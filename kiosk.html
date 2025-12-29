@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>ATLAS TITAN KIOSK</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body class="kiosk-body">
+    
+    <div style="position:absolute; width:100%; height:100%; background:url('https://www.transparenttextures.com/patterns/stardust.png'); opacity:0.1; animation:pulse 5s infinite;"></div>
+
+    <div class="kiosk-content" style="position:relative; z-index:10; display:flex; flex-direction:column; align-items:center;">
+        
+        <div class="kiosk-logo-wrapper">
+            <div class="energy-ring ring-1"></div>
+            <div class="energy-ring ring-2"></div>
+            <div class="energy-ring ring-3"></div>
+            <img src="Logo/ATLAS.png" class="kiosk-logo">
+        </div>
+
+        <h1 style="margin-bottom:30px; font-size:4rem; letter-spacing:10px; font-family:'Rajdhani'; text-shadow:0 0 20px rgba(255,255,255,0.2);">ACCESO SOCIOS</h1>
+        
+        <input type="text" id="k-input" class="kiosk-input" maxlength="5" placeholder="_____">
+        <p style="color:#aaa; margin-top:20px; font-size:1.2rem; letter-spacing:2px; text-transform:uppercase;">Digita tu código y presiona <b style="color:#fff">ENTER</b></p>
+
+        <div id="k-msg" style="margin-top:40px; min-height:60px; text-align:center;"></div>
+        <div id="k-sub" style="min-height:30px; text-align:center; font-size:1.5rem; color:#ddd;"></div>
+    </div>
+
+    <script type="module">
+        import { database } from './firebase-config.js';
+        import { ref, get, push, set } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-database.js";
+
+        const db = {
+            get: async (key) => {
+                const snapshot = await get(ref(database, key));
+                return snapshot.exists() ? snapshot.val() : null;
+            },
+            add: (collection, data) => {
+                const newRef = push(ref(database, collection));
+                set(newRef, data);
+            }
+        };
+        
+        const inp = document.getElementById('k-input');
+        const msg = document.getElementById('k-msg');
+        const sub = document.getElementById('k-sub');
+        const body = document.body;
+
+        // Keep focus always
+        document.body.onclick = () => inp.focus();
+        inp.focus();
+
+        inp.addEventListener('keydown', async (e) => {
+            if (e.key === 'Enter') {
+                const code = inp.value;
+                if (code.length < 1) return;
+
+                inp.disabled = true;
+                msg.innerHTML = '<span style="color:#fff; font-size:2rem;">PROCESANDO...</span>';
+
+                try {
+                    const membersData = await db.get("members");
+                    if (!membersData) {
+                         setErrorState("ERROR DE CONEXIÓN", "No se pudo cargar la base de datos");
+                         resetAfterDelay();
+                         return;
+                    }
+
+                    const membersList = Object.values(membersData);
+                    const m = membersList.find(mem => mem.code === code);
+
+                    if (!m) {
+                        setErrorState("SOCIO NO ENCONTRADO", "Consulta en recepción");
+                    } else {
+                        const days = Math.ceil((new Date(m.expiryDate) - new Date()) / (1000 * 60 * 60 * 24));
+
+                        if (days < 0) {
+                            setErrorState("MEMBRESÍA VENCIDA", "Tu plan ha expirado");
+                        } else {
+                            setSuccessState(m.name, days, m.expiryDate);
+                            db.add("visits", { code: code, name: m.name, date: new Date().toISOString() });
+                        }
+                    }
+                } catch (err) {
+                    console.error(err);
+                    setErrorState("ERROR SISTEMA", "Intenta de nuevo");
+                }
+                
+                resetAfterDelay();
+            }
+        });
+        
+        function resetAfterDelay() {
+            setTimeout(() => {
+                inp.value = '';
+                inp.disabled = false;
+                inp.focus();
+                resetState();
+            }, 4000);
+        }
+
+        function setSuccessState(name, days, expiryDate) {
+            body.style.transition = "background-color 0.5s ease";
+            body.style.backgroundColor = '#00cc33';
+            msg.innerHTML = `<span style="font-size:3.5rem; text-shadow:0 0 30px rgba(0,0,0,0.5); color:#fff; font-weight:800;">¡BIENVENIDO, ${name.split(' ')[0]}! 🔥</span>`;
+            
+            const expiryMessage = `Tu membresía vence el: <b>${new Date(expiryDate).toLocaleDateString()}</b>`;
+            const daysMessage = days <= 5 ? `⚠️ Quedan ${days} días` : `✅ Acceso Autorizado`;
+            
+            sub.innerHTML = `${daysMessage}<br><span style="font-size:1.2rem; color: #e0e0e0;">${expiryMessage}</span>`;
+        }
+
+        function setErrorState(title, subtitle) {
+            body.style.transition = "background-color 0.3s ease";
+            body.style.backgroundColor = '#d32f2f';
+            msg.innerHTML = `<span style="font-size:3.5rem; color:#fff; font-weight:800;"><i class="fas fa-times-circle"></i> ${title}</span>`;
+            sub.innerHTML = subtitle;
+        }
+
+        function resetState() {
+            body.style.backgroundColor = '#000';
+            body.style.backgroundImage = "radial-gradient(circle, #1a0000 0%, #000000 80%)";
+            msg.innerHTML = '';
+            sub.innerHTML = '';
+        }
+    </script>
+</body>
+</html>

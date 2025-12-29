@@ -1,0 +1,621 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ATLAS TITAN | SYSTEM</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+    <div id="toast-container"></div>
+
+    <div id="login-screen">
+        <img src="Logo/ATLAS.png" style="width:160px; margin-bottom:30px; filter:drop-shadow(0 0 15px #ff003c);">
+        <div class="login-box">
+            <h2 style="color:var(--primary); font-family:'Rajdhani'; margin-bottom:10px; font-size:2rem;">SYSTEM ACCESS</h2>
+            <p style="color:#666; margin-bottom:30px;">Identifíquese para continuar</p>
+            <input type="text" id="login-user" placeholder="Usuario / ID" autocomplete="off">
+            <input type="password" id="login-pass" placeholder="Contraseña" onkeydown="if(event.key === 'Enter') app.login()">
+            <button class="btn" style="width:100%; margin-top:10px;" onclick="app.login()">INICIAR SESIÓN</button>
+        </div>
+        <p style="color:#444; margin-top:20px; font-size:0.8rem;">ATLAS GYM MANAGEMENT v2.0</p>
+    </div>
+
+    <div style="display:flex; height:100vh; width:100%;" id="app-container" hidden>
+        
+        <aside class="sidebar">
+            <div class="brand">
+                <img src="Logo/ATLAS.png" alt="Logo"> <span>ATLAS</span>
+            </div>
+            <nav style="flex:1;">
+                <button class="nav-btn active" onclick="app.nav('dashboard')"><i class="fas fa-chart-pie"></i> Dashboard</button>
+                <button class="nav-btn" onclick="app.nav('members')"><i class="fas fa-users"></i> Socios</button>
+                <button class="nav-btn" onclick="app.nav('store')"><i class="fas fa-shopping-bag"></i> Tienda</button>
+                <button class="nav-btn" onclick="app.nav('finances')"><i class="fas fa-cash-register"></i> Finanzas</button>
+                <button class="nav-btn" onclick="app.nav('trash')"><i class="fas fa-trash-alt"></i> Papelera</button>
+                
+                <div id="admin-menu" style="display:none; border-top:1px solid #333; margin-top:20px; padding-top:20px;">
+                    <small style="color:#555; margin-left:20px; text-transform:uppercase; letter-spacing:1px; font-size:0.7rem;">Administración</small>
+                    <button class="nav-btn" onclick="app.nav('admin')"><i class="fas fa-cogs"></i> Sistema</button>
+                    <button class="nav-btn" onclick="app.nav('reports')"><i class="fas fa-print"></i> Reportes</button>
+                    <button class="nav-btn" onclick="app.nav('history')"><i class="fas fa-history"></i> Historial</button>
+                </div>
+                <div id="dev-menu" style="display:none; border-top:1px solid #333; margin-top:20px; padding-top:20px;">
+                    <small style="color:#555; margin-left:20px; text-transform:uppercase; letter-spacing:1px; font-size:0.7rem;">Developer</small>
+                    <button class="nav-btn" onclick="app.nav('dev')"><i class="fas fa-code"></i> Dev Tools</button>
+                </div>
+            </nav>
+            <div style="border-top:1px solid #222; padding-top:20px;">
+                <div style="display:flex; align-items:center; gap:10px; margin-bottom:15px; padding-left:10px;">
+                    <div style="width:30px; height:30px; background:#222; border-radius:50%; display:flex; align-items:center; justify-content:center; color:var(--primary); font-weight:bold;">U</div>
+                    <div>
+                        <div style="font-size:0.9rem; font-weight:bold; color:#fff;" id="user-display-name">Usuario</div>
+                        <div style="font-size:0.7rem; color:#666;" id="user-display-role">Staff</div>
+                    </div>
+                </div>
+                <button class="nav-btn" onclick="location.reload()" style="color:#d32f2f; margin:0;"><i class="fas fa-sign-out-alt"></i> Cerrar Sesión</button>
+            </div>
+        </aside>
+
+        <main class="main-content">
+            <button id="hamburger-menu" class="hamburger-menu-btn">
+                <i class="fas fa-bars"></i>
+            </button>
+            
+            <section id="view-dashboard" class="view-section active">
+                <h1>Panel de Control</h1>
+                <div class="stats-grid">
+    <div class="card" onclick="app.filterMembers('visits_today')">
+        <h3 id="stat-visits">0</h3>
+        <p>Visitas Hoy</p>
+    </div>
+
+    <div class="card" onclick="app.filterMembers('active_only')">
+        <h3 id="stat-active">0</h3>
+        <p>Socios Activos</p>
+    </div>
+
+    <div class="card" onclick="app.filterMembers('expiring')">
+        <h3 id="stat-expiring">0</h3>
+        <p>Por Vencer</p>
+    </div>
+
+    <div class="card" onclick="app.filterMembers('inactive')">
+        <h3 id="stat-inactive">0</h3>
+        <p>Inactivos</p>
+    </div>
+</div>
+
+                <div style="display:grid; grid-template-columns: 1fr 1fr; gap:30px;">
+                    <div class="table-container" style="padding:25px;">
+                        <h4 style="color:#fff; margin-bottom:15px;"><i class="fas fa-birthday-cake" style="color:var(--primary)"></i> Cumpleaños del Mes</h4>
+                        <ul id="bday-list" style="list-style:none; color:#aaa; font-size:0.9rem; line-height:1.8;"></ul>
+                    </div>
+                    <div class="table-container" style="padding:25px; text-align:center; background:linear-gradient(135deg, #111 0%, #000 100%);">
+                        <i class="fas fa-door-open" style="font-size:3rem; color:var(--green); margin-bottom:20px;"></i>
+                        <h3 style="color:#fff; margin-bottom:10px;">ACCESO KIOSCO</h3>
+                        <p style="color:#666; margin-bottom:20px; font-size:0.9rem;">Abrir pantalla completa para ingreso de socios mediante código.</p>
+                        <a href="kiosk.html" target="_blank" class="btn btn-outline" style="text-decoration:none; display:inline-block;">ABRIR KIOSCO</a>
+                    </div>
+                </div>
+            </section>
+
+            <section id="view-members" class="view-section">
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px;">
+                    <h1 data-testid="members-heading">Directorio de Socios</h1>
+                    <button class="btn" onclick="app.openRegisterModal()"><i class="fas fa-plus"></i> NUEVO SOCIO</button>
+                </div>
+                
+                <div style="position:relative; margin-bottom:20px;">
+                    <i class="fas fa-search" style="position:absolute; left:15px; top:15px; color:#666;"></i>
+                    <input type="text" id="search-member" placeholder="Buscar por nombre o código..." onkeyup="app.renderMembers()" style="padding-left:45px;">
+                </div>
+                
+                <div class="table-container">
+                    <table>
+                        <thead>
+                            <tr><th>Código</th><th>Nombre</th><th>Registro</th><th>Vencimiento</th><th>Estado</th><th>Acciones</th></tr>
+                        </thead>
+                        <tbody id="members-table-body"></tbody>
+                    </table>
+                </div>
+            </section>
+
+            <div id="view-store" class="view-section">
+    <div class="section-header">
+        <h1><i class="fas fa-store"></i> Tienda Atlas</h1>
+        <div class="header-actions">
+            <button class="btn admin-only" onclick="app.openProductModal()">
+                <i class="fas fa-plus"></i> Nuevo Producto
+            </button>
+        </div>
+    </div>
+
+    <div class="filters-bar" style="background: var(--dark-soft); padding: 15px; border-radius: 8px; margin-bottom: 20px; display: flex; gap: 15px; align-items: center;">
+        <div style="flex: 2; position: relative;">
+            <i class="fas fa-search" style="position: absolute; left: 12px; top: 12px; color: #666;"></i>
+            <input type="text" id="search-prod" placeholder="Buscar producto..." onkeyup="app.renderStore()" style="padding-left: 35px; margin-bottom: 0;">
+        </div>
+        <select id="filter-category" onchange="app.renderStore()" style="flex: 1; margin-bottom: 0;">
+            <option value="all">Todas las Categorías</option>
+            <option value="Suplementos">Suplementos</option>
+            <option value="Bebidas">Bebidas</option>
+            <option value="Snacks">Snacks</option>
+            <option value="Accesorios">Accesorios</option>
+            <option value="Ropa">Ropa</option>
+        </select>
+    </div>
+
+    <div class="store-container" style="display: grid; grid-template-columns: 1fr 350px; gap: 20px;">
+        <div id="store-grid" class="store-grid">
+            </div>
+
+        <div class="cart-panel" style="background: var(--dark-soft); border-radius: 12px; padding: 20px; border: 1px solid #333; position: sticky; top: 20px; height: fit-content;">
+            <h3 style="margin-top:0; border-bottom: 1px solid #333; padding-bottom: 10px;">
+                <i class="fas fa-shopping-cart" style="color:var(--primary)"></i> Carrito de Ventas
+            </h3>
+            <div id="cart-items" style="min-height: 150px; max-height: 400px; overflow-y: auto; margin-bottom: 20px;">
+                </div>
+            <div class="cart-summary" style="border-top: 2px solid #222; padding-top: 15px;">
+                <div style="display:flex; justify-content:space-between; font-size: 1.2rem; margin-bottom: 20px;">
+                    <span>TOTAL:</span>
+                    <span style="color:var(--neon-green); font-weight:bold;">$<span id="cart-total">0</span></span>
+                </div>
+                <button class="btn" onclick="app.checkout()" style="width: 100%; padding: 15px; font-size: 1.1rem;">
+                    <i class="fas fa-cash-register"></i> COMPLETAR VENTA
+                </button>
+                <button class="btn btn-outline" onclick="app.clearCart()" style="width: 100%; margin-top: 10px; border-color: #444; color: #888;">
+                    Vaciar Carrito
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div id="modal-product" class="modal">
+    <div class="modal-content" style="max-width: 450px;">
+        <h2 id="prod-modal-title">Gestión de Producto</h2>
+        <div class="form-group">
+            <label>Nombre del Producto</label>
+            <input type="text" id="prod-name">
+        </div>
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px;">
+            <div class="form-group">
+                <label>Precio de Venta</label>
+                <input type="number" id="prod-price">
+            </div>
+            <div class="form-group">
+                <label>Stock Inicial</label>
+                <input type="number" id="prod-stock">
+            </div>
+        </div>
+        <div class="form-group">
+            <label>Categoría</label>
+            <select id="prod-category">
+                <option value="Suplementos">Suplementos</option>
+                <option value="Bebidas">Bebidas</option>
+                <option value="Snacks">Snacks</option>
+                <option value="Accesorios">Accesorios</option>
+                <option value="Ropa">Ropa</option>
+            </select>
+        </div>
+        <div class="form-group">
+            <label>Icono (FontAwesome)</label>
+            <select id="prod-icon">
+                <option value="fa-prescription-bottle">Bote/Polvo</option>
+                <option value="fa-bottle-water">Bebida</option>
+                <option value="fa-cookie-bite">Snack/Barrita</option>
+                <option value="fa-shirt">Ropa</option>
+                <option value="fa-dumbbell">Accesorio</option>
+            </select>
+        </div>
+        <div style="display:flex; gap:10px; margin-top:20px;">
+            <button class="btn" onclick="app.saveProduct()" style="flex:2;">Guardar Producto</button>
+            <button class="btn btn-outline" onclick="app.closeModal('modal-product')" style="flex:1;">Cancelar</button>
+        </div>
+    </div>
+</div>
+
+        <section id="view-finances" class="view-section">
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px;">
+                    <h1>Finanzas Profesionales</h1>
+                    <div style="display:flex; gap:10px;">
+                        <button class="btn btn-outline admin-only" onclick="app.openExpenseModal()" style="border-color:var(--primary); color:var(--primary);">
+                            <i class="fas fa-minus-circle"></i> REGISTRAR GASTO
+                        </button>
+                        <button class="btn" onclick="app.printReport()">
+                            <i class="fas fa-print"></i> IMPRIMIR REPORTE
+                        </button>
+                    </div>
+                </div>
+
+                <div class="finance-summary">
+                    <div class="fin-card income">
+                        <h4>Total Ingresos</h4>
+                        <div class="amount" id="fin-total-income">$0</div>
+                    </div>
+                    <div class="fin-card expense">
+                        <h4>Total Gastos</h4>
+                        <div class="amount" id="fin-total-expense">$0</div>
+                    </div>
+                    <div class="fin-card balance">
+                        <h4>Balance Neto</h4>
+                        <div class="amount" id="fin-balance">$0</div>
+                    </div>
+                </div>
+
+                <div class="filters-bar">
+    <div class="date-group">
+        <label>Desde:</label>
+        <input type="date" id="filter-start" onchange="app.loadFinances()">
+    </div>
+    <div class="date-group">
+        <label>Hasta:</label>
+        <input type="date" id="filter-end" onchange="app.loadFinances()">
+    </div>
+    <select id="filter-type" onchange="app.loadFinances()" style="width:150px; margin-bottom:0;">
+        <option value="all">Todos los Mov.</option>
+        <option value="ingreso">Solo Ingresos</option>
+        <option value="gasto">Solo Gastos</option>
+    </select>
+    <select id="filter-user" onchange="app.loadFinances()" style="width:180px; margin-bottom:0;">
+        <option value="all">Todos los Usuarios</option>
+    </select>
+    
+    <button class="btn" onclick="app.printReport()"><i class="fas fa-print"></i> Imprimir</button>
+</div>
+                
+                <div class="table-container">
+                    <table style="width:100%">
+                        <thead>
+                            <tr>
+                                <th>Fecha / Hora</th>
+                                <th>Tipo</th>
+                                <th>Concepto</th>
+                                <th>Usuario</th>
+                                <th>Monto</th>
+                                <th style="text-align:right">Acción</th>
+                            </tr>
+                        </thead>
+                        <tbody id="finances-list"></tbody>
+                    </table>
+                </div>
+            </section>
+
+    <div id="modal-expense" class="modal">
+        <div class="modal-content">
+            <span class="close-btn" onclick="app.closeModal('modal-expense')"><i class="fas fa-times"></i></span>
+            <h2 style="color:var(--primary);">Registrar Gasto</h2>
+            <p style="color:#666; margin-bottom:20px;">Registra salidas de dinero (Luz, Agua, Pagos, etc.)</p>
+            
+            <input type="text" id="exp-desc" placeholder="Descripción del Gasto (ej. Pago de Luz)">
+            <input type="number" id="exp-amount" placeholder="Monto ($)">
+            
+            <button class="btn" style="width:100%; background:var(--primary);" onclick="app.saveExpense()">REGISTRAR SALIDA</button>
+        </div>
+    </div>
+
+            <section id="view-admin" class="view-section">
+                <h1>Configuración</h1>
+                <div style="display:grid; grid-template-columns: 1fr 1fr; gap:30px;">
+                    
+                    <div style="background:var(--panel); padding:30px; border-radius:12px; border:var(--border);">
+                        <h3 style="margin-bottom:20px;">Precios Membresía</h3>
+                        <label>1 Mes</label><input type="number" id="conf-p1">
+                        <label>3 Meses</label><input type="number" id="conf-p3">
+                        <label>12 Meses</label><input type="number" id="conf-p12">
+                        <button class="btn" onclick="app.saveConfig()">GUARDAR CAMBIOS</button>
+                    </div>
+                    
+                    <div style="background:var(--panel); padding:30px; border-radius:12px; border:var(--border);">
+                        <h3 style="margin-bottom:20px;">Gestión de Empleados</h3>
+                        <div class="form-grid" style="display:grid; grid-template-columns: 1fr; gap:10px;">
+                            <input type="text" id="emp-name" placeholder="Nombre Real">
+                            <input type="text" id="emp-user" placeholder="Usuario Login">
+                            <input type="password" id="emp-pass" placeholder="Contraseña">
+                            <select id="emp-role">
+                                <option value="staff">Staff</option>
+                                <option value="admin">Admin</option>
+                            </select>
+                            <button class="btn" onclick="app.registerEmployee()">REGISTRAR CUENTA</button>
+                        </div>
+
+                        <div style="margin-top:30px; border-top:1px solid #333; padding-top:10px;">
+                            <h4 style="margin-bottom:10px; color:#fff;">Lista de Colaboradores</h4>
+                            <div class="table-container" style="max-height: 250px; overflow-y:auto;">
+                                <table style="width:100%;">
+                                    <thead>
+                                        <tr>
+                                            <th>Nombre</th>
+                                            <th>Rol</th>
+                                            <th style="text-align:right;">Eliminar</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="employee-table-body"></tbody>
+                                </table>
+                            </div>
+                        </div>
+
+                    </div>
+                </div>
+            </section>
+
+            <section id="view-trash" class="view-section">
+                <h1>Papelera de Socios</h1>
+                <p style="color:#888; margin-top:-30px; margin-bottom:30px;">
+                    Socios eliminados del sistema. Pueden ser restaurados o eliminados permanentemente.
+                </p>
+                
+                <div class="table-container">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Nombre</th>
+                                <th>Código</th>
+                                <th>Eliminado por</th>
+                                <th>Fecha Elim.</th>
+                                <th style="text-align:right;">Acciones</th>
+                            </tr>
+                        </thead>
+                        <tbody id="trash-table-body">
+                            <!-- Los datos se cargarán aquí desde JS -->
+                        </tbody>
+                    </table>
+                </div>
+            </section>
+
+            <section id="view-dev" class="view-section">
+                <h1>Developer Zone</h1>
+                <div class="dev-tools">
+                    <div class="dev-card">
+                        <h3><i class="fas fa-paint-brush"></i> Customization</h3>
+                        <p>Change the look and feel of the application.</p>
+                        <div class="form-group">
+                            <label>Primary Color</label>
+                            <input type="color" id="dev-color-primary" onchange="app.dev.updateColor('--primary', this.value)">
+                        </div>
+                    </div>
+                    <div class="dev-card">
+                        <h3><i class="fas fa-sign-out-alt"></i> Force User Logout</h3>
+                        <p>Remotely log out a specific staff or admin user.</p>
+                        <div class="form-group">
+                            <label>Select User</label>
+                            <select id="dev-user-list"></select>
+                        </div>
+                        <button class="btn" onclick="app.dev.forceLogout()">Force Logout</button>
+                    </div>
+                    <div class="dev-card">
+                        <h3><i class="fas fa-eye-slash"></i> Hide System Sections</h3>
+                        <p>Control which sections are visible for a specific user.</p>
+                        <div class="form-group">
+                            <label>Select User</label>
+                            <select id="dev-hide-user-list" onchange="app.dev.loadUserSections()"></select>
+                        </div>
+                        <div id="dev-sections-checklist" class="form-group" style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+                            <!-- Checkboxes will be dynamically inserted here -->
+                        </div>
+                        <button class="btn" onclick="app.dev.saveHiddenSections()">Save Visibility</button>
+                    </div>
+                    <div class="dev-card">
+                        <h3><i class="fas fa-exclamation-triangle"></i> Danger Zone</h3>
+                        <p>These actions are irreversible. Use with caution.</p>
+                        <button class="btn btn-danger" onclick="app.dev.fullReset()">Full Application Reset</button>
+                    </div>
+                </div>
+            </section>
+
+            <section id="view-history" class="view-section">
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px;">
+                    <h1>Historial de Acciones</h1>
+                    <button class="btn btn-danger admin-only" onclick="app.clearHistory()">
+                        <i class="fas fa-eraser"></i> Limpiar Historial
+                    </button>
+                </div>
+                <div class="table-container">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Fecha / Hora</th>
+                                <th>Tipo de Acción</th>
+                                <th>Descripción</th>
+                                <th>Usuario</th>
+                            </tr>
+                        </thead>
+                        <tbody id="history-table-body"></tbody>
+                    </table>
+                </div>
+            </section>
+
+            <section id="view-reports" class="view-section">
+                <h1>Centro de Reportes</h1>
+                <p style="color:#888; margin-top:-30px; margin-bottom:30px;">
+                    Seleccione una categoría para generar un reporte detallado.
+                </p>
+
+                <div class="report-grid">
+                    <div class="report-card" onclick="app.reports.show('members')">
+                        <i class="fas fa-users"></i>
+                        <h3>Socios</h3>
+                        <p>Generar listas de socios por estado (activos, inactivos, por vencer).</p>
+                    </div>
+                    <div class="report-card" onclick="app.reports.show('finances')">
+                        <i class="fas fa-cash-register"></i>
+                        <h3>Financieros</h3>
+                        <p>Crear reportes de ingresos, gastos y balance neto por fechas.</p>
+                    </div>
+                    <div class="report-card" onclick="app.reports.show('store')">
+                        <i class="fas fa-store"></i>
+                        <h3>Tienda</h3>
+                        <p>Ver reportes de ventas, resumen de productos y niveles de inventario.</p>
+                    </div>
+                    <div class="report-card" onclick="app.reports.show('activity')">
+                        <i class="fas fa-history"></i>
+                        <h3>Actividad</h3>
+                        <p>Consultar historial de accesos de socios y registros del sistema.</p>
+                    </div>
+                </div>
+
+                <div id="report-generator-modal" class="modal">
+                    <div class="modal-content" style="max-width: 800px;">
+                        <div id="report-generator-content">
+                            <!-- El contenido del generador de reportes se inyectará aquí -->
+                        </div>
+                        <div style="text-align: right; margin-top: 20px;">
+                             <button class="btn" onclick="app.reports.printCurrent()">IMPRIMIR</button>
+                            <button class="btn btn-outline" onclick="app.closeModal('report-generator-modal')">Cerrar</button>
+                        </div>
+                    </div>
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <div id="modal-register" class="modal">
+        <div class="modal-content">
+            <span class="close-btn" onclick="app.closeModal('modal-register')"><i class="fas fa-times"></i></span>
+            <h2 style="color:var(--primary); margin-bottom:20px;">Nuevo Socio</h2>
+            <div style="display:grid; grid-template-columns: 1fr 1fr; gap:15px;">
+                <input type="text" id="reg-name" placeholder="Nombre Completo" style="grid-column:span 2;">
+                <input type="date" id="reg-dob" title="Fecha Nacimiento">
+                <input type="text" id="reg-phone" placeholder="WhatsApp (52...)">
+                <input type="email" id="reg-email" placeholder="Correo (Opcional)" style="grid-column:span 2;">
+            </div>
+            <hr style="border-color:#333; margin:20px 0;">
+            <label>Plan a contratar:</label>
+            <select id="reg-plan" onchange="app.updateRegisterPrice()">
+    <option value="1">1 Mes</option>
+    <option value="3">3 Meses</option>
+    <option value="12">12 Meses</option>
+</select>
+
+<div style="margin-top:10px; font-weight:bold; color:var(--neon-green);">
+    TOTAL A PAGAR: <span id="reg-price-display">$500</span>
+</div>
+
+            <button class="btn btn-success" style="width:100%" onclick="app.confirmRegister()">REGISTRAR Y COBRAR</button>
+        </div>
+    </div>
+
+    <div id="modal-member-detail" class="modal">
+    <div class="modal-content" style="width: 600px; border-top: 5px solid var(--primary);">
+        <div id="member-info-content"></div>
+        
+        <div class="form-grid" style="margin-top:20px; border-top:1px solid #222; padding-top:20px;">
+            <div>
+                <label style="color:#666; font-size:0.8rem;">Nombre Completo</label>
+                <input type="text" id="edit-name">
+            </div>
+            <div>
+                <label style="color:#666; font-size:0.8rem;">Teléfono</label>
+                <input type="text" id="edit-phone">
+            </div>
+        </div>
+
+        <div style="display:flex; gap:10px; margin-top:20px;">
+            <button class="btn admin-only" onclick="app.saveMemberEdit()" style="flex:1">Actualizar Datos</button>
+            <button class="btn btn-outline" onclick="app.showMemberCard()" style="flex:1"><i class="fas fa-id-card"></i> Ver Tarjeta</button>
+            <button class="btn" style="background:#ffaa00; flex:1; color:#000;" onclick="app.openRenewModal()"><i class="fas fa-sync"></i> Renovar</button>
+        </div>
+
+        <div style="margin-top:30px; background: #0a0a0a; padding: 15px; border-radius: 8px; border: 1px solid #222;">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px;">
+                <h4 style="color:var(--primary); text-transform:uppercase; font-size:0.9rem; margin:0;">Historial de Accesos</h4>
+                <span id="visit-counter-badge" style="background:var(--primary); color:white; padding:2px 10px; border-radius:10px; font-size:0.8rem; font-weight:bold;">0 VISITAS</span>
+            </div>
+            <div id="member-visits-list" style="max-height:150px; overflow-y:auto; font-size:0.85rem; color:#aaa;">
+                </div>
+        </div>
+
+        <div style="margin-top:20px; display:flex; gap:10px; border-top: 1px solid #222; padding-top: 20px;">
+            <button class="btn admin-only" style="background:#333; flex:1" onclick="app.deleteMember()">
+                <i class="fas fa-trash-alt"></i> Eliminar Socio
+            </button>
+            <button class="btn btn-outline" style="flex:1" onclick="app.closeModal('modal-member-detail')">Cerrar</button>
+        </div>
+    </div>
+</div>
+
+<div id="modal-card" class="modal">
+    <div class="modal-content" style="background:transparent; border:none; box-shadow:none; width:450px;">
+        <div id="member-card-ui" class="member-card-design">
+            </div>
+        <div style="display:flex; gap:10px; margin-top:20px;">
+            <button class="btn" style="flex:1" onclick="app.downloadMemberCard()"><i class="fas fa-download"></i> Descargar</button>
+            <button class="btn btn-outline" style="flex:1" onclick="app.closeModal('modal-card')">Volver</button>
+        </div>
+    </div>
+</div>
+
+<div id="modal-renew-pro" class="modal">
+    <div class="modal-content" style="width:400px; border-left: 5px solid var(--neon-orange);">
+        <h2 style="font-family:'Rajdhani'; margin-bottom:20px; color:var(--neon-orange);">RENOVACIÓN DE PLAN</h2>
+        <div id="renew-member-info" style="margin-bottom:20px; padding:10px; background:#1a1a1a; border-radius:8px;"></div>
+        
+        <label>Seleccionar Nuevo Plan:</label>
+        <select id="renew-plan-select" onchange="app.updateRenewPrice()">
+            <option value="1">1 Mes - Mensualidad</option>
+            <option value="3">3 Meses - Trimestre</option>
+            <option value="12">12 Meses - Anualidad</option>
+        </select>
+        
+        <div style="background:#000; padding:20px; border-radius:8px; text-align:center; margin-top:10px;">
+            <span style="color:#888; display:block;">Total a Pagar:</span>
+            <h2 id="renew-price-display" style="color:var(--neon-green); font-size:2.5rem; font-family:'Rajdhani';">$0</h2>
+        </div>
+        
+        <button class="btn" style="width:100%; margin-top:20px; background:var(--neon-orange)" onclick="app.confirmRenewal()">Confirmar Pago y Renovar</button>
+        <button class="btn btn-outline" style="width:100%; margin-top:10px;" onclick="app.closeModal('modal-renew-pro')">Cancelar</button>
+    </div>
+</div>
+
+    <div id="modal-product" class="modal">
+        <div class="modal-content">
+            <span class="close-btn" onclick="app.closeModal('modal-product')"><i class="fas fa-times"></i></span>
+            <h2>Gestión Producto</h2>
+            <input type="text" id="prod-name" placeholder="Nombre del Producto">
+            <div style="display:flex; gap:10px;">
+                <input type="number" id="prod-price" placeholder="Precio ($)">
+                <input type="number" id="prod-stock" placeholder="Stock Inicial">
+            </div>
+            <select id="prod-icon">
+                <option value="fa-bottle-water">Botella</option>
+                <option value="fa-cookie-bite">Snack/Barra</option>
+                <option value="fa-tshirt">Ropa</option>
+                <option value="fa-dumbbell">Equipo</option>
+                <option value="fa-box">Otro</option>
+            </select>
+            <button class="btn" style="width:100%" onclick="app.saveProduct()">GUARDAR PRODUCTO</button>
+        </div>
+    </div>
+
+    <div id="printable-area"></div>
+
+    <div id="modal-confirm" class="modal">
+        <div class="modal-content">
+            <h2 id="confirm-title">Confirm</h2>
+            <p id="confirm-message">Are you sure?</p>
+            <div style="display:flex; gap:10px; margin-top:20px;">
+                <button id="confirm-ok" class="btn">OK</button>
+                <button id="confirm-cancel" class="btn btn-outline">Cancel</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="modal-prompt" class="modal">
+        <div class="modal-content">
+            <h2 id="prompt-title">Prompt</h2>
+            <p id="prompt-message">Please enter a value:</p>
+            <input type="text" id="prompt-input">
+            <div style="display:flex; gap:10px; margin-top:20px;">
+                <button id="prompt-ok" class="btn">OK</button>
+                <button id="prompt-cancel" class="btn btn-outline">Cancel</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <script type="module" src="firebase-config.js"></script>
+    <script type="module" src="script.js"></script>
+</body>
+</html>
