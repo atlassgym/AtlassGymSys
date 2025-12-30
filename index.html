@@ -38,6 +38,7 @@
                 <div id="admin-menu" style="display:none; border-top:1px solid #333; margin-top:20px; padding-top:20px;">
                     <small style="color:#555; margin-left:20px; text-transform:uppercase; letter-spacing:1px; font-size:0.7rem;">Administración</small>
                     <button class="nav-btn" onclick="app.nav('admin')"><i class="fas fa-cogs"></i> Sistema</button>
+                    <button class="nav-btn" onclick="app.nav('stats')"><i class="fas fa-chart-line"></i> Estadísticas</button>
                     <button class="nav-btn" onclick="app.nav('reports')"><i class="fas fa-print"></i> Reportes</button>
                     <button class="nav-btn" onclick="app.nav('history')"><i class="fas fa-history"></i> Historial</button>
                 </div>
@@ -427,6 +428,20 @@
                 </div>
             </section>
 
+            <section id="view-stats" class="view-section">
+                <h1>Estadísticas Profesionales</h1>
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 30px;">
+                    <div class="table-container" style="padding: 20px; background: #111;">
+                        <h3 style="font-family: 'Rajdhani'; margin-bottom: 20px; color: var(--primary);">Afluencia Horaria</h3>
+                        <canvas id="chart-visits"></canvas>
+                    </div>
+                    <div class="table-container" style="padding: 20px; background: #111;">
+                        <h3 style="font-family: 'Rajdhani'; margin-bottom: 20px; color: var(--neon-green);">Rendimiento Mensual</h3>
+                        <canvas id="chart-finances"></canvas>
+                    </div>
+                </div>
+            </section>
+
             <section id="view-reports" class="view-section">
                 <h1>Centro de Reportes</h1>
                 <p style="color:#888; margin-top:-30px; margin-bottom:30px;">
@@ -462,7 +477,7 @@
                             <!-- El contenido del generador de reportes se inyectará aquí -->
                         </div>
                         <div style="text-align: right; margin-top: 20px;">
-                             <button class="btn" onclick="app.reports.printCurrent()">IMPRIMIR</button>
+                            <button class="btn" onclick="app.reports.printCurrent()">IMPRIMIR</button>
                             <button class="btn btn-outline" onclick="app.closeModal('report-generator-modal')">Cerrar</button>
                         </div>
                     </div>
@@ -614,6 +629,7 @@
         </div>
     </div>
 
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
     <script type="module" src="firebase-config.js"></script>
     <script type="module" src="script.js"></script>
