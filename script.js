@@ -283,6 +283,94 @@ window.app = {
         if(viewId === 'history') this.renderHistory();
         if(viewId === 'reports') this.reports.init();
         if(viewId === 'dev') this.dev.loadUsers();
+        if(viewId === 'stats') this.renderStats();
+    },
+
+    // 2.5. ESTADÍSTICAS PRO
+    renderStats: function() {
+        if (!app.charts) app.charts = {};
+
+        // 1. Gráfica de Afluencia Horaria (Area Chart)
+        const visitHours = new Array(24).fill(0);
+        visits.forEach(v => {
+            const h = new Date(v.date).getHours();
+            visitHours[h]++;
+        });
+
+        if (app.charts.visits) app.charts.visits.destroy();
+        app.charts.visits = new Chart(document.getElementById('chart-visits'), {
+            type: 'line',
+            data: {
+                labels: Array.from({length: 24}, (_, i) => `${i}:00`),
+                datasets: [{
+                    label: 'Visitas',
+                    data: visitHours,
+                    backgroundColor: 'rgba(255, 0, 60, 0.2)', // --primary con opacidad
+                    borderColor: '#ff003c', // --primary
+                    fill: true,
+                    tension: 0.4 // Suavizado
+                }]
+            },
+            options: {
+                responsive: true,
+                plugins: {
+                    legend: { labels: { color: '#fff' } }
+                },
+                scales: {
+                    x: { ticks: { color: '#888' }, grid: { color: '#222' } },
+                    y: { ticks: { color: '#888' }, grid: { color: '#222' } }
+                }
+            }
+        });
+
+        // 2. Gráfica de Rendimiento Mensual (Grouped Bar)
+        const months = {}; // { 'Ene 2023': { income: 0, expense: 0 } }
+        finances.forEach(f => {
+            const d = new Date(f.date);
+            const key = `${d.toLocaleString('es', { month: 'short' })} ${d.getFullYear()}`;
+            if (!months[key]) months[key] = { income: 0, expense: 0, sortDate: d };
+            
+            if (String(f.type).toLowerCase() === 'gasto' || String(f.type).toLowerCase() === 'salida' || String(f.type).toLowerCase() === 'egreso') {
+                months[key].expense += Number(f.amount);
+            } else {
+                months[key].income += Number(f.amount);
+            }
+        });
+
+        // Ordenar cronológicamente
+        const sortedKeys = Object.keys(months).sort((a, b) => months[a].sortDate - months[b].sortDate);
+        const incomeData = sortedKeys.map(k => months[k].income);
+        const expenseData = sortedKeys.map(k => months[k].expense);
+
+        if (app.charts.finances) app.charts.finances.destroy();
+        app.charts.finances = new Chart(document.getElementById('chart-finances'), {
+            type: 'bar',
+            data: {
+                labels: sortedKeys,
+                datasets: [
+                    {
+                        label: 'Ingresos',
+                        data: incomeData,
+                        backgroundColor: '#00ff41' // --neon-green
+                    },
+                    {
+                        label: 'Gastos',
+                        data: expenseData,
+                        backgroundColor: '#ff003c' // --primary
+                    }
+                ]
+            },
+            options: {
+                responsive: true,
+                plugins: {
+                    legend: { labels: { color: '#fff' } }
+                },
+                scales: {
+                    x: { ticks: { color: '#888' }, grid: { color: '#222' } },
+                    y: { ticks: { color: '#888' }, grid: { color: '#222' } }
+                }
+            }
+        });
     },
 
     // 3. DASHBOARD
