@@ -62,9 +62,9 @@
                 try {
                     const membersData = await db.get("members");
                     if (!membersData) {
-                         setErrorState("ERROR DE CONEXIÓN", "No se pudo cargar la base de datos");
-                         resetAfterDelay();
-                         return;
+                        setErrorState("ERROR DE CONEXIÓN", "No se pudo cargar la base de datos");
+                        resetAfterDelay();
+                        return;
                     }
 
                     const membersList = Object.values(membersData);
