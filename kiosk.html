@@ -71,12 +71,12 @@
                     const m = membersList.find(mem => mem.code === code);
 
                     if (!m) {
-                        setErrorState("SOCIO NO ENCONTRADO", "Consulta en recepción");
+                        setErrorState("Error: Código inexistente", "");
                     } else {
                         const days = Math.ceil((new Date(m.expiryDate) - new Date()) / (1000 * 60 * 60 * 24));
 
                         if (days < 0) {
-                            setErrorState("MEMBRESÍA VENCIDA", "Tu plan ha expirado");
+                            setErrorState(`Membresía vencida el día ${new Date(m.expiryDate).toLocaleDateString()}`, "");
                         } else {
                             setSuccessState(m.name, days, m.expiryDate);
                             db.add("visits", { code: code, name: m.name, date: new Date().toISOString() });
@@ -103,7 +103,8 @@
         function setSuccessState(name, days, expiryDate) {
             body.style.transition = "background-color 0.5s ease";
             body.style.backgroundColor = '#00cc33';
-            msg.innerHTML = `<span style="font-size:3.5rem; text-shadow:0 0 30px rgba(0,0,0,0.5); color:#fff; font-weight:800;">¡BIENVENIDO, ${name.split(' ')[0]}! 🔥</span>`;
+            body.style.backgroundImage = 'none';
+            msg.innerHTML = `<span style="font-size:3.5rem; text-shadow:0 0 30px rgba(0,0,0,0.5); color:#fff; font-weight:800;">¡Bienvenido ${name.split(' ')[0]}!</span>`;
             
             const expiryMessage = `Tu membresía vence el: <b>${new Date(expiryDate).toLocaleDateString()}</b>`;
             const daysMessage = days <= 5 ? `⚠️ Quedan ${days} días` : `✅ Acceso Autorizado`;
@@ -114,6 +115,7 @@
         function setErrorState(title, subtitle) {
             body.style.transition = "background-color 0.3s ease";
             body.style.backgroundColor = '#d32f2f';
+            body.style.backgroundImage = 'none';
             msg.innerHTML = `<span style="font-size:3.5rem; color:#fff; font-weight:800;"><i class="fas fa-times-circle"></i> ${title}</span>`;
             sub.innerHTML = subtitle;
         }
