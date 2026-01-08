@@ -10,6 +10,16 @@
 
     <div id="toast-container"></div>
 
+    <!-- Big Alert Overlay for Reception -->
+    <div id="big-alert" class="big-alert-overlay">
+        <div class="big-alert-content">
+            <div id="ba-icon" class="alert-icon"><i class="fas fa-check-circle"></i></div>
+            <h1 id="ba-title" class="alert-title">¡BIENVENIDO!</h1>
+            <div id="ba-name" class="alert-name">Juan Perez</div>
+            <div id="ba-reason" class="alert-reason" style="display:none;"></div>
+        </div>
+    </div>
+
     <div id="login-screen">
         <img src="Logo/ATLAS.png" style="width:160px; margin-bottom:30px; filter:drop-shadow(0 0 15px #ff003c);">
         <div class="login-box">
@@ -20,6 +30,7 @@
             <button class="btn" style="width:100%; margin-top:10px;" onclick="app.login()">INICIAR SESIÓN</button>
         </div>
         <p style="color:#444; margin-top:20px; font-size:0.8rem;">ATLAS GYM MANAGEMENT v2.0</p>
+        <p style="color:#888; margin-top:15px; font-size:1.1rem; font-weight:bold;">Desarrollado por Mauricio Villalpando</p>
     </div>
 
     <div style="display:flex; height:100vh; width:100%;" id="app-container" hidden>
@@ -302,11 +313,36 @@
                 <div style="display:grid; grid-template-columns: 1fr 1fr; gap:30px;">
                     
                     <div style="background:var(--panel); padding:30px; border-radius:12px; border:var(--border);">
-                        <h3 style="margin-bottom:20px;">Precios Membresía</h3>
-                        <label>1 Mes</label><input type="number" id="conf-p1">
-                        <label>3 Meses</label><input type="number" id="conf-p3">
-                        <label>12 Meses</label><input type="number" id="conf-p12">
-                        <button class="btn" onclick="app.saveConfig()">GUARDAR CAMBIOS</button>
+                        <h3 style="margin-bottom:20px;">Configuración de Precios</h3>
+                        <div style="max-height: 400px; overflow-y: auto; padding-right: 10px;">
+                            <h4 style="color:#aaa; border-bottom:1px solid #333; margin-bottom:15px;">Temporales</h4>
+                            <div class="form-grid">
+                                <div><label>Visita</label><input type="number" id="conf-visit"></div>
+                                <div><label>Semanal</label><input type="number" id="conf-weekly"></div>
+                                <div><label>Quincenal</label><input type="number" id="conf-biweekly"></div>
+                            </div>
+
+                            <h4 style="color:#aaa; border-bottom:1px solid #333; margin:15px 0;">Individuales</h4>
+                            <div class="form-grid">
+                                <div><label>Mensual</label><input type="number" id="conf-monthly"></div>
+                                <div><label>Estudiante</label><input type="number" id="conf-student"></div>
+                            </div>
+
+                            <h4 style="color:#aaa; border-bottom:1px solid #333; margin:15px 0;">Adelantados</h4>
+                            <div class="form-grid">
+                                <div><label>Trimestral</label><input type="number" id="conf-quarterly"></div>
+                                <div><label>Semestral</label><input type="number" id="conf-semiannual"></div>
+                                <div><label>Anual</label><input type="number" id="conf-annual"></div>
+                            </div>
+
+                            <h4 style="color:#aaa; border-bottom:1px solid #333; margin:15px 0;">Grupales</h4>
+                            <div class="form-grid">
+                                <div><label>Pareja</label><input type="number" id="conf-couple"></div>
+                                <div><label>Fam. (3 Pers)</label><input type="number" id="conf-family3"></div>
+                                <div><label>Fam. (4 Pers)</label><input type="number" id="conf-family4"></div>
+                            </div>
+                        </div>
+                        <button class="btn" style="width:100%; margin-top:20px;" onclick="app.saveConfig()">GUARDAR CAMBIOS</button>
                     </div>
                     
                     <div style="background:var(--panel); padding:30px; border-radius:12px; border:var(--border);">
@@ -343,11 +379,20 @@
             </section>
 
             <section id="view-trash" class="view-section">
-                <h1>Papelera de Socios</h1>
+                <h1>Papelera de Reciclaje</h1>
                 <p style="color:#888; margin-top:-30px; margin-bottom:30px;">
-                    Socios eliminados del sistema. Pueden ser restaurados o eliminados permanentemente.
+                    Registros eliminados del sistema. Pueden ser restaurados o eliminados permanentemente.
                 </p>
                 
+                <div style="display:flex; gap:15px; margin-bottom:20px;">
+                    <button id="btn-trash-members" class="btn active" onclick="app.setTrashView('members')">
+                        <i class="fas fa-users"></i> Socios
+                    </button>
+                    <button id="btn-trash-finances" class="btn btn-outline" onclick="app.setTrashView('finances')">
+                        <i class="fas fa-cash-register"></i> Finanzas
+                    </button>
+                </div>
+
                 <div class="table-container">
                     <table>
                         <thead>
@@ -367,41 +412,41 @@
             </section>
 
             <section id="view-dev" class="view-section">
-                <h1>Developer Zone</h1>
+                <h1>Zona de Desarrollador</h1>
                 <div class="dev-tools">
                     <div class="dev-card">
-                        <h3><i class="fas fa-paint-brush"></i> Customization</h3>
-                        <p>Change the look and feel of the application.</p>
+                        <h3><i class="fas fa-paint-brush"></i>Customizacion</h3>
+                        <p>Personalizar el diseño y la interfaz de la aplicación.</p>
                         <div class="form-group">
-                            <label>Primary Color</label>
+                            <label>Color primario</label>
                             <input type="color" id="dev-color-primary" onchange="app.dev.updateColor('--primary', this.value)">
                         </div>
                     </div>
                     <div class="dev-card">
-                        <h3><i class="fas fa-sign-out-alt"></i> Force User Logout</h3>
-                        <p>Remotely log out a specific staff or admin user.</p>
+                        <h3><i class="fas fa-sign-out-alt"></i> Forzar cierre de usuario</h3>
+                        <p>Cerrar la sesión de forma remota de un usuario específico del personal o administrador.</p>
                         <div class="form-group">
-                            <label>Select User</label>
+                            <label>Elegir usuario</label>
                             <select id="dev-user-list"></select>
                         </div>
-                        <button class="btn" onclick="app.dev.forceLogout()">Force Logout</button>
+                        <button class="btn" onclick="app.dev.forceLogout()">Forzar cierre</button>
                     </div>
                     <div class="dev-card">
-                        <h3><i class="fas fa-eye-slash"></i> Hide System Sections</h3>
-                        <p>Control which sections are visible for a specific user.</p>
+                        <h3><i class="fas fa-eye-slash"></i> Esconder secciones del sistema</h3>
+                        <p>Controla qué secciones son visibles para un usuario específico.</p>
                         <div class="form-group">
-                            <label>Select User</label>
+                            <label>Elegir usuario</label>
                             <select id="dev-hide-user-list" onchange="app.dev.loadUserSections()"></select>
                         </div>
                         <div id="dev-sections-checklist" class="form-group" style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
                             <!-- Checkboxes will be dynamically inserted here -->
                         </div>
-                        <button class="btn" onclick="app.dev.saveHiddenSections()">Save Visibility</button>
+                        <button class="btn" onclick="app.dev.saveHiddenSections()">Guardar Visibilidad</button>
                     </div>
                     <div class="dev-card">
-                        <h3><i class="fas fa-exclamation-triangle"></i> Danger Zone</h3>
-                        <p>These actions are irreversible. Use with caution.</p>
-                        <button class="btn btn-danger" onclick="app.dev.fullReset()">Full Application Reset</button>
+                        <h3><i class="fas fa-exclamation-triangle"></i> Zona de Peligro</h3>
+                        <p>Estas accion no se pueden deshacer. Proceda con precaución</p>
+                        <button class="btn btn-danger" onclick="app.dev.fullReset()">Aplicacion completamente Reseteada :C</button>
                     </div>
                 </div>
             </section>
@@ -487,28 +532,58 @@
     </div>
 
     <div id="modal-register" class="modal">
-        <div class="modal-content">
-            <span class="close-btn" onclick="app.closeModal('modal-register')"><i class="fas fa-times"></i></span>
-            <h2 style="color:var(--primary); margin-bottom:20px;">Nuevo Socio</h2>
-            <div style="display:grid; grid-template-columns: 1fr 1fr; gap:15px;">
-                <input type="text" id="reg-name" placeholder="Nombre Completo" style="grid-column:span 2;">
-                <input type="date" id="reg-dob" title="Fecha Nacimiento">
-                <input type="text" id="reg-phone" placeholder="WhatsApp (52...)">
-                <input type="email" id="reg-email" placeholder="Correo (Opcional)" style="grid-column:span 2;">
+        <div class="modal-content" style="width: 600px; max-height: 90vh; display: flex; flex-direction: column;">
+            <div style="flex-shrink: 0;">
+                <span class="close-btn" onclick="app.closeModal('modal-register')"><i class="fas fa-times"></i></span>
+                <h2 style="color:var(--primary); margin-bottom:20px;">Nuevo Registro</h2>
+                
+                <div style="display: flex; gap: 15px; margin-bottom: 15px;">
+                    <div style="flex: 2;">
+                        <label>Plan a contratar:</label>
+                        <select id="reg-plan" onchange="app.handlePlanChange()">
+                            <optgroup label="Temporales">
+                                <option value="visit">Visita</option>
+                                <option value="weekly">Semanal</option>
+                                <option value="biweekly">Quincenal</option>
+                            </optgroup>
+                            <optgroup label="Individuales">
+                                <option value="monthly" selected>Mensual</option>
+                                <option value="student">Estudiante</option>
+                            </optgroup>
+                            <optgroup label="Adelantados">
+                                <option value="quarterly">Trimestral</option>
+                                <option value="semiannual">Semestral</option>
+                                <option value="annual">Anual</option>
+                            </optgroup>
+                            <optgroup label="Grupales">
+                                <option value="couple">Pareja</option>
+                <option value="family3">Fam. (3 Pers)</option>
+                <option value="family4">Fam. (4 Pers)</option>
+                            </optgroup>
+                        </select>
+                    </div>
+                    <div id="family-size-container" style="flex: 1; display: none;">
+                        <label>Personas:</label>
+                        <select id="reg-family-size" onchange="app.renderRegisterForms()">
+                            <option value="3">3</option>
+                            <option value="4">4</option>
+                        </select>
+                    </div>
+                </div>
             </div>
-            <hr style="border-color:#333; margin:20px 0;">
-            <label>Plan a contratar:</label>
-            <select id="reg-plan" onchange="app.updateRegisterPrice()">
-    <option value="1">1 Mes</option>
-    <option value="3">3 Meses</option>
-    <option value="12">12 Meses</option>
-</select>
 
-<div style="margin-top:10px; font-weight:bold; color:var(--neon-green);">
-    TOTAL A PAGAR: <span id="reg-price-display">$500</span>
-</div>
+            <!-- Scrollable Container for Member Forms -->
+            <div id="reg-members-container" style="overflow-y: auto; padding-right: 5px; margin-bottom: 15px; flex-grow: 1;">
+                <!-- Forms generated by JS -->
+            </div>
 
-            <button class="btn btn-success" style="width:100%" onclick="app.confirmRegister()">REGISTRAR Y COBRAR</button>
+            <div style="flex-shrink: 0; border-top: 1px solid #333; padding-top: 15px;">
+                <div style="display:flex; justify-content:space-between; font-size:1.2rem; margin-bottom:15px;">
+                    <span>TOTAL A PAGAR:</span>
+                    <span id="reg-price-display" style="color:var(--neon-green); font-weight:bold;">$0</span>
+                </div>
+                <button class="btn btn-success" style="width:100%" onclick="app.confirmRegister()">REGISTRAR Y COBRAR</button>
+            </div>
         </div>
     </div>
 
@@ -569,9 +644,25 @@
         
         <label>Seleccionar Nuevo Plan:</label>
         <select id="renew-plan-select" onchange="app.updateRenewPrice()">
-            <option value="1">1 Mes - Mensualidad</option>
-            <option value="3">3 Meses - Trimestre</option>
-            <option value="12">12 Meses - Anualidad</option>
+            <optgroup label="Temporales">
+                <option value="visit">Visita</option>
+                <option value="weekly">Semanal</option>
+                <option value="biweekly">Quincenal</option>
+            </optgroup>
+            <optgroup label="Individuales">
+                <option value="monthly" selected>Mensual</option>
+                <option value="student">Estudiante</option>
+            </optgroup>
+            <optgroup label="Adelantados">
+                <option value="quarterly">Trimestral</option>
+                <option value="semiannual">Semestral</option>
+                <option value="annual">Anual</option>
+            </optgroup>
+            <optgroup label="Grupales">
+                <option value="couple">Pareja</option>
+                <option value="family3">Fam. (3 Pers)</option>
+                <option value="family4">Fam. (4 Pers)</option>
+            </optgroup>
         </select>
         
         <div style="background:#000; padding:20px; border-radius:8px; text-align:center; margin-top:10px;">
@@ -608,11 +699,11 @@
 
     <div id="modal-confirm" class="modal">
         <div class="modal-content">
-            <h2 id="confirm-title">Confirm</h2>
-            <p id="confirm-message">Are you sure?</p>
+            <h2 id="confirm-title">Confirmar</h2>
+            <p id="confirm-message">Estas Seguro?</p>
             <div style="display:flex; gap:10px; margin-top:20px;">
                 <button id="confirm-ok" class="btn">OK</button>
-                <button id="confirm-cancel" class="btn btn-outline">Cancel</button>
+                <button id="confirm-cancel" class="btn btn-outline">Cancelar</button>
             </div>
         </div>
     </div>
@@ -620,11 +711,11 @@
     <div id="modal-prompt" class="modal">
         <div class="modal-content">
             <h2 id="prompt-title">Prompt</h2>
-            <p id="prompt-message">Please enter a value:</p>
+            <p id="prompt-message">Ingresa un valor:</p>
             <input type="text" id="prompt-input">
             <div style="display:flex; gap:10px; margin-top:20px;">
                 <button id="prompt-ok" class="btn">OK</button>
-                <button id="prompt-cancel" class="btn btn-outline">Cancel</button>
+                <button id="prompt-cancel" class="btn btn-outline">Cancelar</button>
             </div>
         </div>
     </div>
