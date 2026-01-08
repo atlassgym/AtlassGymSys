@@ -1,5 +1,5 @@
 import { database } from './firebase-config.js';
-import { ref, set, get, push, remove, update, onValue } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-database.js";
+import { ref, set, get, push, remove, update, onValue, onChildAdded, query, limitToLast } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-database.js";
 
 // --- FIREBASE DATABASE ---
 const db = {
@@ -34,7 +34,26 @@ let history = [];
 let users = [];
 let cart = [];
 let selectedMemberId = null;
-let prices = { "1": 500, "3": 1200, "12": 4000 };
+let prices = {
+    "visit": 50, "weekly": 200, "biweekly": 350,
+    "monthly": 500, "student": 400,
+    "quarterly": 1200, "semiannual": 2200, "annual": 4000,
+    "couple": 900, "family3": 1300, "family4": 1600
+};
+
+const PLAN_NAMES = {
+    "visit": "Visita",
+    "weekly": "Semanal",
+    "biweekly": "Quincenal",
+    "monthly": "Mensual",
+    "student": "Estudiante",
+    "quarterly": "Trimestral",
+    "semiannual": "Semestral",
+    "annual": "Anual",
+    "couple": "Pareja",
+    "family3": "Fam. (3 Pers)",
+    "family4": "Fam. (4 Pers)"
+};
 
 // --- UI HELPERS ---
 function showToast(type, msg) {
@@ -252,6 +271,35 @@ window.app = {
         db.onDataChange('visits', (data) => {
             visits = Object.entries(data).map(([id, value]) => ({ id, ...value }));
             this.calcStats();
+        });
+        
+        // Listener REAL-TIME para Alertas de Acceso (Req 2)
+        // Se activa cuando se añade un nuevo nodo a 'visits'
+        const visitsRef = ref(database, 'visits');
+        // Limit to last 1 to avoid showing alerts for old visits on load, 
+        // but since we want *new* ones, we can just check the timestamp or use onChildAdded
+        // For simplicity and effectiveness in this SPA:
+        let initialLoad = true;
+        
+        onValue(visitsRef, (snapshot) => {
+             // This is handled by the main listener above for the array
+             // We need a specific listener for new additions to trigger the UI
+        });
+
+        // Use onChildAdded for instant reaction
+        // We need to ignore the initial batch
+        const newVisitsQuery = query(visitsRef, limitToLast(1));
+        
+        onChildAdded(newVisitsQuery, (snapshot) => {
+            const v = snapshot.val();
+            if (!v) return;
+            
+            // Check if the visit is recent (within last 10 seconds) to avoid firing on page reload
+            const visitTime = new Date(v.date).getTime();
+            const now = new Date().getTime();
+            if (now - visitTime < 10000) { 
+               this.showAccessAlert(v);
+            }
         });
         db.onDataChange('trash', (data) => {
             trash = Object.entries(data).map(([id, value]) => ({ id, ...value }));
@@ -498,43 +546,186 @@ window.app = {
     },
     // Añade esto para abrir el modal de registro
     openRegisterModal: function() {
-        // Limpia los campos del formulario por si quedaron datos previos
-        document.getElementById('reg-name').value = '';
-        document.getElementById('reg-phone').value = '';
-        document.getElementById('reg-email').value = '';
-        document.getElementById('reg-dob').value = '';
-        // Muestra el modal
         document.getElementById('modal-register').style.display = 'flex';
+        // Reset to default
+        document.getElementById('reg-plan').value = 'monthly';
+        this.handlePlanChange();
+    },
+
+    handlePlanChange: function() {
+        const plan = document.getElementById('reg-plan').value;
+        const familyContainer = document.getElementById('family-size-container');
+        let count = 1;
+
+        if (plan === 'couple') {
+            count = 2;
+        } else if (plan === 'family3') {
+            count = 3;
+        } else if (plan === 'family4') {
+            count = 4;
+        }
+        
+        if (familyContainer) familyContainer.style.display = 'none';
+        
+        this.renderRegisterForms(count);
+        this.updateRegisterPrice();
+    },
+
+    renderRegisterForms: function(count) {
+        // Calculate count if not provided or if it's an event object
+        if (typeof count !== 'number') {
+            const plan = document.getElementById('reg-plan').value;
+            if (plan === 'family3') {
+                count = 3;
+            } else if (plan === 'family4') {
+                count = 4;
+            } else if (plan === 'couple') {
+                count = 2;
+            } else {
+                count = 1;
+            }
+        }
+
+        const container = document.getElementById('reg-members-container');
+        container.innerHTML = '';
+
+        for (let i = 1; i <= count; i++) {
+            const isMain = i === 1;
+            const title = count > 1 ? `Socio #${i} ${isMain ? '(Titular)' : ''}` : 'Datos del Socio';
+            
+            container.innerHTML += `
+                <div class="member-form-group" style="background: rgba(255,255,255,0.02); padding: 15px; border-radius: 8px; margin-bottom: 10px; border: 1px solid #333;">
+                    <h4 style="color: var(--primary); margin-bottom: 10px; font-size: 0.9rem; text-transform: uppercase;">${title}</h4>
+                    <div style="display:grid; grid-template-columns: 1fr 1fr; gap:10px;">
+                        <input type="text" id="reg-name-${i}" placeholder="Nombre Completo *" style="grid-column: span 2">
+                        <input type="text" id="reg-phone-${i}" placeholder="WhatsApp (52...) *">
+                        <input type="date" id="reg-dob-${i}" title="Fecha Nacimiento">
+                        <input type="email" id="reg-email-${i}" placeholder="Correo (Opcional)" style="grid-column: span 2">
+                    </div>
+                </div>
+            `;
+        }
+        this.updateRegisterPrice();
     },
 
     updateRegisterPrice: function() {
         const plan = document.getElementById('reg-plan').value;
+        let priceKey = plan;
+        // family3/family4 are direct keys now
+        const price = prices[priceKey] || 0;
         const display = document.getElementById('reg-price-display');
         if (display) {
-            display.innerText = `$${prices[plan]}`;
+            display.innerText = `$${price}`;
         }
     },
 
     confirmRegister: function() {
-        const name = document.getElementById('reg-name').value;
-        const phone = document.getElementById('reg-phone').value;
         const plan = document.getElementById('reg-plan').value;
-        if(!name || !phone) return showToast('error', 'Faltan datos');
-        const code = Math.floor(10000 + Math.random() * 90000).toString();
-        const exp = new Date(); exp.setMonth(exp.getMonth() + parseInt(plan));
-        const newMember = { name, phone, dob: document.getElementById('reg-dob').value, email: document.getElementById('reg-email').value, plan, code, expiryDate: exp.toISOString(), registeredAt: new Date().toISOString(), registeredBy: currentUser.username };
-        db.add("members", newMember);
-        this.addFinanceLog('INSCRIPCION', prices[plan], `Socio: ${name}`);
-        this.logAction('Registro Socio', `Se registró al socio ${name} (${code}).`);
-        showToast('success', 'Socio registrado');
-        this.closeModal('modal-register');
-        this.printReceipt(name, prices[plan], `Membresía ${plan} Meses`);
+        let count = 1;
+        
+        if (plan === 'couple') count = 2;
+        else if (plan === 'family3') count = 3;
+        else if (plan === 'family4') count = 4;
 
-        // Enviar mensaje de WhatsApp
-        const welcomeMessage = `¡Hola ${name.split(' ')[0]}! 👋 ¡Bienvenido a ATLAS GYM! Tu código de acceso es: *${code}*. ¡A entrenar con todo! 💪`;
-        const encodedMessage = encodeURIComponent(welcomeMessage);
-        const whatsappUrl = `https://wa.me/${phone}?text=${encodedMessage}`;
-        window.open(whatsappUrl, '_blank');
+        const priceKey = plan;
+        const price = prices[priceKey] || 0;
+        const membersToRegister = [];
+
+        // Validation Loop
+        for (let i = 1; i <= count; i++) {
+            const name = document.getElementById(`reg-name-${i}`).value.trim();
+            const phone = document.getElementById(`reg-phone-${i}`).value.trim();
+            
+            if (!name || !phone) {
+                return showToast('error', `Faltan datos del Socio #${i}`);
+            }
+            
+            membersToRegister.push({
+                name,
+                phone,
+                dob: document.getElementById(`reg-dob-${i}`).value,
+                email: document.getElementById(`reg-email-${i}`).value
+            });
+        }
+
+        // Calculate Expiry
+        const exp = new Date();
+        const planLower = plan.toLowerCase();
+        
+        // Logic for duration
+        if (['visit'].includes(planLower)) exp.setDate(exp.getDate() + 1); // 1 Day (approx, or same day)
+        else if (['weekly'].includes(planLower)) exp.setDate(exp.getDate() + 7);
+        else if (['biweekly'].includes(planLower)) exp.setDate(exp.getDate() + 15);
+        else if (['monthly', 'student', 'couple', 'family3', 'family4'].includes(planLower)) exp.setMonth(exp.getMonth() + 1);
+        else if (planLower === 'quarterly') exp.setMonth(exp.getMonth() + 3);
+        else if (planLower === 'semiannual') exp.setMonth(exp.getMonth() + 6);
+        else if (planLower === 'annual') exp.setMonth(exp.getMonth() + 12);
+        else exp.setMonth(exp.getMonth() + 1); // Default
+
+        const transactionId = new Date().getTime(); // Simple ID for grouping
+        const groupId = transactionId; // Use transactionId as the initial group ID
+        const registeredAt = new Date().toISOString();
+        const expiryDate = exp.toISOString();
+
+        // Register Loop
+        let mainMemberName = "";
+        let mainMemberPhone = "";
+        let messagesToSend = [];
+
+        membersToRegister.forEach((m, index) => {
+            const code = Math.floor(10000 + Math.random() * 90000).toString();
+            if (index === 0) {
+                mainMemberName = m.name;
+                mainMemberPhone = m.phone;
+            }
+
+            const newMember = {
+                ...m,
+                plan: plan, // Store the raw plan key
+                code: code,
+                expiryDate: expiryDate,
+                registeredAt: registeredAt,
+                registeredBy: currentUser.username,
+                transactionId: transactionId,
+                groupId: groupId // Persist group link
+            };
+
+            db.add("members", newMember);
+            
+            // Prepare Message
+            const planName = PLAN_NAMES[plan] || plan.toUpperCase();
+            const msg = `¡Hola ${m.name.split(' ')[0]}! 👋 ¡Bienvenido a ATLAS GYM! Tu código de acceso es: *${code}*. Plan: ${planName}. ¡A entrenar! 💪`;
+            messagesToSend.push({ phone: m.phone, msg: msg });
+        });
+
+        // Finance Log (Single Entry)
+        const displayPlan = PLAN_NAMES[plan] || plan.toUpperCase();
+        this.addFinanceLog('INSCRIPCION', price, `Plan ${displayPlan} (${count} Socios) - Titular: ${mainMemberName}`);
+        this.logAction('Registro Múltiple', `Se registraron ${count} socios bajo el plan ${displayPlan}.`);
+        
+        showToast('success', 'Registro exitoso');
+        this.closeModal('modal-register');
+        this.printReceipt(mainMemberName + (count > 1 ? ` (+${count-1})` : ''), price, `Membresía ${displayPlan}`);
+
+        // WhatsApp Logic - Open for each distinct number if possible, or just the main one
+        // Browsers block multiple popups. We will try to open the main one.
+        // If the user requirement implies strict multi-send, we'd need a backend or user interaction loop.
+        // For this environment, we'll open the main one with all codes if they share a number, 
+        // OR just the main one. 
+        // Let's iterate but with a small alert or just the main one as primary.
+        
+        // Hack: Send one big message to the main phone if they are likely family?
+        // No, requirements say "send... to each number".
+        // We will loop open.
+        
+        messagesToSend.forEach((item, i) => {
+             // Only open if phone is different or first one to avoid spamming same number tabs
+             // Actually, simplest valid implementation:
+            setTimeout(() => {
+                const url = `https://wa.me/${item.phone}?text=${encodeURIComponent(item.msg)}`;
+                window.open(url, '_blank');
+             }, i * 1000); 
+        });
     },
 
     openMemberDetail: function(id) {
@@ -550,6 +741,22 @@ window.app = {
         const days = Math.ceil((new Date(m.expiryDate) - new Date())/(1000*60*60*24));
         const color = days < 0 ? 'var(--primary)' : (days<=5 ? 'var(--neon-orange)' : 'var(--neon-green)');
         
+        // Buscar miembros del grupo
+        let groupHtml = '';
+        if (m.groupId) {
+            const groupMembers = members.filter(gm => gm.groupId === m.groupId && gm.id !== m.id);
+            if (groupMembers.length > 0) {
+                groupHtml = `
+                    <div style="margin-top: 20px; background: rgba(255, 255, 255, 0.05); padding: 10px; border-radius: 8px; border-left: 3px solid var(--neon-orange);">
+                        <h4 style="margin:0 0 10px 0; color: #ddd; font-size: 0.9rem;"><i class="fas fa-users"></i> GRUPO VINCULADO (${groupMembers.length + 1})</h4>
+                        <ul style="list-style: none; padding: 0; margin: 0; font-size: 0.85rem; color: #aaa;">
+                            ${groupMembers.map(gm => `<li><i class="fas fa-user-circle"></i> ${gm.name} <small>(${gm.code})</small></li>`).join('')}
+                        </ul>
+                    </div>
+                `;
+            }
+        }
+
         document.getElementById('member-info-content').innerHTML = `
             <div style="display:flex; justify-content:space-between; align-items:start;">
                 <div>
@@ -563,6 +770,7 @@ window.app = {
                     </div>
                 </div>
             </div>
+            ${groupHtml}
         `;
         
         document.getElementById('edit-name').value = m.name;
@@ -597,16 +805,33 @@ window.app = {
 
     deleteMember: async function() {
         if(currentUser.role !== 'admin' && currentUser.role !== 'dev') return showToast('error', 'Acceso denegado');
-        const password = await customPrompt("Confirmar Eliminación", "Ingrese la contraseña de ADMINISTRADOR para eliminar este socio:", '', 'password');
-        if(password === 'AtlassCC') {
-            const m = members.find(x => String(x.id) === String(selectedMemberId));
-            const memberData = { ...m, deletedAt: new Date().toISOString(), deletedBy: currentUser.username };
-            
-            db.set(`trash/${m.id}`, memberData);
-            db.delete(`members/${selectedMemberId}`);
+        
+        const m = members.find(x => String(x.id) === String(selectedMemberId));
+        let groupMembers = [];
+        let message = "Ingrese la contraseña de ADMINISTRADOR para eliminar este socio:";
+        
+        if (m.groupId) {
+            groupMembers = members.filter(gm => gm.groupId === m.groupId);
+            if (groupMembers.length > 1) {
+                message = `¡ATENCIÓN! Este socio es parte de un grupo de ${groupMembers.length} personas. Al eliminarlo, SE ELIMINARÁ TODO EL GRUPO.\n\nIngrese contraseña para confirmar:`;
+            } else {
+                groupMembers = [m];
+            }
+        } else {
+            groupMembers = [m];
+        }
 
-            this.logAction('Eliminación Socio', `Se eliminó al socio ${m.name} (${m.code}).`);
-            showToast('success', 'Socio movido a la papelera');
+        const password = await customPrompt("Confirmar Eliminación", message, '', 'password');
+        
+        if(password === 'AtlassCC') {
+            groupMembers.forEach(gm => {
+                const memberData = { ...gm, deletedAt: new Date().toISOString(), deletedBy: currentUser.username };
+                db.set(`trash/${gm.id}`, memberData);
+                db.delete(`members/${gm.id}`);
+            });
+
+            this.logAction('Eliminación Socio', `Se eliminó al socio ${m.name} y su grupo (${groupMembers.length} miembros).`);
+            showToast('success', `Socio y grupo (${groupMembers.length}) movidos a la papelera`);
             this.closeModal('modal-member-detail');
         } else if(password !== null) {
             showToast('error', 'Contraseña incorrecta. Acción cancelada.');
@@ -626,27 +851,119 @@ window.app = {
 
     openRenewModal: function() {
         const m = members.find(x => String(x.id) === String(selectedMemberId));
-        document.getElementById('renew-member-info').innerHTML = `<h4 style="margin:0">${m.name}</h4><small style="color:#aaa">Fecha actual de vencimiento: ${new Date(m.expiryDate).toLocaleDateString()}</small>`;
+        let groupInfo = '';
+        let isGroupRenewal = false;
+        let groupMembers = [];
+
+        // Check if member is part of a group
+        if (m.groupId) {
+            groupMembers = members.filter(gm => gm.groupId === m.groupId);
+            if (groupMembers.length > 1) {
+                isGroupRenewal = true;
+                groupInfo = `
+                    <div style="margin-bottom: 15px; padding: 10px; background: rgba(255, 170, 0, 0.1); border: 1px solid var(--neon-orange); border-radius: 4px;">
+                        <strong style="color:var(--neon-orange)">RENOVACIÓN GRUPAL DETECTADA</strong><br>
+                        <small style="color:#aaa">Se renovará a: ${groupMembers.map(gm => gm.name.split(' ')[0]).join(', ')}</small>
+                    </div>
+                `;
+            }
+        }
+
+        document.getElementById('renew-member-info').innerHTML = `
+            ${groupInfo}
+            <h4 style="margin:0">${m.name} ${isGroupRenewal ? '(+ Grupo)' : ''}</h4>
+            <small style="color:#aaa">Vencimiento actual: ${new Date(m.expiryDate).toLocaleDateString()}</small>
+        `;
+        
+        // Configurar opciones del select
+        const select = document.getElementById('renew-plan-select');
+        const optGroups = select.querySelectorAll('optgroup');
+        
+        if (isGroupRenewal) {
+            optGroups.forEach(og => {
+                if (og.label === 'Grupales') og.style.display = '';
+                else og.style.display = 'none';
+            });
+            
+            // Auto-select based on group size
+            const size = groupMembers.length;
+            
+            if (size === 2) select.value = 'couple';
+            else if (size === 3) select.value = 'family3';
+            else if (size >= 4) select.value = 'family4';
+            else select.value = 'couple'; // Fallback
+            
+        } else {
+            optGroups.forEach(og => og.style.display = '');
+            select.value = 'monthly';
+        }
+
+        // Store group state in the modal DOM for confirmRenewal to read
+        document.getElementById('modal-renew-pro').dataset.isGroup = isGroupRenewal;
+        document.getElementById('modal-renew-pro').dataset.groupId = m.groupId;
+
         this.updateRenewPrice();
         document.getElementById('modal-renew-pro').style.display = 'flex';
     },
 
     updateRenewPrice: function() {
         const p = document.getElementById('renew-plan-select').value;
-        document.getElementById('renew-price-display').innerText = `$${prices[p]}`;
+        const display = document.getElementById('renew-price-display');
+        
+        // If it's a group renewal, ensure the price reflects the group plan (the simple select does this if user selects "Family")
+        // The user manually selects the plan to renew to.
+        
+        display.innerText = `$${prices[p] || 0}`;
     },
 
     confirmRenewal: function() {
         const plan = document.getElementById('renew-plan-select').value;
         const m = members.find(x => String(x.id) === String(selectedMemberId));
-        let d = new Date(m.expiryDate); if(d < new Date()) d = new Date(); d.setMonth(d.getMonth() + parseInt(plan));
-        db.update(`members/${selectedMemberId}`, { expiryDate: d.toISOString() });
-        this.addFinanceLog('RENOVACION', prices[plan], `Socio: ${m.name}`);
-        this.logAction('Renovación', `Se renovó la membresía de ${m.name} por ${plan} mes(es).`);
-        showToast('success', 'Membresía renovada con éxito');
+        const isGroup = document.getElementById('modal-renew-pro').dataset.isGroup === 'true';
+        const groupId = document.getElementById('modal-renew-pro').dataset.groupId;
+
+        // Calculate New Expiry
+        let d = new Date(m.expiryDate); 
+        if(d < new Date()) d = new Date(); 
+
+        // Logic for duration
+        const planLower = plan.toLowerCase();
+        if (['visit'].includes(planLower)) d.setDate(d.getDate() + 1);
+        else if (['weekly'].includes(planLower)) d.setDate(d.getDate() + 7);
+        else if (['biweekly'].includes(planLower)) d.setDate(d.getDate() + 15);
+        else if (['monthly', 'student', 'couple', 'family'].includes(planLower)) d.setMonth(d.getMonth() + 1);
+        else if (planLower === 'quarterly') d.setMonth(d.getMonth() + 3);
+        else if (planLower === 'semiannual') d.setMonth(d.getMonth() + 6);
+        else if (planLower === 'annual') d.setMonth(d.getMonth() + 12);
+        else d.setMonth(d.getMonth() + 1);
+
+        const newExpiryISO = d.toISOString();
+        const price = prices[plan] || 0;
+        const displayPlan = PLAN_NAMES[plan] || plan.toUpperCase();
+        let renewDescription = `Renovación ${displayPlan}`;
+        let renewUser = m.name;
+
+        if (isGroup && groupId) {
+            // Bulk Update
+            // Ensure type compatibility when comparing groupId (it might be string in dataset, number in DB)
+            const groupMembers = members.filter(gm => String(gm.groupId) === String(groupId));
+            groupMembers.forEach(gm => {
+                db.update(`members/${gm.id}`, { expiryDate: newExpiryISO });
+            });
+            renewUser = `${m.name} + ${Math.max(0, groupMembers.length - 1)} miembros`;
+            renewDescription += ` (Grupo: ${groupMembers.length} personas)`;
+        } else {
+            // Single Update
+            db.update(`members/${selectedMemberId}`, { expiryDate: newExpiryISO });
+        }
+        
+        this.addFinanceLog('RENOVACION', price, `Socio: ${renewUser}`);
+        this.logAction('Renovación', `Se renovó - ${renewDescription}.`);
+        
+        showToast('success', 'Renovación exitosa');
         this.closeModal('modal-renew-pro');
         this.closeModal('modal-member-detail');
-        this.printReceipt(m.name, prices[plan], `Renovación ${plan} Mes/es`);
+        this.printReceipt(renewUser, price, renewDescription);
     },
 
     downloadMemberCard: function() {
@@ -678,33 +995,93 @@ window.app = {
         showToast('success', 'Datos actualizados');
     },
 
+    trashViewMode: 'members', // 'members' or 'finances'
+
+    setTrashView: function(mode) {
+        this.trashViewMode = mode;
+        
+        // Update Buttons
+        document.getElementById('btn-trash-members').className = mode === 'members' ? 'btn active' : 'btn btn-outline';
+        document.getElementById('btn-trash-finances').className = mode === 'finances' ? 'btn active' : 'btn btn-outline';
+
+        this.renderTrash();
+    },
+
     renderTrash: function() {
         const tbody = document.getElementById('trash-table-body');
+        const thead = document.querySelector('#view-trash table thead tr');
         tbody.innerHTML = '';
 
-        if (trash.length === 0) {
+        let filteredTrash = [];
+        
+        if (this.trashViewMode === 'members') {
+            // Filter: Must have code OR objectType='member' (for backward compatibility, assume no amount = member)
+            filteredTrash = trash.filter(item => item.code || item.objectType === 'member');
+            
+            thead.innerHTML = `
+                <th>Nombre</th>
+                <th>Código</th>
+                <th>Eliminado por</th>
+                <th>Fecha Elim.</th>
+                <th style="text-align:right;">Acciones</th>
+            `;
+        } else {
+            // Filter: Must have amount OR objectType='finance'
+            filteredTrash = trash.filter(item => (item.amount !== undefined) || item.objectType === 'finance');
+            
+            thead.innerHTML = `
+                <th>Fecha / Hora</th>
+                <th>Concepto</th>
+                <th>Monto</th>
+                <th>Eliminado por</th>
+                <th style="text-align:right;">Acciones</th>
+            `;
+        }
+
+        if (filteredTrash.length === 0) {
             tbody.innerHTML = `<tr><td colspan="5" style="text-align:center; padding:50px; color:#666;">La papelera está vacía.</td></tr>`;
             return;
         }
 
-        trash.forEach(m => {
-            const deletedDate = m.deletedAt ? new Date(m.deletedAt).toLocaleDateString() : 'N/A';
-            tbody.innerHTML += `
-                <tr>
-                    <td>${m.name}</td>
-                    <td>${m.code}</td>
-                    <td style="color:#aaa;">${m.deletedBy || 'N/A'}</td>
-                    <td style="color:#aaa;">${deletedDate}</td>
-                    <td style="text-align:right;">
-                        <button class="btn btn-outline" style="border-color:var(--neon-green); color:var(--neon-green);" onclick="app.restoreMember('${m.id}')">
-                            <i class="fas fa-undo-alt"></i> Restaurar
-                        </button>
-                        <button class="btn admin-only" style="background:#d32f2f;" onclick="app.purgeMember('${m.id}')">
-                            <i class="fas fa-fire"></i> Purga
-                        </button>
-                    </td>
-                </tr>
-            `;
+        filteredTrash.forEach(item => {
+            const deletedDate = item.deletedAt ? new Date(item.deletedAt).toLocaleDateString() : 'N/A';
+            
+            if (this.trashViewMode === 'members') {
+                tbody.innerHTML += `
+                    <tr>
+                        <td>${item.name}</td>
+                        <td>${item.code}</td>
+                        <td style="color:#aaa;">${item.deletedBy || 'N/A'}</td>
+                        <td style="color:#aaa;">${deletedDate}</td>
+                        <td style="text-align:right;">
+                            <button class="btn btn-outline" style="border-color:var(--neon-green); color:var(--neon-green);" onclick="app.restoreMember('${item.id}')">
+                                <i class="fas fa-undo-alt"></i> Restaurar
+                            </button>
+                            <button class="btn admin-only" style="background:#d32f2f;" onclick="app.purgeMember('${item.id}')">
+                                <i class="fas fa-fire"></i> Purga
+                            </button>
+                        </td>
+                    </tr>
+                `;
+            } else {
+                const amountColor = (String(item.type).toLowerCase() === 'gasto' || String(item.type).toLowerCase() === 'egreso' || String(item.type).toLowerCase() === 'salida') ? 'var(--primary)' : 'var(--neon-green)';
+                tbody.innerHTML += `
+                    <tr>
+                        <td style="font-size:0.85rem;">${new Date(item.date).toLocaleString()}</td>
+                        <td>${item.desc}</td>
+                        <td style="color:${amountColor}; font-weight:bold;">$${Number(item.amount).toLocaleString()}</td>
+                        <td style="color:#aaa;">${item.deletedBy || 'N/A'}</td>
+                        <td style="text-align:right;">
+                            <button class="btn btn-outline" style="border-color:var(--neon-green); color:var(--neon-green);" onclick="app.restoreFinance('${item.id}')">
+                                <i class="fas fa-undo-alt"></i> Restaurar
+                            </button>
+                            <button class="btn admin-only" style="background:#d32f2f;" onclick="app.purgeFinance('${item.id}')">
+                                <i class="fas fa-fire"></i> Purga
+                            </button>
+                        </td>
+                    </tr>
+                `;
+            }
         });
     },
 
@@ -715,10 +1092,13 @@ window.app = {
         const memberToRestore = trash.find(m => m.id === id);
 
         if (memberToRestore) {
-            db.set(`members/${id}`, memberToRestore);
+            // Remove trash-specific metadata
+            const { objectType, deletedAt, deletedBy, ...cleanMember } = memberToRestore;
+            
+            db.set(`members/${id}`, cleanMember);
             db.delete(`trash/${id}`);
             
-            this.logAction('Restauración Socio', `Se restauró al socio ${memberToRestore.name} (${memberToRestore.code}).`);
+            this.logAction('Restauración Socio', `Se restauró al socio ${cleanMember.name} (${cleanMember.code}).`);
             showToast('success', 'Socio restaurado exitosamente.');
         } else {
             showToast('error', 'No se pudo encontrar al socio en la papelera.');
@@ -738,6 +1118,40 @@ window.app = {
             
             this.logAction('Purga Socio', `Se eliminó permanentemente al socio ${memberToPurge.name} (${memberToPurge.code}).`);
             showToast('success', 'Socio eliminado permanentemente.');
+        }
+    },
+
+    restoreFinance: async function(id) {
+        const confirmed = await customConfirm("Restaurar Registro", "¿Seguro que quieres restaurar este registro financiero?");
+        if (!confirmed) return;
+
+        const itemToRestore = trash.find(m => m.id === id);
+
+        if (itemToRestore) {
+            const { objectType, deletedAt, deletedBy, ...cleanItem } = itemToRestore;
+            db.set(`finances/${id}`, cleanItem);
+            db.delete(`trash/${id}`);
+            
+            this.logAction('Restauración Finanzas', `Se restauró el registro: ${cleanItem.desc} ($${cleanItem.amount}).`);
+            showToast('success', 'Registro restaurado exitosamente.');
+        } else {
+            showToast('error', 'No se pudo encontrar el registro.');
+        }
+    },
+
+    purgeFinance: async function(id) {
+        if (currentUser.role !== 'admin' && currentUser.role !== 'dev') {
+            showToast('error', 'Acción no permitida.');
+            return;
+        }
+
+        const confirmed = await customConfirm("Eliminación Permanente", "¡ATENCIÓN! Esta acción eliminará permanentemente el registro. ¿Estás seguro?");
+        if (confirmed) {
+            const itemToPurge = trash.find(m => m.id === id);
+            db.delete(`trash/${id}`);
+            
+            this.logAction('Purga Finanzas', `Se eliminó permanentemente el registro: ${itemToPurge.desc}.`);
+            showToast('success', 'Registro eliminado permanentemente.');
         }
     },
     // 5. TIENDA 
@@ -929,7 +1343,21 @@ window.app = {
     delFin: async function(id) {
         if(currentUser.role !== 'admin' && currentUser.role !== 'dev') return;
         const confirmed = await customConfirm("Eliminar Registro", "¿Estás seguro de que quieres eliminar este registro financiero?");
-        if(confirmed) { db.delete(`finances/${id}`); showToast('success', 'Eliminado'); }
+        if(confirmed) { 
+            const fin = finances.find(f => f.id === id);
+            if (fin) {
+                const trashData = { 
+                    ...fin, 
+                    objectType: 'finance', 
+                    deletedAt: new Date().toISOString(), 
+                    deletedBy: currentUser.username 
+                };
+                db.set(`trash/${id}`, trashData);
+                db.delete(`finances/${id}`);
+                this.logAction('Eliminación Finanzas', `Se eliminó el registro financiero "${fin.desc}" de $${fin.amount}.`);
+                showToast('success', 'Movido a la papelera');
+            }
+        }
     },
 
     // 7. IMPRESIÓN.
@@ -992,18 +1420,75 @@ window.app = {
         document.getElementById('printable-area').innerHTML = ticketHTML; window.print(); 
     },
 
+    showAccessAlert: function(visit) {
+        const overlay = document.getElementById('big-alert');
+        const icon = document.getElementById('ba-icon');
+        const title = document.getElementById('ba-title');
+        const name = document.getElementById('ba-name');
+        const reason = document.getElementById('ba-reason');
+        
+        if (!overlay) return;
+
+        // Reset classes
+        overlay.classList.remove('alert-success', 'alert-error');
+        reason.style.display = 'none';
+
+        name.innerText = visit.name;
+
+        if (visit.status === 'success') {
+            overlay.classList.add('alert-success');
+            icon.innerHTML = '<i class="fas fa-check-circle"></i>';
+            title.innerText = '¡BIENVENIDO!';
+        } else {
+            overlay.classList.add('alert-error');
+            icon.innerHTML = '<i class="fas fa-exclamation-triangle"></i>';
+            title.innerText = 'ACCESO DENEGADO';
+            reason.innerText = visit.reason || 'Error Desconocido';
+            reason.style.display = 'inline-block';
+        }
+
+        // Show
+        overlay.classList.add('visible');
+
+        // Auto hide after 4 seconds
+        if (this.alertTimeout) clearTimeout(this.alertTimeout);
+        this.alertTimeout = setTimeout(() => {
+            overlay.classList.remove('visible');
+        }, 4000);
+    },
+
     // 8. OTROS
     loadConfig: async function() {
         const c = await db.get('config/prices');
         if(c) {
             prices = c;
-            const p1 = document.getElementById('conf-p1'), p3 = document.getElementById('conf-p3'), p12 = document.getElementById('conf-p12');
-            if(p1) p1.value = c["1"]; if(p3) p3.value = c["3"]; if(p12) p12.value = c["12"];
+            // Map keys to input IDs
+            const map = {
+                "visit": "conf-visit", "weekly": "conf-weekly", "biweekly": "conf-biweekly",
+                "monthly": "conf-monthly", "student": "conf-student",
+                "quarterly": "conf-quarterly", "semiannual": "conf-semiannual", "annual": "conf-annual",
+                "couple": "conf-couple", "family3": "conf-family3", "family4": "conf-family4"
+            };
+            for (const [key, id] of Object.entries(map)) {
+                const el = document.getElementById(id);
+                if (el && c[key] !== undefined) el.value = c[key];
+            }
         }
     },
     saveConfig: function() {
-        const p1 = Number(document.getElementById('conf-p1').value), p3 = Number(document.getElementById('conf-p3').value), p12 = Number(document.getElementById('conf-p12').value);
-        const newPrices = { "1":p1, "3":p3, "12":p12 };
+        const newPrices = {
+            "visit": Number(document.getElementById('conf-visit').value),
+            "weekly": Number(document.getElementById('conf-weekly').value),
+            "biweekly": Number(document.getElementById('conf-biweekly').value),
+            "monthly": Number(document.getElementById('conf-monthly').value),
+            "student": Number(document.getElementById('conf-student').value),
+            "quarterly": Number(document.getElementById('conf-quarterly').value),
+            "semiannual": Number(document.getElementById('conf-semiannual').value),
+            "annual": Number(document.getElementById('conf-annual').value),
+            "couple": Number(document.getElementById('conf-couple').value),
+            "family3": Number(document.getElementById('conf-family3').value),
+            "family4": Number(document.getElementById('conf-family4').value)
+        };
         db.set('config/prices', newPrices);
         prices = newPrices;
         showToast('success', 'Configurado');
