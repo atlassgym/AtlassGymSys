@@ -721,9 +721,9 @@ window.app = {
         messagesToSend.forEach((item, i) => {
              // Only open if phone is different or first one to avoid spamming same number tabs
              // Actually, simplest valid implementation:
-            setTimeout(() => {
-                const url = `https://wa.me/${item.phone}?text=${encodeURIComponent(item.msg)}`;
-                window.open(url, '_blank');
+             setTimeout(() => {
+                 const url = `https://wa.me/${item.phone}?text=${encodeURIComponent(item.msg)}`;
+                 window.open(url, '_blank');
              }, i * 1000); 
         });
     },
@@ -1064,8 +1064,8 @@ window.app = {
                     </tr>
                 `;
             } else {
-                const amountColor = (String(item.type).toLowerCase() === 'gasto' || String(item.type).toLowerCase() === 'egreso' || String(item.type).toLowerCase() === 'salida') ? 'var(--primary)' : 'var(--neon-green)';
-                tbody.innerHTML += `
+                 const amountColor = (String(item.type).toLowerCase() === 'gasto' || String(item.type).toLowerCase() === 'egreso' || String(item.type).toLowerCase() === 'salida') ? 'var(--primary)' : 'var(--neon-green)';
+                 tbody.innerHTML += `
                     <tr>
                         <td style="font-size:0.85rem;">${new Date(item.date).toLocaleString()}</td>
                         <td>${item.desc}</td>
