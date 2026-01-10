@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ATLAS GYM | SYSTEM</title>
+    <title>ATLAS TITAN | SYSTEM</title>
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
@@ -412,41 +412,41 @@
             </section>
 
             <section id="view-dev" class="view-section">
-                <h1>Zona de Desarrollador</h1>
+                <h1>Developer Zone</h1>
                 <div class="dev-tools">
                     <div class="dev-card">
-                        <h3><i class="fas fa-paint-brush"></i>Customizacion</h3>
-                        <p>Personalizar el diseño y la interfaz de la aplicación.</p>
+                        <h3><i class="fas fa-paint-brush"></i> Customization</h3>
+                        <p>Change the look and feel of the application.</p>
                         <div class="form-group">
-                            <label>Color primario</label>
+                            <label>Primary Color</label>
                             <input type="color" id="dev-color-primary" onchange="app.dev.updateColor('--primary', this.value)">
                         </div>
                     </div>
                     <div class="dev-card">
-                        <h3><i class="fas fa-sign-out-alt"></i> Forzar cierre de usuario</h3>
-                        <p>Cerrar la sesión de forma remota de un usuario específico del personal o administrador.</p>
+                        <h3><i class="fas fa-sign-out-alt"></i> Force User Logout</h3>
+                        <p>Remotely log out a specific staff or admin user.</p>
                         <div class="form-group">
-                            <label>Elegir usuario</label>
+                            <label>Select User</label>
                             <select id="dev-user-list"></select>
                         </div>
-                        <button class="btn" onclick="app.dev.forceLogout()">Forzar cierre</button>
+                        <button class="btn" onclick="app.dev.forceLogout()">Force Logout</button>
                     </div>
                     <div class="dev-card">
-                        <h3><i class="fas fa-eye-slash"></i> Esconder secciones del sistema</h3>
-                        <p>Controla qué secciones son visibles para un usuario específico.</p>
+                        <h3><i class="fas fa-eye-slash"></i> Hide System Sections</h3>
+                        <p>Control which sections are visible for a specific user.</p>
                         <div class="form-group">
-                            <label>Elegir usuario</label>
+                            <label>Select User</label>
                             <select id="dev-hide-user-list" onchange="app.dev.loadUserSections()"></select>
                         </div>
                         <div id="dev-sections-checklist" class="form-group" style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
                             <!-- Checkboxes will be dynamically inserted here -->
                         </div>
-                        <button class="btn" onclick="app.dev.saveHiddenSections()">Guardar Visibilidad</button>
+                        <button class="btn" onclick="app.dev.saveHiddenSections()">Save Visibility</button>
                     </div>
                     <div class="dev-card">
-                        <h3><i class="fas fa-exclamation-triangle"></i> Zona de Peligro</h3>
-                        <p>Estas accion no se pueden deshacer. Proceda con precaución</p>
-                        <button class="btn btn-danger" onclick="app.dev.fullReset()">Aplicacion completamente Reseteada :C</button>
+                        <h3><i class="fas fa-exclamation-triangle"></i> Danger Zone</h3>
+                        <p>These actions are irreversible. Use with caution.</p>
+                        <button class="btn btn-danger" onclick="app.dev.fullReset()">Full Application Reset</button>
                     </div>
                 </div>
             </section>
@@ -699,11 +699,11 @@
 
     <div id="modal-confirm" class="modal">
         <div class="modal-content">
-            <h2 id="confirm-title">Confirmar</h2>
-            <p id="confirm-message">Estas Seguro?</p>
+            <h2 id="confirm-title">Confirm</h2>
+            <p id="confirm-message">Are you sure?</p>
             <div style="display:flex; gap:10px; margin-top:20px;">
                 <button id="confirm-ok" class="btn">OK</button>
-                <button id="confirm-cancel" class="btn btn-outline">Cancelar</button>
+                <button id="confirm-cancel" class="btn btn-outline">Cancel</button>
             </div>
         </div>
     </div>
@@ -711,11 +711,11 @@
     <div id="modal-prompt" class="modal">
         <div class="modal-content">
             <h2 id="prompt-title">Prompt</h2>
-            <p id="prompt-message">Ingresa un valor:</p>
+            <p id="prompt-message">Please enter a value:</p>
             <input type="text" id="prompt-input">
             <div style="display:flex; gap:10px; margin-top:20px;">
                 <button id="prompt-ok" class="btn">OK</button>
-                <button id="prompt-cancel" class="btn btn-outline">Cancelar</button>
+                <button id="prompt-cancel" class="btn btn-outline">Cancel</button>
             </div>
         </div>
     </div>
