@@ -237,6 +237,20 @@ window.app = {
                 }
             }
         });
+
+        // Real-time GLOBAL BROADCAST listener
+        db.onDataChange('config/broadcast', (data) => {
+            const banner = document.getElementById('system-sys-banner');
+            const msgEl = document.getElementById('sys-banner-msg');
+            if (banner && msgEl) {
+                if (data && data.message && String(data.message).trim() !== "") {
+                    msgEl.innerText = data.message;
+                    banner.style.display = 'flex';
+                } else {
+                    banner.style.display = 'none';
+                }
+            }
+        });
         
         // Hamburger Menu Logic
         const hamburger = document.getElementById('hamburger-menu');
@@ -372,16 +386,19 @@ window.app = {
         });
 
         // 2. Gráfica de Rendimiento Mensual (Grouped Bar)
-        const months = {}; // { 'Ene 2023': { income: 0, expense: 0 } }
+        const months = {}; // { 'Ene 2023': { income: 0, expense: 0, cash: 0, card: 0 } }
         finances.forEach(f => {
             const d = new Date(f.date);
             const key = `${d.toLocaleString('es', { month: 'short' })} ${d.getFullYear()}`;
-            if (!months[key]) months[key] = { income: 0, expense: 0, sortDate: d };
+            if (!months[key]) months[key] = { income: 0, expense: 0, cash: 0, card: 0, sortDate: d };
             
             if (String(f.type).toLowerCase() === 'gasto' || String(f.type).toLowerCase() === 'salida' || String(f.type).toLowerCase() === 'egreso') {
                 months[key].expense += Number(f.amount);
             } else {
-                months[key].income += Number(f.amount);
+                const amt = Number(f.amount);
+                months[key].income += amt;
+                if (f.metodoPago === 'Tarjeta') months[key].card += amt;
+                else months[key].cash += amt;
             }
         });
 
@@ -389,6 +406,9 @@ window.app = {
         const sortedKeys = Object.keys(months).sort((a, b) => months[a].sortDate - months[b].sortDate);
         const incomeData = sortedKeys.map(k => months[k].income);
         const expenseData = sortedKeys.map(k => months[k].expense);
+        
+        // Custom tooltip data mapping
+        const breakdownData = sortedKeys.map(k => ({ cash: months[k].cash, card: months[k].card }));
 
         if (app.charts.finances) app.charts.finances.destroy();
         app.charts.finances = new Chart(document.getElementById('chart-finances'), {
@@ -411,7 +431,19 @@ window.app = {
             options: {
                 responsive: true,
                 plugins: {
-                    legend: { labels: { color: '#fff' } }
+                    legend: { labels: { color: '#fff' } },
+                    tooltip: {
+                        callbacks: {
+                            afterLabel: function(context) {
+                                if (context.dataset.label === 'Ingresos') {
+                                    const index = context.dataIndex;
+                                    const bd = breakdownData[index];
+                                    return ` (Efectivo: $${bd.cash.toLocaleString()} | Tarjeta: $${bd.card.toLocaleString()})`;
+                                }
+                                return '';
+                            }
+                        }
+                    }
                 },
                 scales: {
                     x: { ticks: { color: '#888' }, grid: { color: '#222' } },
@@ -621,6 +653,7 @@ window.app = {
 
     confirmRegister: function() {
         const plan = document.getElementById('reg-plan').value;
+        const paymentMethod = document.querySelector('input[name="reg-payment-method"]:checked').value;
         let count = 1;
         
         if (plan === 'couple') count = 2;
@@ -700,8 +733,8 @@ window.app = {
 
         // Finance Log (Single Entry)
         const displayPlan = PLAN_NAMES[plan] || plan.toUpperCase();
-        this.addFinanceLog('INSCRIPCION', price, `Plan ${displayPlan} (${count} Socios) - Titular: ${mainMemberName}`);
-        this.logAction('Registro Múltiple', `Se registraron ${count} socios bajo el plan ${displayPlan}.`);
+        this.addFinanceLog('INSCRIPCION', price, `Plan ${displayPlan} (${count} Socios) - Titular: ${mainMemberName}`, paymentMethod);
+        this.logAction('Registro Múltiple', `Se registraron ${count} socios bajo el plan ${displayPlan}. Pago: ${paymentMethod}.`);
         
         showToast('success', 'Registro exitoso');
         this.closeModal('modal-register');
@@ -721,9 +754,9 @@ window.app = {
         messagesToSend.forEach((item, i) => {
              // Only open if phone is different or first one to avoid spamming same number tabs
              // Actually, simplest valid implementation:
-             setTimeout(() => {
-                 const url = `https://wa.me/${item.phone}?text=${encodeURIComponent(item.msg)}`;
-                 window.open(url, '_blank');
+            setTimeout(() => {
+                const url = `https://wa.me/${item.phone}?text=${encodeURIComponent(item.msg)}`;
+                window.open(url, '_blank');
              }, i * 1000); 
         });
     },
@@ -918,6 +951,7 @@ window.app = {
 
     confirmRenewal: function() {
         const plan = document.getElementById('renew-plan-select').value;
+        const paymentMethod = document.querySelector('input[name="renew-payment-method"]:checked').value;
         const m = members.find(x => String(x.id) === String(selectedMemberId));
         const isGroup = document.getElementById('modal-renew-pro').dataset.isGroup === 'true';
         const groupId = document.getElementById('modal-renew-pro').dataset.groupId;
@@ -957,8 +991,8 @@ window.app = {
             db.update(`members/${selectedMemberId}`, { expiryDate: newExpiryISO });
         }
         
-        this.addFinanceLog('RENOVACION', price, `Socio: ${renewUser}`);
-        this.logAction('Renovación', `Se renovó - ${renewDescription}.`);
+        this.addFinanceLog('RENOVACION', price, `Socio: ${renewUser}`, paymentMethod);
+        this.logAction('Renovación', `Se renovó - ${renewDescription}. Pago: ${paymentMethod}.`);
         
         showToast('success', 'Renovación exitosa');
         this.closeModal('modal-renew-pro');
@@ -1064,8 +1098,8 @@ window.app = {
                     </tr>
                 `;
             } else {
-                 const amountColor = (String(item.type).toLowerCase() === 'gasto' || String(item.type).toLowerCase() === 'egreso' || String(item.type).toLowerCase() === 'salida') ? 'var(--primary)' : 'var(--neon-green)';
-                 tbody.innerHTML += `
+                const amountColor = (String(item.type).toLowerCase() === 'gasto' || String(item.type).toLowerCase() === 'egreso' || String(item.type).toLowerCase() === 'salida') ? 'var(--primary)' : 'var(--neon-green)';
+                tbody.innerHTML += `
                     <tr>
                         <td style="font-size:0.85rem;">${new Date(item.date).toLocaleString()}</td>
                         <td>${item.desc}</td>
@@ -1201,14 +1235,15 @@ window.app = {
 
     checkout: function() {
         if(cart.length === 0) return showToast('error', 'Vacío');
+        const paymentMethod = document.querySelector('input[name="store-payment-method"]:checked').value;
         const total = cart.reduce((sum, item) => sum + item.price, 0);
         const grouped = cart.reduce((acc, item) => { acc[item.id] = (acc[item.id] || 0) + 1; return acc; }, {});
         Object.keys(grouped).forEach(id => {
             const p = products.find(x => x.id === id);
             db.update(`products/${id}`, { stock: p.stock - grouped[id] });
         });
-        this.addFinanceLog('TIENDA', total, `Venta Tienda`);
-        this.logAction('Venta Tienda', `Se realizó una venta en la tienda por un total de $${total}.`);
+        this.addFinanceLog('TIENDA', total, `Venta Tienda`, paymentMethod);
+        this.logAction('Venta Tienda', `Se realizó una venta en la tienda por un total de $${total}. Pago: ${paymentMethod}.`);
         this.printReceipt("Público General", total, "Productos");
         this.clearCart();
         showToast('success', 'Venta exitosa');
@@ -1259,6 +1294,7 @@ window.app = {
         const startInput = document.getElementById('filter-start');
         const endInput = document.getElementById('filter-end');
         const typeInput = document.getElementById('filter-type');
+        const methodInput = document.getElementById('filter-method');
         const userInput = document.getElementById('filter-user'); 
         if(!list) return;
         const today = new Date();
@@ -1286,6 +1322,7 @@ window.app = {
         const endDate = new Date(endVal[0], endVal[1] - 1, endVal[2]);
         endDate.setHours(23, 59, 59, 999);
         const filterType = typeInput.value;
+        const filterMethod = methodInput ? methodInput.value : "all";
         const filterUser = userInput ? userInput.value : "all";
         let all = finances;
         if (userInput && (mode === 'default' || userInput.options.length <= 1)) {
@@ -1304,30 +1341,42 @@ window.app = {
             let typeMatch = true;
             if (filterType === 'ingreso') typeMatch = !f.isExpense;
             if (filterType === 'gasto') typeMatch = f.isExpense;
+            let methodMatch = true;
+            if (filterMethod !== 'all') methodMatch = (f.metodoPago === filterMethod);
             let userMatch = true;
             if (filterUser !== 'all') userMatch = f.user === filterUser;
-            return dateMatch && typeMatch && userMatch;
+            return dateMatch && typeMatch && methodMatch && userMatch;
         });
         filtered.sort((a,b) => b.dateObj - a.dateObj);
-        let income = 0, expense = 0, html = '';
+        let income = 0, expense = 0, cashTotal = 0, cardTotal = 0, html = '';
         filtered.forEach(f => {
-            if(f.isExpense) expense += Number(f.amount); else income += Number(f.amount);
+            if(f.isExpense) {
+                expense += Number(f.amount);
+            } else {
+                income += Number(f.amount);
+                if (f.metodoPago === 'Tarjeta') cardTotal += Number(f.amount);
+                else cashTotal += Number(f.amount); // Assume default is Cash if undefined for legacy
+            }
+            
             const amountColor = f.isExpense ? 'var(--primary)' : 'var(--neon-green)';
             const sign = f.isExpense ? '- ' : '+ ';
             const badgeClass = f.isExpense ? 'gasto' : 'ingreso';
-            html += `<tr><td style="font-size:0.85rem; color:#888;">${f.dateObj.toLocaleDateString()} <br> <small>${f.dateObj.toLocaleTimeString()}</small></td><td><span class="badge-fin ${badgeClass}">${f.type}</span></td><td style="font-weight:600; color:#fff;">${f.desc}</td><td style="color:#aaa;">${f.user}</td><td style="font-family:'Rajdhani'; font-size:1.1rem; font-weight:bold; color:${amountColor}">${sign}$${Number(f.amount).toLocaleString()}</td><td style="text-align:right">${(currentUser.role === 'admin' || currentUser.role === 'dev') ? `<button onclick="app.delFin('${f.id}')" style="color:#666; background:none; border:none; cursor:pointer;"><i class="fas fa-trash"></i></button>` : ''}</td></tr>`;
+            const metodoDisplay = f.metodoPago || 'N/A';
+            
+            html += `<tr><td style="font-size:0.85rem; color:#888;">${f.dateObj.toLocaleDateString()} <br> <small>${f.dateObj.toLocaleTimeString()}</small></td><td><span class="badge-fin ${badgeClass}">${f.type}</span></td><td style="font-weight:600; color:#fff;">${f.desc}</td><td style="color:#aaa;">${f.user}</td><td style="color:#aaa;">${metodoDisplay}</td><td style="font-family:'Rajdhani'; font-size:1.1rem; font-weight:bold; color:${amountColor}">${sign}$${Number(f.amount).toLocaleString()}</td><td style="text-align:right">${(currentUser.role === 'admin' || currentUser.role === 'dev') ? `<button onclick="app.delFin('${f.id}')" style="color:#666; background:none; border:none; cursor:pointer;"><i class="fas fa-trash"></i></button>` : ''}</td></tr>`;
         });
-        list.innerHTML = html || '<tr><td colspan="6" style="text-align:center; padding:20px; color:#666;">Sin movimientos</td></tr>';
-        document.getElementById('fin-total-income').innerText = `$${income.toLocaleString()}`;
+        list.innerHTML = html || '<tr><td colspan="7" style="text-align:center; padding:20px; color:#666;">Sin movimientos</td></tr>';
+        
+        document.getElementById('fin-total-income').innerHTML = `$${income.toLocaleString()}<br><span style="font-size:0.8rem; color:#888;">Efectivo: $${cashTotal.toLocaleString()} | Tarjeta: $${cardTotal.toLocaleString()}</span>`;
         document.getElementById('fin-total-expense').innerText = `$${expense.toLocaleString()}`;
         const balance = income - expense;
         const balEl = document.getElementById('fin-balance');
         if(balEl) { balEl.innerText = `$${balance.toLocaleString()}`; balEl.style.color = balance >= 0 ? 'var(--neon-orange)' : 'var(--primary)'; }
     },
 
-    addFinanceLog: function(type, amount, desc) {
+    addFinanceLog: function(type, amount, desc, metodoPago = 'N/A') {
         if(!amount || isNaN(amount)) return;
-        db.add("finances", { type, amount: Number(amount), desc, user: currentUser.username, date: new Date().toISOString() });
+        db.add("finances", { type, amount: Number(amount), desc, user: currentUser.username, date: new Date().toISOString(), metodoPago });
         if(document.getElementById('view-finances').classList.contains('active')) this.loadFinances();
     },
 
@@ -1563,6 +1612,25 @@ window.app = {
     closeModal: function(id) { document.getElementById(id).style.display = 'none'; },
 
     dev: {
+        broadcast: function() {
+            const msg = document.getElementById('dev-broadcast-msg').value.trim();
+            // If empty, clear the broadcast
+            const payload = {
+                message: msg,
+                sender: currentUser.username,
+                timestamp: Date.now()
+            };
+            
+            db.set('config/broadcast', payload);
+            
+            if (msg) {
+                app.logAction('Global Broadcast', `Se envió el comunicado: "${msg}"`);
+                showToast('success', 'Comunicado enviado a todas las pantallas.');
+                document.getElementById('dev-broadcast-msg').value = '';
+            } else {
+                showToast('success', 'Comunicado eliminado/oculto.');
+            }
+        },
         loadUsers: function() {
             const forceLogoutSelect = document.getElementById('dev-user-list');
             const hideSectionsSelect = document.getElementById('dev-hide-user-list');
