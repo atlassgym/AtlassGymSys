@@ -457,7 +457,7 @@ window.app = {
     calcStats: function() {
         const today = new Date();
         const startOfDay = new Date(); startOfDay.setHours(0,0,0,0);
-        const todayVisits = visits.filter(v => new Date(v.date) >= startOfDay);
+        const todayVisits = visits.filter(v => new Date(v.date) >= startOfDay && v.status === 'success');
         document.getElementById('stat-visits').innerText = todayVisits.length;
 
         let active=0, expiring=0, inactive=0;
