@@ -180,14 +180,12 @@
                 </div>
             <div class="cart-summary" style="border-top: 2px solid #222; padding-top: 15px;">
                 <div style="margin-bottom:15px;">
-                    <label style="color:#aaa; display:block; margin-bottom:5px;">Método de Pago:</label>
-                    <div style="display:flex; gap:15px;">
-                        <label style="display:flex; align-items:center; gap:5px; cursor:pointer; color:#fff;">
-                            <input type="radio" name="store-payment-method" value="Efectivo" checked> Efectivo
-                        </label>
-                        <label style="display:flex; align-items:center; gap:5px; cursor:pointer; color:#fff;">
-                            <input type="radio" name="store-payment-method" value="Tarjeta"> Tarjeta
-                        </label>
+                    <label style="color:#aaa; display:block; margin-bottom:8px; font-size:0.8rem; text-transform:uppercase; letter-spacing:1px;">Método de Pago</label>
+                    <div class="payment-method-group">
+                        <input type="radio" name="store-payment-method" value="Efectivo" id="pay-efectivo" checked>
+                        <label for="pay-efectivo" class="pay-label"><i class="fas fa-money-bill-wave"></i> Efectivo</label>
+                        <input type="radio" name="store-payment-method" value="Tarjeta" id="pay-tarjeta">
+                        <label for="pay-tarjeta" class="pay-label"><i class="fas fa-credit-card"></i> Tarjeta</label>
                     </div>
                 </div>
 
