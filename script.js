@@ -1200,7 +1200,19 @@ window.app = {
         filtered.forEach(p => {
             const isLow = p.stock <= 3;
             const isOut = p.stock <= 0;
-            grid.innerHTML += `<div class="prod-item ${isLow ? 'stock-alert' : ''} ${isOut ? 'out-of-stock' : ''}" onclick="${isOut ? '' : `app.addToCart('${p.id}')`}" style="position:relative; opacity: ${isOut ? '0.6' : '1'}">${isOut ? '<div style="position:absolute; top:50%; left:50%; transform:translate(-50%,-50%) rotate(-15deg); background:var(--primary); color:white; padding:5px 10px; font-weight:bold; z-index:2; border-radius:4px;">AGOTADO</div>' : ''}<div style="font-size: 2rem; margin-bottom:10px; color: ${isLow ? 'var(--neon-orange)' : 'var(--primary)'}"><i class="fas ${p.icon || 'fa-box'}"></i></div><small style="text-transform:uppercase; color:#888;">${p.category || 'General'}</small><h4 style="margin: 5px 0;">${p.name}</h4><p style="color:var(--neon-green); font-weight:bold; font-size:1.2rem; margin: 10px 0;">$${p.price}</p><div style="display:flex; justify-content:space-between; align-items:center; margin-top:10px;"><span style="font-size:0.85rem; color:${isLow ? 'var(--neon-orange)' : '#aaa'}">Stock: <b>${p.stock}</b></span><div class="prod-actions"><button onclick="event.stopPropagation(); app.addStock('${p.id}')" class="btn-mini-stock" title="Reponer"><i class="fas fa-plus"></i></button>${(currentUser.role === 'admin' || currentUser.role === 'dev') ? `<button onclick="event.stopPropagation(); app.delProd('${p.id}')" class="btn-mini-del" title="Eliminar"><i class="fas fa-times"></i></button>` : ''}</div></div></div>`;
+            grid.innerHTML += `
+                <div class="prod-item ${isOut ? 'out-of-stock' : ''}" onclick="${isOut ? '' : `app.addToCart('${p.id}')`}">
+                    ${isOut ? '<div class="prod-badge-agotado">AGOTADO</div>' : ''}
+                    <div class="prod-actions-overlay">
+                        <button onclick="event.stopPropagation(); app.addStock('${p.id}')" class="btn-mini-stock" title="Reponer"><i class="fas fa-plus"></i></button>
+                        ${(currentUser.role === 'admin' || currentUser.role === 'dev') ? `<button onclick="event.stopPropagation(); app.delProd('${p.id}')" class="btn-mini-del" title="Eliminar"><i class="fas fa-times"></i></button>` : ''}
+                    </div>
+                    <div class="prod-icon" style="color: ${isLow ? 'var(--neon-orange)' : 'var(--primary)'}"><i class="fas ${p.icon || 'fa-box'}"></i></div>
+                    <span class="prod-category">${p.category || 'General'}</span>
+                    <span class="prod-name">${p.name}</span>
+                    <span class="prod-price">$${p.price}</span>
+                    <span class="prod-stock ${isLow ? 'low' : ''}">Stock: ${p.stock}</span>
+                </div>`;
         });
     },
 
