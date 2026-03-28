@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>ATLAS GYM | SISTEMA</title>
-    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="style.css?v=4">
     <link rel="manifest" href="manifest.json">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -155,6 +155,61 @@
                         <h3 style="color:#fff; margin-bottom:8px; font-family:'Rajdhani',sans-serif; letter-spacing:3px; font-size:1.3rem;">ACCESO KIOSCO</h3>
                         <p style="color:#555; margin-bottom:22px; font-size:0.85rem; line-height:1.5;">Abrir pantalla completa para ingreso de socios mediante codigo.</p>
                         <a href="kiosk.html" target="_blank" class="btn btn-outline" style="text-decoration:none; display:inline-block; padding:10px 30px; border-color:rgba(0,255,65,0.3); color:var(--neon-green); letter-spacing:2px;"><i class="fas fa-external-link-alt" style="margin-right:8px;"></i>ABRIR KIOSCO</a>
+                    </div>
+                </div>
+
+                <!-- Advanced Metrics Panel (Admin/Dev Only) -->
+                <div id="dashboard-advanced-metrics" class="metrics-advanced-panel" style="display:none;">
+                    <h2><i class="fas fa-chart-line"></i> Metricas Avanzadas</h2>
+                    <div class="metrics-grid-advanced">
+                        <div class="metric-card-pro">
+                            <div class="metric-icon" style="background:rgba(0,255,65,0.08); color:var(--neon-green);"><i class="fas fa-dollar-sign"></i></div>
+                            <div class="metric-label">Ingresos del Mes</div>
+                            <div class="metric-value" id="metric-revenue">$0</div>
+                            <div class="metric-sub" id="metric-revenue-change" style="color:var(--neon-green);">vs mes anterior</div>
+                        </div>
+                        <div class="metric-card-pro">
+                            <div class="metric-icon" style="background:rgba(255,170,0,0.08); color:var(--neon-orange);"><i class="fas fa-user-plus"></i></div>
+                            <div class="metric-label">Nuevos Socios</div>
+                            <div class="metric-value" id="metric-new-members">0</div>
+                            <div class="metric-sub" id="metric-new-members-change">vs mes anterior</div>
+                        </div>
+                        <div class="metric-card-pro">
+                            <div class="metric-icon" style="background:rgba(255,0,60,0.08); color:var(--primary);"><i class="fas fa-heartbeat"></i></div>
+                            <div class="metric-label">Tasa de Retencion</div>
+                            <div class="metric-value" id="metric-retention">0%</div>
+                            <div class="metric-sub" style="color:#888;">Activos / Total</div>
+                        </div>
+                        <div class="metric-card-pro">
+                            <div class="metric-icon" style="background:rgba(68,136,255,0.08); color:#4488ff;"><i class="fas fa-shopping-bag"></i></div>
+                            <div class="metric-label">Ventas Tienda (Mes)</div>
+                            <div class="metric-value" id="metric-store-revenue">$0</div>
+                            <div class="metric-sub" style="color:#888;">Productos vendidos</div>
+                        </div>
+                        <div class="metric-card-pro">
+                            <div class="metric-icon" style="background:rgba(170,68,255,0.08); color:#aa44ff;"><i class="fas fa-trophy"></i></div>
+                            <div class="metric-label">Plan Mas Popular</div>
+                            <div class="metric-value" id="metric-top-plan" style="font-size:1.4rem;">-</div>
+                            <div class="metric-sub" style="color:#888;">Mayor demanda</div>
+                        </div>
+                        <div class="metric-card-pro">
+                            <div class="metric-icon" style="background:rgba(0,255,65,0.08); color:var(--neon-green);"><i class="fas fa-calculator"></i></div>
+                            <div class="metric-label">Ingreso Prom. / Socio</div>
+                            <div class="metric-value" id="metric-avg-revenue">$0</div>
+                            <div class="metric-sub" style="color:#888;">Este mes</div>
+                        </div>
+                        <div class="metric-card-pro">
+                            <div class="metric-icon" style="background:rgba(0,200,100,0.08); color:#00c864;"><i class="fas fa-money-bill-wave"></i></div>
+                            <div class="metric-label">Efectivo (Mes)</div>
+                            <div class="metric-value" id="metric-cash-month">$0</div>
+                            <div class="metric-sub" style="color:#888;">Pagos en efectivo</div>
+                        </div>
+                        <div class="metric-card-pro">
+                            <div class="metric-icon" style="background:rgba(68,136,255,0.08); color:#4488ff;"><i class="fas fa-credit-card"></i></div>
+                            <div class="metric-label">Tarjeta (Mes)</div>
+                            <div class="metric-value" id="metric-card-month">$0</div>
+                            <div class="metric-sub" style="color:#888;">Pagos con tarjeta</div>
+                        </div>
                     </div>
                 </div>
             </section>
@@ -554,6 +609,26 @@
                         <canvas id="chart-finances"></canvas>
                     </div>
                 </div>
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 30px; margin-top: 30px;">
+                    <div class="table-container" style="padding: 20px; background: #111;">
+                        <h3 style="font-family: 'Rajdhani'; margin-bottom: 20px; color: var(--neon-orange);">Distribucion por Plan</h3>
+                        <canvas id="chart-plans"></canvas>
+                    </div>
+                    <div class="table-container" style="padding: 20px; background: #111;">
+                        <h3 style="font-family: 'Rajdhani'; margin-bottom: 20px; color: var(--primary);">Visitas por Dia de la Semana</h3>
+                        <canvas id="chart-day-of-week"></canvas>
+                    </div>
+                </div>
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 30px; margin-top: 30px;">
+                    <div class="table-container" style="padding: 20px; background: #111;">
+                        <h3 style="font-family: 'Rajdhani'; margin-bottom: 20px; color: var(--neon-orange);">Tendencia de Nuevos Socios (6 meses)</h3>
+                        <canvas id="chart-reg-trend"></canvas>
+                    </div>
+                    <div class="table-container" style="padding: 20px; background: #111;">
+                        <h3 style="font-family: 'Rajdhani'; margin-bottom: 20px; color: var(--neon-green);">Tendencia de Ingresos (6 meses)</h3>
+                        <canvas id="chart-rev-trend"></canvas>
+                    </div>
+                </div>
             </section>
 
             <section id="view-reports" class="view-section">
@@ -816,7 +891,7 @@
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
     <script type="module" src="firebase-config.js"></script>
-    <script type="module" src="script.js"></script>
+    <script type="module" src="script.js?v=4"></script>
     <script>
         if ('serviceWorker' in navigator) {
             navigator.serviceWorker.register('./sw.js')

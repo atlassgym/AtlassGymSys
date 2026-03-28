@@ -451,6 +451,139 @@ window.app = {
                 }
             }
         });
+
+        // 3. Distribución por Plan (Doughnut)
+        const planCounts = {};
+        members.forEach(m => {
+            const planName = PLAN_NAMES[m.plan] || m.plan || 'Sin Plan';
+            planCounts[planName] = (planCounts[planName] || 0) + 1;
+        });
+        const planLabels = Object.keys(planCounts);
+        const planData = Object.values(planCounts);
+        const planColors = ['#ff003c','#ff4466','#ff6680','#ff8899','#00ff41','#00cc33','#ffaa00','#ff8800','#4488ff','#aa44ff','#ff44aa'];
+
+        const planCanvas = document.getElementById('chart-plans');
+        if (planCanvas) {
+            if (app.charts.plans) app.charts.plans.destroy();
+            app.charts.plans = new Chart(planCanvas, {
+                type: 'doughnut',
+                data: {
+                    labels: planLabels,
+                    datasets: [{ data: planData, backgroundColor: planColors.slice(0, planLabels.length), borderColor: '#0a0a0a', borderWidth: 2 }]
+                },
+                options: {
+                    responsive: true,
+                    plugins: { legend: { position: 'bottom', labels: { color: '#aaa', padding: 12, font: { size: 11 } } } }
+                }
+            });
+        }
+
+        // 4. Visitas por Día de la Semana (Bar)
+        const dayNames = ['Dom','Lun','Mar','Mié','Jue','Vie','Sáb'];
+        const dayVisits = new Array(7).fill(0);
+        visits.forEach(v => { if (v.status === 'success') dayVisits[new Date(v.date).getDay()]++; });
+
+        const dowCanvas = document.getElementById('chart-day-of-week');
+        if (dowCanvas) {
+            if (app.charts.dayOfWeek) app.charts.dayOfWeek.destroy();
+            app.charts.dayOfWeek = new Chart(dowCanvas, {
+                type: 'bar',
+                data: {
+                    labels: dayNames,
+                    datasets: [{
+                        label: 'Visitas',
+                        data: dayVisits,
+                        backgroundColor: dayVisits.map(v => { const max = Math.max(...dayVisits); return `rgba(255, 0, 60, ${max > 0 ? 0.3 + (v/max)*0.7 : 0.3})`; }),
+                        borderColor: '#ff003c', borderWidth: 1, borderRadius: 6
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    plugins: { legend: { display: false } },
+                    scales: {
+                        x: { ticks: { color: '#888' }, grid: { display: false } },
+                        y: { ticks: { color: '#888' }, grid: { color: '#222' }, beginAtZero: true }
+                    }
+                }
+            });
+        }
+
+        // 5. Tendencia de Nuevos Registros (Últimos 6 meses)
+        const regMonths = {};
+        const nowDate = new Date();
+        for (let i = 5; i >= 0; i--) {
+            const d = new Date(nowDate.getFullYear(), nowDate.getMonth() - i, 1);
+            const key = d.toLocaleString('es', { month: 'short' }) + ' ' + d.getFullYear();
+            regMonths[key] = { registrations: 0, revenue: 0, sortDate: d };
+        }
+        members.forEach(m => {
+            if (!m.registeredAt) return;
+            const d = new Date(m.registeredAt);
+            const key = d.toLocaleString('es', { month: 'short' }) + ' ' + d.getFullYear();
+            if (regMonths[key] !== undefined) regMonths[key].registrations++;
+        });
+        finances.forEach(f => {
+            const d = new Date(f.date);
+            const key = d.toLocaleString('es', { month: 'short' }) + ' ' + d.getFullYear();
+            const typeStr = String(f.type).toLowerCase();
+            const isExp = typeStr === 'gasto' || typeStr === 'salida' || typeStr === 'egreso';
+            if (!isExp && regMonths[key] !== undefined) regMonths[key].revenue += Number(f.amount);
+        });
+        const trendKeys = Object.keys(regMonths);
+        const regTrendData = trendKeys.map(k => regMonths[k].registrations);
+        const revTrendData = trendKeys.map(k => regMonths[k].revenue);
+
+        const regCanvas = document.getElementById('chart-reg-trend');
+        if (regCanvas) {
+            if (app.charts.regTrend) app.charts.regTrend.destroy();
+            app.charts.regTrend = new Chart(regCanvas, {
+                type: 'line',
+                data: {
+                    labels: trendKeys,
+                    datasets: [{
+                        label: 'Nuevos Socios', data: regTrendData,
+                        borderColor: '#ffaa00', backgroundColor: 'rgba(255,170,0,0.1)',
+                        fill: true, tension: 0.4, pointBackgroundColor: '#ffaa00', pointRadius: 5
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    plugins: { legend: { labels: { color: '#fff' } } },
+                    scales: {
+                        x: { ticks: { color: '#888' }, grid: { color: '#222' } },
+                        y: { ticks: { color: '#888', stepSize: 1 }, grid: { color: '#222' }, beginAtZero: true }
+                    }
+                }
+            });
+        }
+
+        // 6. Tendencia de Ingresos (Últimos 6 meses)
+        const revCanvas = document.getElementById('chart-rev-trend');
+        if (revCanvas) {
+            if (app.charts.revTrend) app.charts.revTrend.destroy();
+            app.charts.revTrend = new Chart(revCanvas, {
+                type: 'line',
+                data: {
+                    labels: trendKeys,
+                    datasets: [{
+                        label: 'Ingresos', data: revTrendData,
+                        borderColor: '#00ff41', backgroundColor: 'rgba(0,255,65,0.1)',
+                        fill: true, tension: 0.4, pointBackgroundColor: '#00ff41', pointRadius: 5
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    plugins: {
+                        legend: { labels: { color: '#fff' } },
+                        tooltip: { callbacks: { label: function(ctx) { return 'Ingresos: $' + ctx.parsed.y.toLocaleString(); } } }
+                    },
+                    scales: {
+                        x: { ticks: { color: '#888' }, grid: { color: '#222' } },
+                        y: { ticks: { color: '#888', callback: v => '$' + v.toLocaleString() }, grid: { color: '#222' }, beginAtZero: true }
+                    }
+                }
+            });
+        }
     },
 
     // 3. DASHBOARD
@@ -477,6 +610,82 @@ window.app = {
         document.getElementById('stat-active').innerText = active;
         document.getElementById('stat-expiring').innerText = expiring;
         document.getElementById('stat-inactive').innerText = inactive;
+
+        // === ADVANCED DASHBOARD METRICS (Admin/Dev Only) ===
+        const metricsPanel = document.getElementById('dashboard-advanced-metrics');
+        if (metricsPanel && currentUser && (currentUser.role === 'admin' || currentUser.role === 'dev')) {
+            metricsPanel.style.display = 'block';
+            const now = new Date();
+            const thisMonth = now.getMonth();
+            const thisYear = now.getFullYear();
+            const lastMonth = thisMonth === 0 ? 11 : thisMonth - 1;
+            const lastMonthYear = thisMonth === 0 ? thisYear - 1 : thisYear;
+
+            let revenueThisMonth = 0, revenueLastMonth = 0, storeRevenueThisMonth = 0;
+            let newMembersThisMonth = 0, newMembersLastMonth = 0;
+            let cashThisMonth = 0, cardThisMonth = 0;
+
+            finances.forEach(f => {
+                const d = new Date(f.date);
+                const typeStr = String(f.type).toLowerCase();
+                const isExpense = typeStr === 'gasto' || typeStr === 'salida' || typeStr === 'egreso';
+                if (!isExpense) {
+                    if (d.getMonth() === thisMonth && d.getFullYear() === thisYear) {
+                        const amt = Number(f.amount);
+                        revenueThisMonth += amt;
+                        if (f.metodoPago === 'Tarjeta') cardThisMonth += amt;
+                        else cashThisMonth += amt;
+                        if (typeStr === 'venta' || String(f.desc || '').toLowerCase().includes('venta tienda')) {
+                            storeRevenueThisMonth += amt;
+                        }
+                    }
+                    if (d.getMonth() === lastMonth && d.getFullYear() === lastMonthYear) {
+                        revenueLastMonth += Number(f.amount);
+                    }
+                }
+            });
+
+            members.forEach(m => {
+                if (!m.registeredAt) return;
+                const regDate = new Date(m.registeredAt);
+                if (regDate.getMonth() === thisMonth && regDate.getFullYear() === thisYear) newMembersThisMonth++;
+                if (regDate.getMonth() === lastMonth && regDate.getFullYear() === lastMonthYear) newMembersLastMonth++;
+            });
+
+            const totalMembers = members.length;
+            const retentionRate = totalMembers > 0 ? Math.round((active / totalMembers) * 100) : 0;
+            const revenueChange = revenueLastMonth > 0
+                ? Math.round(((revenueThisMonth - revenueLastMonth) / revenueLastMonth) * 100)
+                : (revenueThisMonth > 0 ? 100 : 0);
+
+            const planCount = {};
+            members.forEach(m => { if (m.plan) planCount[m.plan] = (planCount[m.plan] || 0) + 1; });
+            let topPlan = '-', topPlanCount = 0;
+            for (const [plan, count] of Object.entries(planCount)) {
+                if (count > topPlanCount) { topPlan = PLAN_NAMES[plan] || plan; topPlanCount = count; }
+            }
+
+            const avgRevenue = active > 0 ? Math.round(revenueThisMonth / active) : 0;
+
+            const setEl = (id, val) => { const e = document.getElementById(id); if (e) e.innerText = val; };
+            setEl('metric-revenue', '$' + revenueThisMonth.toLocaleString());
+            setEl('metric-revenue-change', (revenueChange >= 0 ? '+' : '') + revenueChange + '%');
+            const chEl = document.getElementById('metric-revenue-change');
+            if (chEl) chEl.style.color = revenueChange >= 0 ? 'var(--neon-green)' : 'var(--primary)';
+            setEl('metric-new-members', newMembersThisMonth);
+            const nmChange = newMembersLastMonth > 0 ? Math.round(((newMembersThisMonth - newMembersLastMonth) / newMembersLastMonth) * 100) : 0;
+            setEl('metric-new-members-change', newMembersLastMonth > 0 ? (nmChange >= 0 ? '+' : '') + nmChange + '%' : 'N/A');
+            const nmChEl = document.getElementById('metric-new-members-change');
+            if (nmChEl) nmChEl.style.color = nmChange >= 0 ? 'var(--neon-green)' : 'var(--primary)';
+            setEl('metric-retention', retentionRate + '%');
+            setEl('metric-store-revenue', '$' + storeRevenueThisMonth.toLocaleString());
+            setEl('metric-top-plan', topPlan);
+            setEl('metric-avg-revenue', '$' + avgRevenue.toLocaleString());
+            setEl('metric-cash-month', '$' + cashThisMonth.toLocaleString());
+            setEl('metric-card-month', '$' + cardThisMonth.toLocaleString());
+        } else if (metricsPanel) {
+            metricsPanel.style.display = 'none';
+        }
     },
 
     // 4. SOCIOS
@@ -760,17 +969,23 @@ window.app = {
         
         showToast('success', 'Registro exitoso');
         this.closeModal('modal-register');
+
+        // WhatsApp FIRST — must open in direct user-click context (before print)
+        // Browsers block window.open() inside setTimeout or after print dialogs
+        // For family/couple plans, send at least to the first member (titular)
+        if (messagesToSend.length > 0) {
+            const first = messagesToSend[0];
+            const waUrl = `https://wa.me/${first.phone}?text=${encodeURIComponent(first.msg)}`;
+            window.open(waUrl, '_blank');
+        }
+
+        // Print receipt AFTER WhatsApp opens
         this.printReceipt(mainMemberName + (count > 1 ? ` (+${count-1})` : ''), price, `Membresía ${displayPlan}`);
 
-        // WhatsApp Welcome Messages + Auto-download member cards
+        // Auto-download member cards (no popup needed)
         messagesToSend.forEach((item, i) => {
             setTimeout(() => {
-                // Auto-download member card image
                 this.autoDownloadMemberCard(item.name, item.code, expiryDate);
-
-                // Open WhatsApp with professional welcome message
-                const url = `https://wa.me/${item.phone}?text=${encodeURIComponent(item.msg)}`;
-                window.open(url, '_blank');
             }, i * 1500);
         });
     },
@@ -1050,40 +1265,42 @@ window.app = {
         showToast('success', 'Renovación exitosa');
         this.closeModal('modal-renew-pro');
         this.closeModal('modal-member-detail');
-        this.printReceipt(renewUser, price, renewDescription);
 
-        // WhatsApp Renewal Message
+        // WhatsApp Renewal Message — FIRST, before print, in user-click context
         const newExpiryStr = new Date(newExpiryISO).toLocaleDateString('es-MX', { day: '2-digit', month: 'long', year: 'numeric' });
-        const renewalMembersToNotify = (isGroup && groupId) 
-            ? members.filter(gm => String(gm.groupId) === String(groupId)) 
-            : [m];
+        // For group plans, notify at least the first member (titular)
+        const renewalMemberToNotify = (isGroup && groupId) 
+            ? (members.find(gm => String(gm.groupId) === String(groupId)) || m)
+            : m;
 
-        renewalMembersToNotify.forEach((rm, i) => {
-            const renewMsg = `*ATLAS GYM*\n` +
-                `━━━━━━━━━━━━━━━━━━━\n\n` +
-                `¡Hola *${rm.name}*! \n\n` +
-                `Tu membresia ha sido *RENOVADA* exitosamente!\n\n` +
-                `\n*DETALLES DE RENOVACION*\n` +
-                `━━━━━━━━━━━━━━━━━━━\n` +
-                `Nombre: *${rm.name}*\n` +
-                `Codigo de Socio: *${rm.code}*\n` +
-                `Plan: *${displayPlan}*\n` +
-                `Nueva fecha de vencimiento: *${newExpiryStr}*\n\n` +
-                `Tu codigo de socio sigue siendo el mismo. Sigue entrenando sin parar!\n\n` +
-                `━━━━━━━━━━━━━━━━━━━\n` +
-                `*SIGUENOS EN REDES*\n` +
-                `━━━━━━━━━━━━━━━━━━━\n\n` +
-                `Instagram: https://www.instagram.com/atlasgym.fit?igsh=MXV5NnFuaWJpY3NuOQ==\n\n` +
-                `TikTok: https://www.tiktok.com/@atlass2709?_r=1&_t=ZS-951vj3Li22p\n\n` +
-                `━━━━━━━━━━━━━━━━━━━\n\n` +
-                `¡Nos vemos en el gym!\n` +
-                `*ATLAS GYM ― FORJA TU MEJOR VERSION*`;
+        const renewMsg = `*ATLAS GYM*\n` +
+            `━━━━━━━━━━━━━━━━━━━\n\n` +
+            `¡Hola *${renewalMemberToNotify.name}*! \n\n` +
+            `Tu membresia ha sido *RENOVADA* exitosamente!\n\n` +
+            `\n*DETALLES DE RENOVACION*\n` +
+            `━━━━━━━━━━━━━━━━━━━\n` +
+            `Nombre: *${renewalMemberToNotify.name}*\n` +
+            `Codigo de Socio: *${renewalMemberToNotify.code}*\n` +
+            `Plan: *${displayPlan}*\n` +
+            `Nueva fecha de vencimiento: *${newExpiryStr}*\n\n` +
+            `Tu codigo de socio sigue siendo el mismo. Sigue entrenando sin parar!\n\n` +
+            `━━━━━━━━━━━━━━━━━━━\n` +
+            `*SIGUENOS EN REDES*\n` +
+            `━━━━━━━━━━━━━━━━━━━\n\n` +
+            `Instagram: https://www.instagram.com/atlasgym.fit?igsh=MXV5NnFuaWJpY3NuOQ==\n\n` +
+            `TikTok: https://www.tiktok.com/@atlass2709?_r=1&_t=ZS-951vj3Li22p\n\n` +
+            `━━━━━━━━━━━━━━━━━━━\n\n` +
+            `¡Nos vemos en el gym!\n` +
+            `*ATLAS GYM ― FORJA TU MEJOR VERSION*`;
 
-            setTimeout(() => {
-                const url = `https://wa.me/${rm.phone}?text=${encodeURIComponent(renewMsg)}`;
-                window.open(url, '_blank');
-            }, i * 1000);
-        });
+        // Open WhatsApp BEFORE print — stays in user-gesture context
+        if (renewalMemberToNotify.phone) {
+            const waUrl = `https://wa.me/${renewalMemberToNotify.phone}?text=${encodeURIComponent(renewMsg)}`;
+            window.open(waUrl, '_blank');
+        }
+
+        // Print receipt AFTER WhatsApp opens
+        this.printReceipt(renewUser, price, renewDescription);
     },
 
     downloadMemberCard: function() {
@@ -1507,57 +1724,93 @@ window.app = {
         }
     },
 
-    // 7. IMPRESIÓN.
+    // 7. IMPRESIÓN PROFESIONAL.
     printReport: function() {
-        const start = document.getElementById('filter-start').value;
-        const end = document.getElementById('filter-end').value;
-        const income = document.getElementById('fin-total-income').innerText;
-        const expense = document.getElementById('fin-total-expense').innerText;
-        const balance = document.getElementById('fin-balance').innerText;
-        
-        // Limpiamos los botones y estilos de color de las filas originales
-        const rows = document.getElementById('finances-list').innerHTML
-            .replace(/<button.*?<\/button>/g, '') // Quita botones
-            .replace(/style=".*?"/g, '');         // Quita colores de la interfaz
+        const startVal = document.getElementById('filter-start').value;
+        const endVal = document.getElementById('filter-end').value;
+        if (!startVal || !endVal) { showToast('error', 'Seleccione fechas'); return; }
 
-        const printHTML = `
-            <div class="print-report-pro">
-                <header class="report-header">
-                    <div class="report-title">
-                        <h1>ATLAS GYM - REPORTE DE CAJA</h1>
-                        <p>PERIODO: ${start} AL ${end}</p>
-                    </div>
-                    <div class="report-meta">
-                        <p>Generado: ${new Date().toLocaleString()}</p>
-                        <p>Usuario: ${currentUser.name}</p>
-                    </div>
-                </header>
+        const startDate = new Date(startVal); startDate.setHours(0,0,0,0);
+        const endDate = new Date(endVal); endDate.setHours(23,59,59,999);
 
-                <div class="report-summary-bar">
-                    <div class="sum-item"><strong>INGRESOS:</strong> ${income}</div>
-                    <div class="sum-item"><strong>GASTOS:</strong> ${expense}</div>
-                    <div class="sum-item"><strong>BALANCE NETO:</strong> ${balance}</div>
-                </div>
+        const filtered = finances.map(f => {
+            const typeStr = String(f.type).toLowerCase();
+            const isExpense = typeStr === 'gasto' || typeStr === 'salida' || typeStr === 'egreso';
+            return { ...f, isExpense, dateObj: new Date(f.date) };
+        }).filter(f => f.dateObj >= startDate && f.dateObj <= endDate)
+          .sort((a,b) => b.dateObj - a.dateObj);
 
-                <table class="report-table-compact">
-                    <thead>
-                        <tr>
-                            <th>FECHA</th>
-                            <th>TIPO</th>
-                            <th>CONCEPTO</th>
-                            <th>USUARIO</th>
-                            <th>MONTO</th>
-                        </tr>
-                    </thead>
-                    <tbody>${rows}</tbody>
-                </table>
+        let income = 0, expense = 0, cashTotal = 0, cardTotal = 0;
+        let inscripciones = 0, renovaciones = 0, ventasTienda = 0;
 
-                <footer class="report-footer">
-                    <div class="signature-line">Firma Responsable: ${currentUser.name}</div>
-                </footer>
-            </div>`;
-            
-        document.getElementById('printable-area').innerHTML = printHTML; 
+        let rowsHTML = '';
+        filtered.forEach(f => {
+            const amt = Number(f.amount);
+            if (f.isExpense) { expense += amt; }
+            else {
+                income += amt;
+                if (f.metodoPago === 'Tarjeta') cardTotal += amt; else cashTotal += amt;
+            }
+            const t = String(f.type).toLowerCase();
+            if (t.includes('inscri') || t === 'registro') inscripciones++;
+            else if (t.includes('renov')) renovaciones++;
+            else if (t.includes('tienda') || t.includes('venta')) ventasTienda++;
+
+            let bc = 'rpt-badge ';
+            if (t.includes('inscri') || t === 'registro') bc += 'rpt-badge-inscripcion';
+            else if (t.includes('renov')) bc += 'rpt-badge-renovacion';
+            else if (t.includes('tienda') || t.includes('venta')) bc += 'rpt-badge-tienda';
+            else if (f.isExpense) bc += 'rpt-badge-gasto';
+            else bc += 'rpt-badge-ingreso';
+
+            const ac = f.isExpense ? 'rpt-amount-negative' : 'rpt-amount-positive';
+            const sign = f.isExpense ? '-' : '+';
+            rowsHTML += '<tr>'
+                + '<td>' + f.dateObj.toLocaleDateString('es-MX') + '</td>'
+                + '<td>' + f.dateObj.toLocaleTimeString('es-MX',{hour:'2-digit',minute:'2-digit'}) + '</td>'
+                + '<td><span class="' + bc + '">' + f.type + '</span></td>'
+                + '<td>' + (f.desc || '') + '</td>'
+                + '<td>' + (f.user || '') + '</td>'
+                + '<td>' + (f.metodoPago || 'N/A') + '</td>'
+                + '<td class="' + ac + '">' + sign + '$' + amt.toLocaleString() + '</td>'
+                + '</tr>';
+        });
+
+        const balance = income - expense;
+        const uniqueUsers = [...new Set(filtered.map(f => f.user))];
+
+        const printHTML = '<div class="atlas-report">'
+            + '<header class="atlas-report-header">'
+            + '<div class="atlas-report-header-left">'
+            + '<img src="Logo/ATLAS.png" alt="Atlas Gym">'
+            + '<div><h1>ATLAS GYM - REPORTE DE CAJA</h1>'
+            + '<p>Periodo: ' + startVal + ' al ' + endVal + '</p></div></div>'
+            + '<div class="atlas-report-meta">'
+            + '<p>Generado: ' + new Date().toLocaleString('es-MX') + '</p>'
+            + '<p>Usuario: ' + currentUser.name + '</p></div></header>'
+            + '<div class="atlas-report-kpis">'
+            + '<div class="atlas-kpi highlight"><span class="atlas-kpi-label">Total Ingresos</span><span class="atlas-kpi-value" style="color:#2e7d32">$' + income.toLocaleString() + '</span></div>'
+            + '<div class="atlas-kpi"><span class="atlas-kpi-label">Total Gastos</span><span class="atlas-kpi-value" style="color:#c62828">$' + expense.toLocaleString() + '</span></div>'
+            + '<div class="atlas-kpi highlight"><span class="atlas-kpi-label">Balance Neto</span><span class="atlas-kpi-value">$' + balance.toLocaleString() + '</span></div>'
+            + '<div class="atlas-kpi"><span class="atlas-kpi-label">Efectivo</span><span class="atlas-kpi-value">$' + cashTotal.toLocaleString() + '</span></div>'
+            + '<div class="atlas-kpi"><span class="atlas-kpi-label">Tarjeta</span><span class="atlas-kpi-value">$' + cardTotal.toLocaleString() + '</span></div>'
+            + '</div>'
+            + '<table class="atlas-report-table"><thead><tr>'
+            + '<th>Fecha</th><th>Hora</th><th>Tipo</th><th>Concepto</th><th>Usuario</th><th>Método</th><th>Monto</th>'
+            + '</tr></thead><tbody>' + rowsHTML + '</tbody></table>'
+            + '<div class="atlas-report-summary">'
+            + '<div class="atlas-summary-item"><span class="atlas-summary-label">Movimientos</span><span class="atlas-summary-value">' + filtered.length + '</span></div>'
+            + '<div class="atlas-summary-item"><span class="atlas-summary-label">Inscripciones</span><span class="atlas-summary-value">' + inscripciones + '</span></div>'
+            + '<div class="atlas-summary-item"><span class="atlas-summary-label">Renovaciones</span><span class="atlas-summary-value">' + renovaciones + '</span></div>'
+            + '<div class="atlas-summary-item"><span class="atlas-summary-label">Ventas Tienda</span><span class="atlas-summary-value">' + ventasTienda + '</span></div>'
+            + '<div class="atlas-summary-item"><span class="atlas-summary-label">Usuarios</span><span class="atlas-summary-value">' + uniqueUsers.length + '</span></div>'
+            + '</div>'
+            + '<footer class="atlas-report-footer">'
+            + '<span class="atlas-report-footer-note">' + filtered.length + ' registros procesados.</span>'
+            + '<span>Atlas Gym - Sistema de Gestión</span>'
+            + '</footer></div>';
+
+        document.getElementById('printable-area').innerHTML = printHTML;
         window.print();
     },
 
@@ -1975,12 +2228,12 @@ window.app = {
                     break;
             }
 
-            this.currentReportData = { title, content };
+            this.currentReportData = { title, content, type, summary: data ? data.summary || {} : {}, rowCount: data ? data.rows.length : 0 };
             preview.innerHTML = `<h3 style="margin-top:20px; font-family:'Rajdhani'">${title}</h3>${content}`;
         },
         
         generateMemberData: function(memberType) {
-            const headers = ["Código", "Nombre", "Teléfono", "Registro", "Vencimiento"];
+            const headers = ["Código", "Nombre", "Teléfono", "Plan", "Registro", "Vencimiento", "Estado"];
             const today = new Date();
             let filteredMembers = [];
 
@@ -2000,8 +2253,17 @@ window.app = {
                     break;
             }
 
-            const rows = filteredMembers.map(m => [m.code, m.name, m.phone || 'N/A', new Date(m.registeredAt).toLocaleDateString(), new Date(m.expiryDate).toLocaleDateString()]);
-            return { headers, rows };
+            const rows = filteredMembers.map(m => {
+                const days = Math.ceil((new Date(m.expiryDate) - today) / (1000*60*60*24));
+                let status = days < 0 ? 'Vencido' : (days <= 5 ? 'Por Vencer' : 'Activo');
+                return [m.code, m.name, m.phone || 'N/A', PLAN_NAMES[m.plan] || m.plan || 'N/A', new Date(m.registeredAt).toLocaleDateString(), new Date(m.expiryDate).toLocaleDateString(), status];
+            });
+
+            const activeCount = filteredMembers.filter(m => Math.ceil((new Date(m.expiryDate) - today)/(1000*60*60*24)) > 5).length;
+            const expiringCount = filteredMembers.filter(m => { const d = Math.ceil((new Date(m.expiryDate) - today)/(1000*60*60*24)); return d >= 0 && d <= 5; }).length;
+            const inactiveCount = filteredMembers.filter(m => (new Date(m.expiryDate) - today) < 0).length;
+
+            return { headers, rows, summary: { total: filteredMembers.length, active: activeCount, expiring: expiringCount, inactive: inactiveCount, type: memberType } };
         },
 
         generateFinanceData: function(start, end) {
@@ -2044,17 +2306,24 @@ window.app = {
         },
 
         generateStoreData: function(storeType) {
-            const headers = ["Producto", "Categoría", "Precio", "Stock Actual"];
+            const headers = ["Producto", "Categoría", "Precio", "Stock Actual", "Valor en Inventario"];
             let filteredProducts = products;
             if (storeType === 'lowstock') {
                 filteredProducts = products.filter(p => p.stock <= 3);
             }
-            const rows = filteredProducts.map(p => [p.name, p.category, `$${p.price}`, p.stock]);
-            return { headers, rows };
+            let totalValue = 0, lowStockCount = 0, outOfStockCount = 0;
+            const rows = filteredProducts.map(p => {
+                const val = p.price * p.stock;
+                totalValue += val;
+                if (p.stock <= 3) lowStockCount++;
+                if (p.stock === 0) outOfStockCount++;
+                return [p.name, p.category, '$' + p.price.toLocaleString(), p.stock, '$' + val.toLocaleString()];
+            });
+            return { headers, rows, summary: { totalProducts: filteredProducts.length, totalValue, lowStockCount, outOfStockCount } };
         },
         
         generateActivityData: function(start, end) {
-            const headers = ["Socio", "Código", "Fecha / Hora"];
+            const headers = ["Socio", "Código", "Fecha / Hora", "Estado"];
             const startDate = new Date(start);
             startDate.setHours(0, 0, 0, 0);
             const endDate = new Date(end);
@@ -2065,8 +2334,9 @@ window.app = {
                 return vDate >= startDate && vDate <= endDate;
             });
 
-            const rows = filteredVisits.map(v => [v.name, v.code, new Date(v.date).toLocaleString()]);
-            return { headers, rows: rows.sort((a,b) => new Date(b[2]) - new Date(a[2])) };
+            const uniqueMembers = new Set(filteredVisits.map(v => v.code));
+            const rows = filteredVisits.map(v => [v.name, v.code, new Date(v.date).toLocaleString(), v.status === 'success' ? 'Exitosa' : 'Denegada']);
+            return { headers, rows: rows.sort((a,b) => new Date(b[2]) - new Date(a[2])), summary: { totalVisits: filteredVisits.length, uniqueMembers: uniqueMembers.size, startDate: start, endDate: end } };
         },
 
         renderTable: function(headers, rows) {
@@ -2100,25 +2370,62 @@ window.app = {
                 showToast('error', 'Primero genere un reporte.');
                 return;
             }
-            
-            const printHTML = `
-                <div class="print-report-pro">
-                    <header class="report-header">
-                        <div class="report-title">
-                            <h1>ATLAS GYM - REPORTE DE SISTEMA</h1>
-                            <p>${this.currentReportData.title}</p>
-                        </div>
-                        <div class="report-meta">
-                            <p>Generado: ${new Date().toLocaleString()}</p>
-                            <p>Usuario: ${currentUser.name}</p>
-                        </div>
-                    </header>
-                    ${this.currentReportData.content}
-                    <footer class="report-footer">
-                        <div class="signature-line">Firma Responsable: _________________________</div>
-                    </footer>
-                </div>`;
-                
+
+            const rd = this.currentReportData;
+            const sm = rd.summary || {};
+            let kpisHTML = '';
+
+            // Build KPI cards based on report type
+            if (rd.type === 'members') {
+                kpisHTML = '<div class="atlas-report-kpis">'
+                    + '<div class="atlas-kpi highlight"><span class="atlas-kpi-label">Total Socios</span><span class="atlas-kpi-value">' + (sm.total || rd.rowCount || 0) + '</span></div>'
+                    + '<div class="atlas-kpi"><span class="atlas-kpi-label">Activos</span><span class="atlas-kpi-value" style="color:#2e7d32">' + (sm.active || 0) + '</span></div>'
+                    + '<div class="atlas-kpi"><span class="atlas-kpi-label">Por Vencer</span><span class="atlas-kpi-value" style="color:#e65100">' + (sm.expiring || 0) + '</span></div>'
+                    + '<div class="atlas-kpi"><span class="atlas-kpi-label">Vencidos</span><span class="atlas-kpi-value" style="color:#c62828">' + (sm.inactive || 0) + '</span></div>'
+                    + '</div>';
+            } else if (rd.type === 'finances') {
+                kpisHTML = '<div class="atlas-report-kpis">'
+                    + '<div class="atlas-kpi highlight"><span class="atlas-kpi-label">Ingresos</span><span class="atlas-kpi-value" style="color:#2e7d32">$' + (sm.income || 0).toLocaleString() + '</span></div>'
+                    + '<div class="atlas-kpi"><span class="atlas-kpi-label">Gastos</span><span class="atlas-kpi-value" style="color:#c62828">$' + (sm.expense || 0).toLocaleString() + '</span></div>'
+                    + '<div class="atlas-kpi highlight"><span class="atlas-kpi-label">Balance</span><span class="atlas-kpi-value">$' + (sm.balance || 0).toLocaleString() + '</span></div>'
+                    + '<div class="atlas-kpi"><span class="atlas-kpi-label">Registros</span><span class="atlas-kpi-value">' + (rd.rowCount || 0) + '</span></div>'
+                    + '</div>';
+            } else if (rd.type === 'store') {
+                kpisHTML = '<div class="atlas-report-kpis">'
+                    + '<div class="atlas-kpi highlight"><span class="atlas-kpi-label">Total Productos</span><span class="atlas-kpi-value">' + (sm.totalProducts || rd.rowCount || 0) + '</span></div>'
+                    + '<div class="atlas-kpi"><span class="atlas-kpi-label">Valor Inventario</span><span class="atlas-kpi-value" style="color:#2e7d32">$' + (sm.totalValue || 0).toLocaleString() + '</span></div>'
+                    + '<div class="atlas-kpi"><span class="atlas-kpi-label">Bajo Stock</span><span class="atlas-kpi-value" style="color:#e65100">' + (sm.lowStockCount || 0) + '</span></div>'
+                    + '<div class="atlas-kpi"><span class="atlas-kpi-label">Agotados</span><span class="atlas-kpi-value" style="color:#c62828">' + (sm.outOfStockCount || 0) + '</span></div>'
+                    + '</div>';
+            } else if (rd.type === 'activity') {
+                kpisHTML = '<div class="atlas-report-kpis">'
+                    + '<div class="atlas-kpi highlight"><span class="atlas-kpi-label">Total Visitas</span><span class="atlas-kpi-value">' + (sm.totalVisits || rd.rowCount || 0) + '</span></div>'
+                    + '<div class="atlas-kpi"><span class="atlas-kpi-label">Socios Unicos</span><span class="atlas-kpi-value">' + (sm.uniqueMembers || 0) + '</span></div>'
+                    + '</div>';
+            }
+
+            // Convert screen table content to print-friendly table
+            let printContent = rd.content;
+            printContent = printContent.replace(/report-table-compact/g, 'atlas-report-table');
+            printContent = printContent.replace(/report-summary-bar/g, 'atlas-report-summary');
+            printContent = printContent.replace(/sum-item/g, 'atlas-summary-item');
+
+            const printHTML = '<div class="atlas-report">'
+                + '<header class="atlas-report-header">'
+                + '<div class="atlas-report-header-left">'
+                + '<img src="Logo/ATLAS.png" alt="Atlas Gym">'
+                + '<div><h1>ATLAS GYM - REPORTE</h1>'
+                + '<p>' + rd.title + '</p></div></div>'
+                + '<div class="atlas-report-meta">'
+                + '<p>Generado: ' + new Date().toLocaleString('es-MX') + '</p>'
+                + '<p>Usuario: ' + currentUser.name + '</p></div></header>'
+                + kpisHTML
+                + printContent
+                + '<footer class="atlas-report-footer">'
+                + '<span class="atlas-report-footer-note">' + (rd.rowCount || 0) + ' registros procesados.</span>'
+                + '<span>Atlas Gym - Sistema de Gestion</span>'
+                + '</footer></div>';
+
             document.getElementById('printable-area').innerHTML = printHTML;
             window.print();
         }
