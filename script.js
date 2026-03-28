@@ -725,10 +725,32 @@ window.app = {
 
             db.add("members", newMember);
             
-            // Prepare Message
+            // Prepare Professional Welcome Message
             const planName = PLAN_NAMES[plan] || plan.toUpperCase();
-            const msg = `¡Hola ${m.name.split(' ')[0]}! 👋 ¡Bienvenido a ATLAS GYM! Tu código de acceso es: *${code}*. Plan: ${planName}. ¡A entrenar! 💪`;
-            messagesToSend.push({ phone: m.phone, msg: msg });
+            const startDateStr = new Date(registeredAt).toLocaleDateString('es-MX', { day: '2-digit', month: 'long', year: 'numeric' });
+            const expiryDateStr = new Date(expiryDate).toLocaleDateString('es-MX', { day: '2-digit', month: 'long', year: 'numeric' });
+            const msg = `*ATLAS GYM*\n` +
+                `━━━━━━━━━━━━━━━━━━━\n\n` +
+                `¡Hola *${m.name}*! \n\n` +
+                `¡Bienvenido(a) a la familia *ATLAS GYM*! Estamos emocionados de tenerte con nosotros.\n\n` +
+                `\n*TU TARJETA DE SOCIO*\n` +
+                `━━━━━━━━━━━━━━━━━━━\n` +
+                `Nombre: *${m.name}*\n` +
+                `Codigo de Socio: *${code}*\n` +
+                `Plan: *${planName}*\n` +
+                `Inicio: *${startDateStr}*\n` +
+                `Vence: *${expiryDateStr}*\n\n` +
+                `Presenta tu codigo de socio para acceder al gimnasio.\n\n` +
+                `━━━━━━━━━━━━━━━━━━━\n` +
+                `*SIGUENOS EN REDES*\n` +
+                `━━━━━━━━━━━━━━━━━━━\n\n` +
+                `Instagram: https://www.instagram.com/atlasgym.fit?igsh=MXV5NnFuaWJpY3NuOQ==\n\n` +
+                `TikTok: https://www.tiktok.com/@atlass2709?_r=1&_t=ZS-951vj3Li22p\n\n` +
+                `━━━━━━━━━━━━━━━━━━━\n\n` +
+                `Te gustaria formar parte de nuestra *comunidad de WhatsApp*? Responde *SI* y te agregamos!\n\n` +
+                `¡Nos vemos en el gym!\n` +
+                `*ATLAS GYM ― FORJA TU MEJOR VERSION*`;
+            messagesToSend.push({ phone: m.phone, msg: msg, name: m.name, code: code });
         });
 
         // Finance Log (Single Entry)
@@ -740,25 +762,56 @@ window.app = {
         this.closeModal('modal-register');
         this.printReceipt(mainMemberName + (count > 1 ? ` (+${count-1})` : ''), price, `Membresía ${displayPlan}`);
 
-        // WhatsApp Logic - Open for each distinct number if possible, or just the main one
-        // Browsers block multiple popups. We will try to open the main one.
-        // If the user requirement implies strict multi-send, we'd need a backend or user interaction loop.
-        // For this environment, we'll open the main one with all codes if they share a number, 
-        // OR just the main one. 
-        // Let's iterate but with a small alert or just the main one as primary.
-        
-        // Hack: Send one big message to the main phone if they are likely family?
-        // No, requirements say "send... to each number".
-        // We will loop open.
-        
+        // WhatsApp Welcome Messages + Auto-download member cards
         messagesToSend.forEach((item, i) => {
-             // Only open if phone is different or first one to avoid spamming same number tabs
-             // Actually, simplest valid implementation:
             setTimeout(() => {
+                // Auto-download member card image
+                this.autoDownloadMemberCard(item.name, item.code, expiryDate);
+
+                // Open WhatsApp with professional welcome message
                 const url = `https://wa.me/${item.phone}?text=${encodeURIComponent(item.msg)}`;
                 window.open(url, '_blank');
-             }, i * 1000); 
+            }, i * 1500);
         });
+    },
+
+    // Helper: Generate and auto-download a member card image (off-screen)
+    autoDownloadMemberCard: function(name, code, expiryDate) {
+        const tempCard = document.createElement('div');
+        tempCard.id = 'temp-card-render';
+        tempCard.style.cssText = 'position:fixed; left:-9999px; top:-9999px; z-index:-1;';
+        tempCard.innerHTML = `
+            <div class="member-card" style="width:400px; height:240px; background:linear-gradient(135deg, #1a1a1a 0%, #0d0d0d 50%, #1a1a1a 100%); border-radius:16px; padding:25px; color:#fff; font-family:Rajdhani,sans-serif; position:relative; overflow:hidden; border:1px solid #333; box-shadow:0 10px 40px rgba(0,0,0,0.5);">
+                <div style="position:absolute; top:0; left:0; right:0; height:3px; background:linear-gradient(90deg, transparent, #ff003c, transparent);"></div>
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px;">
+                    <img src="Logo/ATLAS.png" style="height:40px; filter:drop-shadow(0 0 8px rgba(255,0,60,0.5));" crossorigin="anonymous">
+                    <div style="width:35px; height:25px; background:linear-gradient(135deg, #ffcc00, #ff9900); border-radius:4px;"></div>
+                </div>
+                <div style="margin-bottom:15px;">
+                    <small style="color:#ff003c; letter-spacing:3px; font-size:0.7rem; text-transform:uppercase;">Miembro Oficial</small>
+                    <h2 style="margin:5px 0; font-size:1.4rem; font-weight:700; letter-spacing:1px; color:#fff;">${name}</h2>
+                    <span style="font-size:2rem; font-weight:800; color:#ff003c; letter-spacing:4px; text-shadow:0 0 15px rgba(255,0,60,0.4);">${code}</span>
+                </div>
+                <div style="display:flex; justify-content:space-between; align-items:center; border-top:1px solid #333; padding-top:10px; font-size:0.75rem; color:#888;">
+                    <div>VENCE: ${new Date(expiryDate).toLocaleDateString('es-MX')}</div>
+                    <div style="text-align:right; color:#aaa; letter-spacing:2px;">ATLAS GYM</div>
+                </div>
+            </div>
+        `;
+        document.body.appendChild(tempCard);
+
+        const cardEl = tempCard.querySelector('.member-card');
+        if (typeof html2canvas !== 'undefined') {
+            html2canvas(cardEl, { backgroundColor: null, scale: 2 }).then(canvas => {
+                const link = document.createElement('a');
+                link.download = `tarjeta_${name.replace(/\s+/g, '_')}.png`;
+                link.href = canvas.toDataURL('image/png');
+                link.click();
+                tempCard.remove();
+            }).catch(() => { tempCard.remove(); });
+        } else {
+            tempCard.remove();
+        }
     },
 
     openMemberDetail: function(id) {
@@ -998,6 +1051,39 @@ window.app = {
         this.closeModal('modal-renew-pro');
         this.closeModal('modal-member-detail');
         this.printReceipt(renewUser, price, renewDescription);
+
+        // WhatsApp Renewal Message
+        const newExpiryStr = new Date(newExpiryISO).toLocaleDateString('es-MX', { day: '2-digit', month: 'long', year: 'numeric' });
+        const renewalMembersToNotify = (isGroup && groupId) 
+            ? members.filter(gm => String(gm.groupId) === String(groupId)) 
+            : [m];
+
+        renewalMembersToNotify.forEach((rm, i) => {
+            const renewMsg = `*ATLAS GYM*\n` +
+                `━━━━━━━━━━━━━━━━━━━\n\n` +
+                `¡Hola *${rm.name}*! \n\n` +
+                `Tu membresia ha sido *RENOVADA* exitosamente!\n\n` +
+                `\n*DETALLES DE RENOVACION*\n` +
+                `━━━━━━━━━━━━━━━━━━━\n` +
+                `Nombre: *${rm.name}*\n` +
+                `Codigo de Socio: *${rm.code}*\n` +
+                `Plan: *${displayPlan}*\n` +
+                `Nueva fecha de vencimiento: *${newExpiryStr}*\n\n` +
+                `Tu codigo de socio sigue siendo el mismo. Sigue entrenando sin parar!\n\n` +
+                `━━━━━━━━━━━━━━━━━━━\n` +
+                `*SIGUENOS EN REDES*\n` +
+                `━━━━━━━━━━━━━━━━━━━\n\n` +
+                `Instagram: https://www.instagram.com/atlasgym.fit?igsh=MXV5NnFuaWJpY3NuOQ==\n\n` +
+                `TikTok: https://www.tiktok.com/@atlass2709?_r=1&_t=ZS-951vj3Li22p\n\n` +
+                `━━━━━━━━━━━━━━━━━━━\n\n` +
+                `¡Nos vemos en el gym!\n` +
+                `*ATLAS GYM ― FORJA TU MEJOR VERSION*`;
+
+            setTimeout(() => {
+                const url = `https://wa.me/${rm.phone}?text=${encodeURIComponent(renewMsg)}`;
+                window.open(url, '_blank');
+            }, i * 1000);
+        });
     },
 
     downloadMemberCard: function() {
