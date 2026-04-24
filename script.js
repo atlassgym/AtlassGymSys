@@ -1047,12 +1047,19 @@ window.app = {
         if (m.groupId) {
             const groupMembers = members.filter(gm => gm.groupId === m.groupId && gm.id !== m.id);
             if (groupMembers.length > 0) {
+                const canEdit = (currentUser.role === 'admin' || currentUser.role === 'dev');
+                const detachBtn = canEdit ? `
+                    <button class="btn btn-outline" style="margin-top:10px; width:100%; font-size:0.8rem; padding:8px; border-color:var(--neon-orange); color:var(--neon-orange);" onclick="app.detachFromGroup()">
+                        <i class="fas fa-user-minus"></i> Independizar a ${m.name.split(' ')[0]} del grupo
+                    </button>
+                ` : '';
                 groupHtml = `
                     <div style="margin-top: 20px; background: rgba(255, 255, 255, 0.05); padding: 10px; border-radius: 8px; border-left: 3px solid var(--neon-orange);">
                         <h4 style="margin:0 0 10px 0; color: #ddd; font-size: 0.9rem;"><i class="fas fa-users"></i> GRUPO VINCULADO (${groupMembers.length + 1})</h4>
                         <ul style="list-style: none; padding: 0; margin: 0; font-size: 0.85rem; color: #aaa;">
                             ${groupMembers.map(gm => `<li><i class="fas fa-user-circle"></i> ${gm.name} <small>(${gm.code})</small></li>`).join('')}
                         </ul>
+                        ${detachBtn}
                     </div>
                 `;
             }
@@ -1162,9 +1169,9 @@ window.app = {
             if (groupMembers.length > 1) {
                 isGroupRenewal = true;
                 groupInfo = `
-                    <div style="margin-bottom: 15px; padding: 10px; background: rgba(255, 170, 0, 0.1); border: 1px solid var(--neon-orange); border-radius: 4px;">
-                        <strong style="color:var(--neon-orange)">RENOVACIÓN GRUPAL DETECTADA</strong><br>
-                        <small style="color:#aaa">Se renovará a: ${groupMembers.map(gm => gm.name.split(' ')[0]).join(', ')}</small>
+                    <div class="group-detected-banner">
+                        <div class="gd-title"><i class="fas fa-users"></i> GRUPO DETECTADO (${groupMembers.length} personas)</div>
+                        <div class="gd-members">Integrantes: ${groupMembers.map(gm => gm.name.split(' ')[0]).join(', ')}</div>
                     </div>
                 `;
             }
@@ -1175,45 +1182,86 @@ window.app = {
             <h4 style="margin:0">${m.name} ${isGroupRenewal ? '(+ Grupo)' : ''}</h4>
             <small style="color:#aaa">Vencimiento actual: ${new Date(m.expiryDate).toLocaleDateString()}</small>
         `;
-        
-        // Configurar opciones del select
+
+        const modeToggle = document.getElementById('renew-mode-toggle');
+        const picker = document.getElementById('renew-individual-picker');
+        const pickerList = document.getElementById('renew-individual-list');
+
+        if (isGroupRenewal) {
+            modeToggle.style.display = '';
+            const groupRadio = document.querySelector('input[name="renew-mode"][value="group"]');
+            if (groupRadio) groupRadio.checked = true;
+
+            pickerList.innerHTML = groupMembers.map(gm => `
+                <label class="renew-member-option">
+                    <input type="radio" name="renew-individual-member" value="${gm.id}" ${String(gm.id) === String(m.id) ? 'checked' : ''}>
+                    <div class="rmo-body">
+                        <div class="rmo-name">${gm.name}</div>
+                        <small class="rmo-meta">${gm.code} · Vence: ${new Date(gm.expiryDate).toLocaleDateString()}</small>
+                    </div>
+                </label>
+            `).join('');
+        } else {
+            modeToggle.style.display = 'none';
+            picker.style.display = 'none';
+            pickerList.innerHTML = '';
+        }
+
+        // Store group state in the modal DOM for confirmRenewal to read
+        const modalEl = document.getElementById('modal-renew-pro');
+        modalEl.dataset.isGroup = isGroupRenewal;
+        if (isGroupRenewal) {
+            modalEl.dataset.groupId = m.groupId;
+        } else {
+            delete modalEl.dataset.groupId;
+        }
+
+        this.onRenewModeChange();
+        modalEl.style.display = 'flex';
+    },
+
+    onRenewModeChange: function() {
+        const modalEl = document.getElementById('modal-renew-pro');
+        const isGroup = modalEl.dataset.isGroup === 'true';
         const select = document.getElementById('renew-plan-select');
         const optGroups = select.querySelectorAll('optgroup');
-        
-        if (isGroupRenewal) {
+        const picker = document.getElementById('renew-individual-picker');
+
+        const modeInput = document.querySelector('input[name="renew-mode"]:checked');
+        const mode = isGroup ? (modeInput ? modeInput.value : 'group') : 'single';
+
+        if (mode === 'group') {
+            picker.style.display = 'none';
             optGroups.forEach(og => {
-                if (og.label === 'Grupales') og.style.display = '';
-                else og.style.display = 'none';
+                og.style.display = (og.label === 'Grupales') ? '' : 'none';
             });
-            
-            // Auto-select based on group size
+            const groupMembers = members.filter(gm => String(gm.groupId) === String(modalEl.dataset.groupId));
             const size = groupMembers.length;
-            
             if (size === 2) select.value = 'couple';
             else if (size === 3) select.value = 'family3';
             else if (size >= 4) select.value = 'family4';
-            else select.value = 'couple'; // Fallback
-            
+            else select.value = 'couple';
+        } else if (mode === 'individual') {
+            picker.style.display = '';
+            optGroups.forEach(og => {
+                og.style.display = (og.label === 'Grupales') ? 'none' : '';
+            });
+            if (['couple','family3','family4'].includes(select.value)) {
+                select.value = 'monthly';
+            }
         } else {
+            // single (member is not part of a group): show all plans, default to monthly
+            picker.style.display = 'none';
             optGroups.forEach(og => og.style.display = '');
             select.value = 'monthly';
         }
 
-        // Store group state in the modal DOM for confirmRenewal to read
-        document.getElementById('modal-renew-pro').dataset.isGroup = isGroupRenewal;
-        document.getElementById('modal-renew-pro').dataset.groupId = m.groupId;
-
         this.updateRenewPrice();
-        document.getElementById('modal-renew-pro').style.display = 'flex';
     },
 
     updateRenewPrice: function() {
         const p = document.getElementById('renew-plan-select').value;
         const display = document.getElementById('renew-price-display');
-        
-        // If it's a group renewal, ensure the price reflects the group plan (the simple select does this if user selects "Family")
-        // The user manually selects the plan to renew to.
-        
         display.innerText = `$${prices[p] || 0}`;
     },
 
@@ -1221,19 +1269,37 @@ window.app = {
         const plan = document.getElementById('renew-plan-select').value;
         const paymentMethod = document.querySelector('input[name="renew-payment-method"]:checked').value;
         const m = members.find(x => String(x.id) === String(selectedMemberId));
-        const isGroup = document.getElementById('modal-renew-pro').dataset.isGroup === 'true';
-        const groupId = document.getElementById('modal-renew-pro').dataset.groupId;
+        const modalEl = document.getElementById('modal-renew-pro');
+        const isGroup = modalEl.dataset.isGroup === 'true';
+        const groupId = modalEl.dataset.groupId;
+        const modeInput = document.querySelector('input[name="renew-mode"]:checked');
+        const renewMode = isGroup ? (modeInput ? modeInput.value : 'group') : 'single';
 
-        // Calculate New Expiry
-        let d = new Date(m.expiryDate); 
-        if(d < new Date()) d = new Date(); 
+        // Determine which member is actually being renewed
+        let primaryMember = m;
+        if (renewMode === 'individual') {
+            const picked = document.querySelector('input[name="renew-individual-member"]:checked');
+            if (!picked) {
+                showToast('error', 'Selecciona qué integrante renueva');
+                return;
+            }
+            primaryMember = members.find(x => String(x.id) === String(picked.value)) || m;
+            // Guard: individual mode must use a non-group plan
+            if (['couple','family3','family4'].includes(plan)) {
+                showToast('error', 'En renovación individual debes elegir un plan individual');
+                return;
+            }
+        }
 
-        // Logic for duration
+        // Calculate New Expiry based on the primary member
+        let d = new Date(primaryMember.expiryDate);
+        if (d < new Date()) d = new Date();
+
         const planLower = plan.toLowerCase();
         if (['visit'].includes(planLower)) d.setDate(d.getDate() + 1);
         else if (['weekly'].includes(planLower)) d.setDate(d.getDate() + 7);
         else if (['biweekly'].includes(planLower)) d.setDate(d.getDate() + 15);
-        else if (['monthly', 'student', 'couple', 'family'].includes(planLower)) d.setMonth(d.getMonth() + 1);
+        else if (['monthly', 'student', 'couple', 'family', 'family3', 'family4'].includes(planLower)) d.setMonth(d.getMonth() + 1);
         else if (planLower === 'quarterly') d.setMonth(d.getMonth() + 3);
         else if (planLower === 'semiannual') d.setMonth(d.getMonth() + 6);
         else if (planLower === 'annual') d.setMonth(d.getMonth() + 12);
@@ -1243,35 +1309,46 @@ window.app = {
         const price = prices[plan] || 0;
         const displayPlan = PLAN_NAMES[plan] || plan.toUpperCase();
         let renewDescription = `Renovación ${displayPlan}`;
-        let renewUser = m.name;
+        let renewUser = primaryMember.name;
 
-        if (isGroup && groupId) {
-            // Bulk Update
-            // Ensure type compatibility when comparing groupId (it might be string in dataset, number in DB)
+        if (renewMode === 'group' && isGroup && groupId) {
+            // Bulk Update: renew all group members with the new group plan
             const groupMembers = members.filter(gm => String(gm.groupId) === String(groupId));
             groupMembers.forEach(gm => {
-                db.update(`members/${gm.id}`, { expiryDate: newExpiryISO });
+                db.update(`members/${gm.id}`, { expiryDate: newExpiryISO, plan: plan });
             });
-            renewUser = `${m.name} + ${Math.max(0, groupMembers.length - 1)} miembros`;
+            renewUser = `${primaryMember.name} + ${Math.max(0, groupMembers.length - 1)} miembros`;
             renewDescription += ` (Grupo: ${groupMembers.length} personas)`;
+        } else if (renewMode === 'individual' && isGroup && groupId) {
+            // Dissolve the group: only the chosen member renews under the chosen individual plan.
+            // Every other group member keeps their current expiry but is detached from the group
+            // so they become independent and can renew individually later.
+            const groupMembers = members.filter(gm => String(gm.groupId) === String(groupId));
+            groupMembers.forEach(gm => {
+                if (String(gm.id) === String(primaryMember.id)) {
+                    db.update(`members/${gm.id}`, { expiryDate: newExpiryISO, plan: plan, groupId: null });
+                } else {
+                    db.update(`members/${gm.id}`, { groupId: null });
+                }
+            });
+            const others = groupMembers.filter(gm => String(gm.id) !== String(primaryMember.id));
+            renewUser = primaryMember.name;
+            renewDescription = `Renovación Individual ${displayPlan} (ex-grupo de ${groupMembers.length}; ${others.length} independizado${others.length === 1 ? '' : 's'})`;
         } else {
-            // Single Update
-            db.update(`members/${selectedMemberId}`, { expiryDate: newExpiryISO });
+            // Single Update (member was never in a group)
+            db.update(`members/${primaryMember.id}`, { expiryDate: newExpiryISO, plan: plan });
         }
-        
+
         this.addFinanceLog('RENOVACION', price, `Socio: ${renewUser}`, paymentMethod);
         this.logAction('Renovación', `Se renovó - ${renewDescription}. Pago: ${paymentMethod}.`);
-        
+
         showToast('success', 'Renovación exitosa');
         this.closeModal('modal-renew-pro');
         this.closeModal('modal-member-detail');
 
-        // WhatsApp Renewal Message — FIRST, before print, in user-click context
+        // WhatsApp Renewal Message — BEFORE print, in user-click context
         const newExpiryStr = new Date(newExpiryISO).toLocaleDateString('es-MX', { day: '2-digit', month: 'long', year: 'numeric' });
-        // For group plans, notify at least the first member (titular)
-        const renewalMemberToNotify = (isGroup && groupId) 
-            ? (members.find(gm => String(gm.groupId) === String(groupId)) || m)
-            : m;
+        const renewalMemberToNotify = primaryMember;
 
         const renewMsg = `*ATLAS GYM*\n` +
             `━━━━━━━━━━━━━━━━━━━\n\n` +
@@ -1330,6 +1407,46 @@ window.app = {
         });
         this.logAction('Actualización Socio', `Se actualizaron los datos de ${member.name}.`);
         showToast('success', 'Datos actualizados');
+    },
+
+    detachFromGroup: async function() {
+        if (currentUser.role !== 'admin' && currentUser.role !== 'dev') {
+            return showToast('error', 'Acceso denegado');
+        }
+        const m = members.find(x => String(x.id) === String(selectedMemberId));
+        if (!m || !m.groupId) {
+            return showToast('error', 'Este socio no pertenece a un grupo');
+        }
+        const siblings = members.filter(gm => gm.groupId === m.groupId && gm.id !== m.id);
+        if (siblings.length === 0) {
+            return showToast('error', 'Este socio ya no tiene vínculos grupales');
+        }
+
+        const confirmed = await customConfirm(
+            'Independizar del grupo',
+            `Se quitará a "${m.name}" del grupo pareja/familia. ` +
+            `Conservará su fecha de vencimiento actual y podrá renovar por su cuenta cuando lo desee. ` +
+            `Los demás integrantes (${siblings.length}) seguirán vinculados entre sí.\n\n¿Continuar?`
+        );
+        if (!confirmed) return;
+
+        const password = await customPrompt(
+            'Confirmar con contraseña',
+            'Ingrese la contraseña de ADMINISTRADOR para independizar a este socio:',
+            '', 'password'
+        );
+        if (password !== 'AtlassCC') {
+            return showToast('error', 'Contraseña incorrecta');
+        }
+
+        // Only remove the groupId from THIS member; do not touch siblings or any expiry dates.
+        db.update(`members/${m.id}`, { groupId: null });
+        this.logAction(
+            'Independizar socio',
+            `Se independizó a ${m.name} del grupo (quedan ${siblings.length} integrante${siblings.length === 1 ? '' : 's'} vinculados).`
+        );
+        showToast('success', `${m.name.split(' ')[0]} ya es socio independiente`);
+        this.closeModal('modal-member-detail');
     },
 
     trashViewMode: 'members', // 'members' or 'finances'

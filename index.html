@@ -794,11 +794,34 @@
 </div>
 
 <div id="modal-renew-pro" class="modal">
-    <div class="modal-content" style="width:400px; border-left: 5px solid var(--neon-orange);">
-        <h2 style="font-family:'Rajdhani'; margin-bottom:20px; color:var(--neon-orange);">RENOVACIÓN DE PLAN</h2>
-        <div id="renew-member-info" style="margin-bottom:20px; padding:10px; background:#1a1a1a; border-radius:8px;"></div>
-        
-        <label>Seleccionar Nuevo Plan:</label>
+    <div class="modal-content renew-modal">
+        <h2 class="renew-title"><i class="fas fa-sync-alt"></i> RENOVACIÓN DE PLAN</h2>
+        <div id="renew-member-info" class="renew-member-info"></div>
+
+        <div id="renew-mode-toggle" class="renew-mode-toggle" style="display:none;">
+            <label class="renew-section-label">Tipo de Renovación</label>
+            <div class="renew-mode-options">
+                <label class="renew-mode-option">
+                    <input type="radio" name="renew-mode" value="group" checked onchange="app.onRenewModeChange()">
+                    <span class="rm-text"><strong>Grupal</strong><small>Renovar a todos</small></span>
+                </label>
+                <label class="renew-mode-option">
+                    <input type="radio" name="renew-mode" value="individual" onchange="app.onRenewModeChange()">
+                    <span class="rm-text"><strong>Individual</strong><small>Solo una persona</small></span>
+                </label>
+            </div>
+        </div>
+
+        <div id="renew-individual-picker" class="renew-picker" style="display:none;">
+            <div class="renew-picker-label"><i class="fas fa-user-check"></i> ¿Quién renueva?</div>
+            <div id="renew-individual-list" class="renew-member-list"></div>
+            <div class="renew-warning">
+                <i class="fas fa-exclamation-triangle"></i>
+                <span>Al renovar individualmente, el grupo se disolverá. El resto de los integrantes conservarán su fecha de vencimiento y quedarán como miembros independientes.</span>
+            </div>
+        </div>
+
+        <label class="renew-section-label">Seleccionar Nuevo Plan</label>
         <select id="renew-plan-select" onchange="app.updateRenewPrice()">
             <optgroup label="Temporales">
                 <option value="visit">Visita</option>
@@ -820,26 +843,28 @@
                 <option value="family4">Fam. (4 Pers)</option>
             </optgroup>
         </select>
-        
-        <div style="background:#000; padding:20px; border-radius:8px; text-align:center; margin-top:10px;">
-            <span style="color:#888; display:block;">Total a Pagar:</span>
-            <h2 id="renew-price-display" style="color:var(--neon-green); font-size:2.5rem; font-family:'Rajdhani';">$0</h2>
+
+        <div class="renew-total-box">
+            <span class="renew-total-label">Total a Pagar</span>
+            <h2 id="renew-price-display">$0</h2>
         </div>
-        
-        <div style="margin-top:15px; text-align:center;">
-            <label style="color:#aaa; display:block; margin-bottom:5px;">Método de Pago:</label>
-            <div style="display:flex; justify-content:center; gap:15px;">
-                <label style="display:flex; align-items:center; gap:5px; cursor:pointer; color:#fff;">
-                    <input type="radio" name="renew-payment-method" value="Efectivo" checked> Efectivo
+
+        <div class="renew-payment-section">
+            <label class="renew-section-label">Método de Pago</label>
+            <div class="renew-payment-options">
+                <label class="renew-payment-option">
+                    <input type="radio" name="renew-payment-method" value="Efectivo" checked>
+                    <i class="fas fa-money-bill-wave"></i> Efectivo
                 </label>
-                <label style="display:flex; align-items:center; gap:5px; cursor:pointer; color:#fff;">
-                    <input type="radio" name="renew-payment-method" value="Tarjeta"> Tarjeta
+                <label class="renew-payment-option">
+                    <input type="radio" name="renew-payment-method" value="Tarjeta">
+                    <i class="fas fa-credit-card"></i> Tarjeta
                 </label>
             </div>
         </div>
 
-        <button class="btn" style="width:100%; margin-top:20px; background:var(--neon-orange)" onclick="app.confirmRenewal()">Confirmar Pago y Renovar</button>
-        <button class="btn btn-outline" style="width:100%; margin-top:10px;" onclick="app.closeModal('modal-renew-pro')">Cancelar</button>
+        <button class="btn renew-confirm-btn" onclick="app.confirmRenewal()"><i class="fas fa-check-circle"></i> Confirmar Pago y Renovar</button>
+        <button class="btn btn-outline renew-cancel-btn" onclick="app.closeModal('modal-renew-pro')">Cancelar</button>
     </div>
 </div>
 

@@ -187,11 +187,341 @@ input:focus, select:focus { border-color: var(--primary); box-shadow: 0 0 15px r
 /* --- MODALS --- */
 .modal {
     position: fixed; inset: 0; background: rgba(0,0,0,0.8); z-index: 2000;
-    display: none; justify-content: center; align-items: center; backdrop-filter: blur(5px);
+    display: none; justify-content: center; align-items: flex-start; backdrop-filter: blur(5px);
+    overflow-y: auto;
+    padding: 20px 0;
+    -webkit-overflow-scrolling: touch;
 }
+.modal[style*="flex"] { align-items: flex-start; }
 .modal-content {
     background: #111; width: 500px; padding: 40px; border-radius: 16px;
     border: 1px solid #333; box-shadow: 0 20px 50px rgba(0,0,0,0.5);
+    margin: auto;
+    max-height: none;
+}
+
+/* ============================================
+   RENEWAL MODAL (modal-renew-pro) — redesign
+   ============================================ */
+.renew-modal {
+    width: 460px !important;
+    padding: 28px !important;
+    border-left: 5px solid var(--neon-orange) !important;
+    background: linear-gradient(180deg, #141414 0%, #0d0d0d 100%) !important;
+}
+.renew-modal h2.renew-title {
+    font-family: 'Rajdhani', sans-serif;
+    font-size: 1.75rem;
+    margin: 0 0 18px;
+    color: var(--neon-orange);
+    letter-spacing: 2px;
+    text-shadow: 0 0 12px rgba(255,170,0,0.35);
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+.renew-modal h2.renew-title i { font-size: 1.3rem; }
+
+.renew-member-info {
+    margin-bottom: 16px;
+    padding: 14px 16px;
+    background: #1a1a1a;
+    border: 1px solid #262626;
+    border-radius: 10px;
+}
+.renew-member-info h4 {
+    margin: 0 0 4px;
+    font-size: 1.05rem;
+    color: #fff;
+    line-height: 1.25;
+}
+.renew-member-info small { color: #888; font-size: 0.82rem; }
+
+.group-detected-banner {
+    margin-bottom: 14px;
+    padding: 12px 14px;
+    background: linear-gradient(90deg, rgba(255,170,0,0.18), rgba(255,170,0,0.04));
+    border: 1px solid var(--neon-orange);
+    border-radius: 10px;
+    box-shadow: 0 0 16px rgba(255,170,0,0.08) inset;
+}
+.group-detected-banner .gd-title {
+    color: var(--neon-orange);
+    font-weight: 700;
+    letter-spacing: 0.5px;
+    font-size: 0.95rem;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+.group-detected-banner .gd-members {
+    color: #bbb;
+    font-size: 0.82rem;
+    margin-top: 4px;
+    line-height: 1.35;
+}
+
+.renew-section-label {
+    color: #ccc;
+    display: block;
+    margin: 4px 0 10px;
+    font-size: 0.82rem;
+    font-weight: 600;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+}
+
+.renew-mode-toggle { margin-bottom: 16px; }
+.renew-mode-options {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+}
+.renew-mode-option {
+    position: relative;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 12px 14px;
+    border: 1px solid #2a2a2a;
+    border-radius: 10px;
+    background: #141414;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+.renew-mode-option:hover {
+    border-color: #555;
+    background: #181818;
+}
+.renew-mode-option input[type="radio"] {
+    width: 16px;
+    height: 16px;
+    margin: 0;
+    accent-color: var(--neon-orange);
+    flex-shrink: 0;
+}
+.renew-mode-option .rm-text { display: flex; flex-direction: column; line-height: 1.2; }
+.renew-mode-option .rm-text strong { font-size: 0.95rem; color: #fff; }
+.renew-mode-option .rm-text small { color: #888; font-size: 0.75rem; margin-top: 2px; }
+.renew-mode-option:has(input:checked) {
+    border-color: var(--neon-orange);
+    background: rgba(255,170,0,0.08);
+    box-shadow: 0 0 0 1px var(--neon-orange), 0 0 16px rgba(255,170,0,0.15);
+}
+.renew-mode-option:has(input:checked) .rm-text strong { color: var(--neon-orange); }
+
+.renew-picker {
+    margin-bottom: 16px;
+    padding: 14px;
+    background: rgba(255,0,60,0.06);
+    border: 1px solid rgba(255,0,60,0.35);
+    border-radius: 10px;
+}
+.renew-picker-label {
+    color: #ddd;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 10px;
+    font-size: 0.88rem;
+    font-weight: 600;
+}
+.renew-picker-label i { color: var(--primary); }
+
+.renew-member-list {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+.renew-member-option {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px 14px;
+    border: 1px solid #262626;
+    border-radius: 10px;
+    background: #111;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+.renew-member-option:hover { border-color: #444; background: #161616; }
+.renew-member-option input[type="radio"] {
+    width: 16px; height: 16px; margin: 0;
+    accent-color: var(--primary);
+    flex-shrink: 0;
+}
+.renew-member-option .rmo-body { flex: 1; min-width: 0; }
+.renew-member-option .rmo-name {
+    color: #fff;
+    font-weight: 700;
+    font-size: 0.95rem;
+    line-height: 1.25;
+    text-transform: capitalize;
+    word-break: break-word;
+}
+.renew-member-option .rmo-meta {
+    color: #888;
+    font-size: 0.78rem;
+    margin-top: 3px;
+    display: block;
+    line-height: 1.3;
+}
+.renew-member-option:has(input:checked) {
+    border-color: var(--primary);
+    background: rgba(255,0,60,0.08);
+    box-shadow: 0 0 0 1px var(--primary), 0 0 14px rgba(255,0,60,0.15);
+}
+.renew-member-option:has(input:checked) .rmo-name { color: var(--primary); }
+
+.renew-warning {
+    display: flex;
+    align-items: flex-start;
+    gap: 8px;
+    margin-top: 12px;
+    padding: 10px 12px;
+    background: rgba(255,170,0,0.06);
+    border: 1px solid rgba(255,170,0,0.35);
+    border-radius: 8px;
+    color: #ffcc55;
+    font-size: 0.78rem;
+    line-height: 1.4;
+}
+.renew-warning i { flex-shrink: 0; margin-top: 2px; }
+
+.renew-modal select#renew-plan-select {
+    margin-bottom: 14px;
+    background: #0a0a0a;
+    border: 1px solid #2a2a2a;
+    padding: 13px 16px;
+    font-size: 0.95rem;
+    border-radius: 10px;
+}
+
+.renew-total-box {
+    background: #000;
+    border: 1px solid #222;
+    padding: 18px 16px;
+    border-radius: 12px;
+    text-align: center;
+    margin-bottom: 16px;
+    box-shadow: inset 0 0 24px rgba(0,255,65,0.05);
+}
+.renew-total-box .renew-total-label {
+    color: #888;
+    display: block;
+    font-size: 0.78rem;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    margin-bottom: 4px;
+}
+.renew-total-box #renew-price-display {
+    color: var(--neon-green);
+    font-size: 2.6rem;
+    font-family: 'Rajdhani', sans-serif;
+    font-weight: 700;
+    margin: 0;
+    line-height: 1;
+    text-shadow: 0 0 20px rgba(0,255,65,0.35);
+}
+
+.renew-payment-section { margin-bottom: 16px; }
+.renew-payment-section .renew-section-label { text-align: center; }
+.renew-payment-options {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+}
+.renew-payment-option {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    padding: 12px 14px;
+    border: 1px solid #2a2a2a;
+    border-radius: 10px;
+    background: #141414;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    color: #ccc;
+    font-weight: 600;
+    font-size: 0.9rem;
+}
+.renew-payment-option i { font-size: 1.05rem; color: #888; transition: color 0.2s; }
+.renew-payment-option input[type="radio"] {
+    width: 14px; height: 14px; margin: 0;
+    accent-color: var(--neon-green);
+    flex-shrink: 0;
+}
+.renew-payment-option:hover { border-color: #555; background: #181818; }
+.renew-payment-option:has(input:checked) {
+    border-color: var(--neon-green);
+    background: rgba(0,255,65,0.08);
+    color: var(--neon-green);
+    box-shadow: 0 0 0 1px var(--neon-green), 0 0 14px rgba(0,255,65,0.18);
+}
+.renew-payment-option:has(input:checked) i { color: var(--neon-green); }
+
+.renew-confirm-btn {
+    width: 100%;
+    background: var(--neon-orange) !important;
+    color: #111 !important;
+    font-weight: 800 !important;
+    padding: 14px !important;
+    font-size: 0.95rem !important;
+    border-radius: 10px !important;
+    box-shadow: 0 6px 18px rgba(255,170,0,0.25);
+}
+.renew-confirm-btn:hover {
+    background: #ffbb33 !important;
+    box-shadow: 0 8px 24px rgba(255,170,0,0.45) !important;
+    transform: translateY(-1px);
+}
+.renew-cancel-btn {
+    width: 100%;
+    margin-top: 10px;
+    padding: 12px !important;
+    border-radius: 10px !important;
+}
+
+/* --- Renewal modal — MOBILE --- */
+@media (max-width: 600px) {
+    .renew-modal {
+        width: 100% !important;
+        max-width: 100% !important;
+        padding: 20px 16px !important;
+        border-radius: 14px !important;
+        margin: 0 !important;
+    }
+    .renew-modal h2.renew-title {
+        font-size: 1.35rem;
+        letter-spacing: 1px;
+        margin-bottom: 14px;
+    }
+    .renew-member-info { padding: 12px 14px; }
+    .renew-member-info h4 { font-size: 0.98rem; }
+    .group-detected-banner { padding: 10px 12px; }
+    .group-detected-banner .gd-title { font-size: 0.85rem; }
+    .group-detected-banner .gd-members { font-size: 0.78rem; }
+
+    .renew-mode-options { gap: 8px; }
+    .renew-mode-option { padding: 10px 12px; }
+    .renew-mode-option .rm-text strong { font-size: 0.88rem; }
+    .renew-mode-option .rm-text small { font-size: 0.7rem; }
+
+    .renew-picker { padding: 12px; }
+    .renew-member-option { padding: 10px 12px; gap: 10px; }
+    .renew-member-option .rmo-name { font-size: 0.9rem; }
+    .renew-member-option .rmo-meta { font-size: 0.72rem; }
+
+    .renew-warning { font-size: 0.72rem; padding: 9px 10px; }
+
+    .renew-total-box { padding: 16px 12px; }
+    .renew-total-box #renew-price-display { font-size: 2.2rem; }
+
+    .renew-payment-options { gap: 8px; }
+    .renew-payment-option { padding: 11px 10px; font-size: 0.85rem; }
+
+    .renew-confirm-btn { padding: 13px !important; font-size: 0.9rem !important; }
 }
 
 /* --- KIOSKO --- */
@@ -2887,4 +3217,164 @@ select {
     .atlas-report-table tr { page-break-inside: avoid; }
     .atlas-report-header { page-break-after: avoid; }
     .atlas-report-kpis { page-break-after: avoid; }
+}
+
+/* ============================================================
+   RESPONSIVE FIXES — sólo aplican al sistema principal (no kiosk)
+   Scope: body:not(.kiosk-body) para no interferir con kiosk.html
+   ============================================================ */
+
+@media (max-width: 992px) {
+    body:not(.kiosk-body) {
+        overflow: auto;
+        height: auto;
+        min-height: 100vh;
+    }
+    body:not(.kiosk-body) #app-container {
+        min-height: 100vh;
+        height: auto !important;
+    }
+    body:not(.kiosk-body) .main-content {
+        flex: 1;
+        width: 100%;
+        min-height: 100vh;
+        overflow-y: visible;
+    }
+
+    /* Forzar que cualquier modal (aun con width inline) sea responsivo */
+    body:not(.kiosk-body) .modal-content {
+        width: 95% !important;
+        max-width: 620px !important;
+        max-height: 90vh;
+        overflow-y: auto;
+        overflow-x: hidden;
+        padding: 20px !important;
+    }
+    body:not(.kiosk-body) #modal-card .modal-content {
+        background: transparent !important;
+        padding: 0 !important;
+        border: none !important;
+    }
+    body:not(.kiosk-body) .member-card-design,
+    body:not(.kiosk-body) #member-card-ui {
+        width: 100% !important;
+        max-width: 420px;
+        margin: 0 auto;
+    }
+
+    /* Filas de botones / flex dentro de modales → wrap */
+    body:not(.kiosk-body) .modal-content > div[style*="display:flex"],
+    body:not(.kiosk-body) .modal-content > div[style*="display: flex"],
+    body:not(.kiosk-body) .modal-content div[style*="display:flex"],
+    body:not(.kiosk-body) .modal-content div[style*="display: flex"] {
+        flex-wrap: wrap;
+    }
+
+    /* Grids inline 1fr 1fr → 1 columna en móvil */
+    body:not(.kiosk-body) [style*="grid-template-columns: 1fr 1fr"],
+    body:not(.kiosk-body) [style*="grid-template-columns:1fr 1fr"],
+    body:not(.kiosk-body) [style*="grid-template-columns: repeat(2"],
+    body:not(.kiosk-body) [style*="grid-template-columns:repeat(2"],
+    body:not(.kiosk-body) [style*="grid-template-columns: repeat(3"],
+    body:not(.kiosk-body) [style*="grid-template-columns:repeat(3"] {
+        grid-template-columns: 1fr !important;
+    }
+
+    /* Inputs > 16px para evitar zoom automático en iOS */
+    body:not(.kiosk-body) input,
+    body:not(.kiosk-body) select,
+    body:not(.kiosk-body) textarea {
+        font-size: 16px !important;
+    }
+
+    body:not(.kiosk-body) .btn {
+        min-height: 42px;
+        font-size: 0.9rem;
+        white-space: normal;
+    }
+
+    body:not(.kiosk-body) .card h3 { font-size: 2rem; }
+    body:not(.kiosk-body) table { font-size: 0.85rem; }
+}
+
+@media (max-width: 600px) {
+    body:not(.kiosk-body) .modal-content {
+        padding: 16px !important;
+        border-radius: 12px;
+    }
+    body:not(.kiosk-body) h1 { font-size: 1.5rem !important; }
+    body:not(.kiosk-body) h2 { font-size: 1.25rem !important; }
+    body:not(.kiosk-body) h1 i,
+    body:not(.kiosk-body) h1 .fas { font-size: 1.5rem !important; }
+
+    /* En modales con 2-3 botones en fila, pasan a apilarse */
+    body:not(.kiosk-body) .modal-content div[style*="display:flex"] > .btn,
+    body:not(.kiosk-body) .modal-content div[style*="display: flex"] > .btn {
+        flex: 1 1 100%;
+    }
+
+    body:not(.kiosk-body) .main-content {
+        padding: 70px 12px 20px 12px !important;
+    }
+
+    /* Banner de bienvenida / alerta: encaja al ancho del móvil */
+    body:not(.kiosk-body) .big-alert-overlay {
+        left: 10px !important;
+        right: 10px !important;
+        bottom: 10px !important;
+        max-width: none !important;
+        width: auto !important;
+        padding: 15px !important;
+    }
+    body:not(.kiosk-body) .alert-title { font-size: 1.3rem !important; }
+    body:not(.kiosk-body) .alert-name { font-size: 1rem !important; }
+
+    /* Tablas mantienen scroll horizontal, pero reducen min-width */
+    body:not(.kiosk-body) table { min-width: 480px; font-size: 0.8rem; }
+
+    /* Reduce el tamaño del número grande de la tarjeta de socio */
+    body:not(.kiosk-body) [style*="font-size:3rem"] { font-size: 2rem !important; }
+    body:not(.kiosk-body) [style*="font-size:2.5rem"] { font-size: 1.8rem !important; }
+    body:not(.kiosk-body) [style*="font-size:2.8rem"] { font-size: 2rem !important; }
+}
+
+@media (max-width: 400px) {
+    body:not(.kiosk-body) .brand {
+        font-size: 26px !important;
+        letter-spacing: 2px !important;
+        margin-bottom: 30px !important;
+    }
+    body:not(.kiosk-body) .brand img { width: 40px; }
+    body:not(.kiosk-body) .nav-btn {
+        padding: 12px 14px;
+        font-size: 14px;
+    }
+    body:not(.kiosk-body) .main-content {
+        padding: 65px 10px 15px 10px !important;
+    }
+    body:not(.kiosk-body) .btn {
+        padding: 10px 14px;
+        font-size: 0.85rem;
+    }
+}
+
+/* Modal-member-detail: en móvil el contenido largo (historial, tarjeta) necesita scroll interno */
+@media (max-width: 768px) {
+    body:not(.kiosk-body) #modal-member-detail .modal-content,
+    body:not(.kiosk-body) #modal-renew-pro .modal-content,
+    body:not(.kiosk-body) #modal-register .modal-content {
+        max-height: 92vh;
+    }
+}
+
+/* Táctil: botones y radio buttons más tocables */
+@media (pointer: coarse) {
+    body:not(.kiosk-body) input[type="radio"],
+    body:not(.kiosk-body) input[type="checkbox"] {
+        width: 18px;
+        height: 18px;
+    }
+    body:not(.kiosk-body) .btn {
+        min-height: 44px;
+    }
 }
