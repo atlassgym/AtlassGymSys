@@ -329,6 +329,13 @@ window.app = {
         });
 
         this.nav('dashboard');
+        // Restore theme mode from localStorage
+        const savedTheme = localStorage.getItem('atlas-theme-mode');
+        if (savedTheme === 'light') {
+            document.body.classList.add('light-mode');
+            const btn = document.getElementById('btn-theme-toggle');
+            if (btn) { btn.innerHTML = '<i class="fas fa-moon"></i> Modo Oscuro'; btn.title = 'Cambiar a Modo Oscuro'; }
+        }
     },
 
     nav: function(viewId) {
@@ -351,6 +358,10 @@ window.app = {
     // 2.5. ESTADÍSTICAS PRO
     renderStats: function() {
         if (!app.charts) app.charts = {};
+        const isLight = document.body.classList.contains('light-mode');
+        const gridColor = isLight ? '#e0e0e0' : '#222';
+        const tickColor = isLight ? '#555' : '#888';
+        const legendColor = isLight ? '#333' : '#fff';
 
         // 1. Gráfica de Afluencia Horaria (Area Chart)
         const visitHours = new Array(24).fill(0);
@@ -376,11 +387,11 @@ window.app = {
             options: {
                 responsive: true,
                 plugins: {
-                    legend: { labels: { color: '#fff' } }
+                    legend: { labels: { color: legendColor } }
                 },
                 scales: {
-                    x: { ticks: { color: '#888' }, grid: { color: '#222' } },
-                    y: { ticks: { color: '#888' }, grid: { color: '#222' } }
+                    x: { ticks: { color: tickColor }, grid: { color: gridColor } },
+                    y: { ticks: { color: tickColor }, grid: { color: gridColor } }
                 }
             }
         });
@@ -431,7 +442,7 @@ window.app = {
             options: {
                 responsive: true,
                 plugins: {
-                    legend: { labels: { color: '#fff' } },
+                    legend: { labels: { color: legendColor } },
                     tooltip: {
                         callbacks: {
                             afterLabel: function(context) {
@@ -446,8 +457,8 @@ window.app = {
                     }
                 },
                 scales: {
-                    x: { ticks: { color: '#888' }, grid: { color: '#222' } },
-                    y: { ticks: { color: '#888' }, grid: { color: '#222' } }
+                    x: { ticks: { color: tickColor }, grid: { color: gridColor } },
+                    y: { ticks: { color: tickColor }, grid: { color: gridColor } }
                 }
             }
         });
@@ -473,7 +484,7 @@ window.app = {
                 },
                 options: {
                     responsive: true,
-                    plugins: { legend: { position: 'bottom', labels: { color: '#aaa', padding: 12, font: { size: 11 } } } }
+                    plugins: { legend: { position: 'bottom', labels: { color: tickColor, padding: 12, font: { size: 11 } } } }
                 }
             });
         }
@@ -501,8 +512,8 @@ window.app = {
                     responsive: true,
                     plugins: { legend: { display: false } },
                     scales: {
-                        x: { ticks: { color: '#888' }, grid: { display: false } },
-                        y: { ticks: { color: '#888' }, grid: { color: '#222' }, beginAtZero: true }
+                        x: { ticks: { color: tickColor }, grid: { display: false } },
+                        y: { ticks: { color: tickColor }, grid: { color: gridColor }, beginAtZero: true }
                     }
                 }
             });
@@ -548,10 +559,10 @@ window.app = {
                 },
                 options: {
                     responsive: true,
-                    plugins: { legend: { labels: { color: '#fff' } } },
+                    plugins: { legend: { labels: { color: legendColor } } },
                     scales: {
-                        x: { ticks: { color: '#888' }, grid: { color: '#222' } },
-                        y: { ticks: { color: '#888', stepSize: 1 }, grid: { color: '#222' }, beginAtZero: true }
+                        x: { ticks: { color: tickColor }, grid: { color: gridColor } },
+                        y: { ticks: { color: tickColor, stepSize: 1 }, grid: { color: gridColor }, beginAtZero: true }
                     }
                 }
             });
@@ -574,12 +585,12 @@ window.app = {
                 options: {
                     responsive: true,
                     plugins: {
-                        legend: { labels: { color: '#fff' } },
+                        legend: { labels: { color: legendColor } },
                         tooltip: { callbacks: { label: function(ctx) { return 'Ingresos: $' + ctx.parsed.y.toLocaleString(); } } }
                     },
                     scales: {
-                        x: { ticks: { color: '#888' }, grid: { color: '#222' } },
-                        y: { ticks: { color: '#888', callback: v => '$' + v.toLocaleString() }, grid: { color: '#222' }, beginAtZero: true }
+                        x: { ticks: { color: tickColor }, grid: { color: gridColor } },
+                        y: { ticks: { color: tickColor, callback: v => '$' + v.toLocaleString() }, grid: { color: gridColor }, beginAtZero: true }
                     }
                 }
             });
@@ -609,7 +620,10 @@ window.app = {
         });
         document.getElementById('stat-active').innerText = active;
         document.getElementById('stat-expiring').innerText = expiring;
-        document.getElementById('stat-inactive').innerText = inactive;
+        const inactiveEl = document.getElementById('stat-inactive');
+        const isHidden = inactiveEl.getAttribute('data-hidden') === 'true';
+        inactiveEl.setAttribute('data-real-value', inactive);
+        if (!isHidden) inactiveEl.innerText = inactive;
 
         // === ADVANCED DASHBOARD METRICS (Admin/Dev Only) ===
         const metricsPanel = document.getElementById('dashboard-advanced-metrics');
@@ -689,7 +703,10 @@ window.app = {
     },
 
     // 4. SOCIOS
-    renderMembers: function(filter = 'all') {
+    renderMembers: function(filter) {
+        // Persistir el filtro actual para re-renders por búsqueda
+        if (filter !== undefined) this._currentMemberFilter = filter;
+        filter = this._currentMemberFilter || 'all';
         const tbody = document.getElementById('members-table-body');
         if(!tbody) return;
         tbody.innerHTML = '';
@@ -776,7 +793,79 @@ window.app = {
         };
         const viewTitle = document.querySelector('#view-members h1');
         if(viewTitle) viewTitle.innerText = titleMap[filter] || 'SOCIOS';
+
+        // Mostrar/ocultar botón de eliminar inactivos
+        const delInactiveBtn = document.getElementById('btn-delete-all-inactive');
+        if (delInactiveBtn) {
+            const canDelete = currentUser && (currentUser.role === 'admin' || currentUser.role === 'dev');
+            delInactiveBtn.style.display = (filter === 'inactive' && canDelete) ? 'inline-flex' : 'none';
+        }
     },
+
+    // ===== TOGGLE INACTIVOS OCULTAR/MOSTRAR =====
+    toggleInactiveCount: function() {
+        const el = document.getElementById('stat-inactive');
+        const btn = document.getElementById('btn-toggle-inactive');
+        if (!el) return;
+        // Inicializar data-hidden si no existe
+        if (!el.getAttribute('data-hidden')) el.setAttribute('data-hidden', 'false');
+        const isHidden = el.getAttribute('data-hidden') === 'true';
+        // Guardar valor real siempre que no esté oculto
+        if (!isHidden) el.setAttribute('data-real-value', el.innerText);
+        const realVal = el.getAttribute('data-real-value') || el.innerText;
+        if (isHidden) {
+            // Estaba oculto → mostrar
+            el.innerText = realVal;
+            el.setAttribute('data-hidden', 'false');
+            if (btn) { btn.innerHTML = '<i class="fas fa-eye-slash"></i>'; btn.title = 'Ocultar número'; }
+        } else {
+            // Estaba visible → ocultar
+            el.setAttribute('data-real-value', el.innerText);
+            el.innerText = '***';
+            el.setAttribute('data-hidden', 'true');
+            if (btn) { btn.innerHTML = '<i class="fas fa-eye"></i>'; btn.title = 'Mostrar número'; }
+        }
+    },
+
+    // ===== ELIMINAR TODOS LOS INACTIVOS =====
+    deleteAllInactive: async function() {
+        if (currentUser.role !== 'admin' && currentUser.role !== 'dev') return showToast('error', 'Acceso denegado');
+        const today = new Date();
+        const inactiveMembers = members.filter(m => (new Date(m.expiryDate) - today) < 0);
+        if (inactiveMembers.length === 0) return showToast('error', 'No hay socios inactivos para eliminar');
+        const confirmed = await customConfirm("Eliminar Todos los Inactivos", `¡ATENCIÓN! Esto moverá ${inactiveMembers.length} socio(s) inactivo(s) a la papelera. ¿Continuar?`);
+        if (!confirmed) return;
+        const password = await customPrompt("Confirmar Eliminación Masiva", "Ingrese la contraseña de ADMINISTRADOR:", '', 'password');
+        if (password === 'AtlassCC') {
+            inactiveMembers.forEach(m => {
+                const memberData = { ...m, deletedAt: new Date().toISOString(), deletedBy: currentUser.username };
+                db.set(`trash/${m.id}`, memberData);
+                db.delete(`members/${m.id}`);
+            });
+            this.logAction('Eliminación Masiva Inactivos', `Se eliminaron ${inactiveMembers.length} socios inactivos.`);
+            showToast('success', `${inactiveMembers.length} socios inactivos movidos a papelera`);
+        } else if (password !== null) {
+            showToast('error', 'Contraseña incorrecta. Acción cancelada.');
+        }
+    },
+
+    // ===== MODO LIGHT/DARK =====
+    toggleThemeMode: function() {
+        const body = document.body;
+        const isLight = body.classList.toggle('light-mode');
+        const btn = document.getElementById('btn-theme-toggle');
+        if (btn) {
+            btn.innerHTML = isLight ? '<i class="fas fa-moon"></i> Modo Oscuro' : '<i class="fas fa-sun"></i> Modo Claro';
+            btn.title = isLight ? 'Cambiar a Modo Oscuro' : 'Cambiar a Modo Claro';
+        }
+        localStorage.setItem('atlas-theme-mode', isLight ? 'light' : 'dark');
+        // Re-renderizar gráficas si están visibles para actualizar colores
+        const statsView = document.getElementById('view-stats');
+        if (statsView && statsView.classList.contains('active')) {
+            this.renderStats();
+        }
+    },
+
 
     filterMembers: function(type) { 
         this.nav('members'); 

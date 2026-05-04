@@ -3378,3 +3378,459 @@ select {
         min-height: 44px;
     }
 }
+
+/* ===================================================
+   MODO LIGHT — ATLAS GYM (v3 — COMPLETO)
+   ===================================================*/
+
+/* ---- BASE ---- */
+body.light-mode {
+    background-color: #eef0f4 !important;
+    background-image: none !important;
+    color: #111 !important;
+}
+
+/* ---- SIDEBAR ---- */
+body.light-mode .sidebar {
+    background: #ffffff !important;
+    border-right: 1px solid #dde1e7 !important;
+}
+body.light-mode .brand { color: #111 !important; }
+body.light-mode .nav-btn {
+    color: #444 !important;
+    background: transparent !important;
+}
+body.light-mode .nav-btn:hover,
+body.light-mode .nav-btn.active {
+    background: rgba(255,0,60,0.07) !important;
+    color: var(--primary) !important;
+}
+body.light-mode .sidebar small { color: #aaa !important; }
+body.light-mode #user-display-name { color: #111 !important; }
+body.light-mode #user-display-role { color: #777 !important; }
+
+/* ---- MAIN CONTENT ---- */
+body.light-mode .main-content {
+    background: #eef0f4 !important;
+}
+
+/* ---- HEADINGS & TEXT ---- */
+body.light-mode h1, body.light-mode h2, body.light-mode h3,
+body.light-mode h4, body.light-mode h5, body.light-mode h6 {
+    color: #111 !important;
+}
+body.light-mode p { color: #444 !important; }
+body.light-mode small { color: #666 !important; }
+body.light-mode label { color: #333 !important; }
+body.light-mode span { color: inherit; }
+
+/* ---- CARDS (stat cards del dashboard) ---- */
+body.light-mode .card {
+    background: #ffffff !important;
+    background-image: none !important;
+    border: 1px solid #e0e3ea !important;
+    box-shadow: 0 2px 12px rgba(0,0,0,0.07) !important;
+    color: #111 !important;
+}
+body.light-mode .card h3 { color: #111 !important; }
+body.light-mode .card p { color: #555 !important; }
+body.light-mode .card small { color: #777 !important; }
+/* Eliminar la línea de neón top en modo claro */
+body.light-mode .card::before { background: linear-gradient(90deg, transparent, rgba(255,0,60,0.25), transparent) !important; }
+
+/* ---- TABLE CONTAINERS ---- */
+body.light-mode .table-container {
+    background: #ffffff !important;
+    background-image: none !important;
+    border: 1px solid #e0e3ea !important;
+    color: #111 !important;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.05) !important;
+}
+/* Tarjetas inline con background:#111 hardcoded en el HTML (cumpleaños, kiosco) */
+body.light-mode .table-container[style*="background:linear-gradient"],
+body.light-mode .table-container[style*="background: linear-gradient"],
+body.light-mode .table-container[style*="background: #111"],
+body.light-mode .table-container[style*="background:#111"] {
+    background: #ffffff !important;
+    border: 1px solid #e0e3ea !important;
+}
+
+/* ---- TABLE ---- */
+body.light-mode table { color: #111 !important; }
+body.light-mode thead th {
+    background: #f4f5f8 !important;
+    color: #333 !important;
+    border-bottom: 2px solid #ddd !important;
+}
+body.light-mode tbody tr {
+    background: #ffffff !important;
+    box-shadow: none !important;
+}
+body.light-mode tbody tr:hover {
+    background: rgba(255,0,60,0.03) !important;
+    transform: none !important;
+}
+body.light-mode tbody td { color: #222 !important; border-top: 1px solid #f0f0f0 !important; }
+
+/* ---- INPUTS & SELECTS ---- */
+body.light-mode input,
+body.light-mode select,
+body.light-mode textarea {
+    background: #ffffff !important;
+    border: 1px solid #ccd1da !important;
+    color: #111 !important;
+}
+body.light-mode input:focus,
+body.light-mode select:focus,
+body.light-mode textarea:focus {
+    border-color: var(--primary) !important;
+    box-shadow: 0 0 10px rgba(255,0,60,0.12) !important;
+}
+body.light-mode input::placeholder,
+body.light-mode textarea::placeholder { color: #aaa !important; }
+
+/* ---- MODALES ---- */
+body.light-mode .modal-content {
+    background: #ffffff !important;
+    background-image: none !important;
+    border: 1px solid #dde1e7 !important;
+    color: #111 !important;
+    box-shadow: 0 20px 60px rgba(0,0,0,0.15) !important;
+}
+body.light-mode .modal-content h2,
+body.light-mode .modal-content h3,
+body.light-mode .modal-content h4,
+body.light-mode .modal-content label {
+    color: #111 !important;
+}
+body.light-mode .modal-content small,
+body.light-mode .modal-content p { color: #555 !important; }
+body.light-mode .modal-content td { color: #222 !important; }
+
+/* Renew modal */
+body.light-mode .renew-modal {
+    background: #ffffff !important;
+}
+body.light-mode .renew-member-info {
+    background: #f7f8fa !important;
+    border: 1px solid #e0e3ea !important;
+}
+body.light-mode .renew-member-info h4 { color: #111 !important; }
+body.light-mode .renew-member-info small { color: #777 !important; }
+body.light-mode .renew-section-label { color: #333 !important; }
+body.light-mode .renew-mode-option {
+    background: #f7f8fa !important;
+    border: 1px solid #dde1e7 !important;
+}
+body.light-mode .renew-mode-option:hover {
+    background: #eef0f4 !important;
+    border-color: #bbb !important;
+}
+body.light-mode .renew-mode-option .rm-text strong { color: #111 !important; }
+body.light-mode .renew-mode-option .rm-text small { color: #777 !important; }
+body.light-mode .renew-member-option {
+    background: #f7f8fa !important;
+    border: 1px solid #dde1e7 !important;
+}
+body.light-mode .renew-member-option:hover {
+    background: #eef0f4 !important;
+    border-color: #bbb !important;
+}
+body.light-mode .renew-member-option .rmo-name { color: #111 !important; }
+body.light-mode .renew-member-option .rmo-meta { color: #666 !important; }
+body.light-mode .renew-total-box {
+    background: #f4f5f8 !important;
+    border: 1px solid #dde1e7 !important;
+}
+body.light-mode .renew-total-label { color: #333 !important; }
+body.light-mode #renew-price-display { color: var(--neon-orange) !important; }
+body.light-mode .renew-payment-option {
+    background: #f7f8fa !important;
+    border: 1px solid #dde1e7 !important;
+    color: #555 !important;
+}
+body.light-mode .renew-payment-option:hover {
+    background: #eef0f4 !important;
+    border-color: #aaa !important;
+}
+body.light-mode .renew-payment-option i { color: #777 !important; }
+body.light-mode .renew-warning {
+    background: rgba(255,170,0,0.08) !important;
+    border-color: rgba(255,170,0,0.3) !important;
+    color: #7a5800 !important;
+}
+
+/* ---- BOTONES ---- */
+body.light-mode .btn-outline {
+    border-color: rgba(255,0,60,0.4) !important;
+    color: var(--primary) !important;
+    background: transparent !important;
+}
+
+/* ---- PAYMENT METHOD GROUP ---- */
+body.light-mode .payment-method-group .pay-label {
+    background: #f4f5f8 !important;
+    border: 1px solid #ccd1da !important;
+    color: #555 !important;
+}
+body.light-mode .payment-method-group .pay-label:hover {
+    background: #eaecf0 !important;
+    border-color: #aaa !important;
+    color: #222 !important;
+}
+body.light-mode .payment-method-group input[type="radio"]:checked + .pay-label {
+    background: rgba(255,0,60,0.07) !important;
+    border-color: var(--primary) !important;
+    color: #111 !important;
+    box-shadow: 0 0 12px rgba(255,0,60,0.1) !important;
+}
+
+/* ---- SYSTEM BANNER ---- */
+body.light-mode .sys-banner {
+    background: #fff8e1 !important;
+    color: #7a5800 !important;
+    border-bottom: 1px solid #ffe082 !important;
+}
+body.light-mode .sys-banner a { color: var(--primary) !important; }
+
+/* ---- FINANZAS ---- */
+body.light-mode .finance-summary { }
+body.light-mode .fin-card {
+    background: #ffffff !important;
+    background-image: none !important;
+    border: 1px solid #e0e3ea !important;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.06) !important;
+}
+body.light-mode .fin-card h4 { color: #555 !important; }
+body.light-mode .fin-card .amount { color: #111 !important; }
+body.light-mode .fin-card.income .amount { color: #1a7a3a !important; }
+body.light-mode .fin-card.expense .amount { color: var(--primary) !important; }
+body.light-mode .fin-card.balance .amount { color: #a06000 !important; }
+body.light-mode .filters-bar {
+    background: #ffffff !important;
+    border: 1px solid #e0e3ea !important;
+}
+body.light-mode .date-group label { color: #555 !important; }
+
+/* ---- TIENDA / STORE ---- */
+body.light-mode .prod-item {
+    background: #ffffff !important;
+    background-image: none !important;
+    border: 1px solid #e0e3ea !important;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.05) !important;
+}
+body.light-mode .prod-item .prod-name { color: #111 !important; }
+body.light-mode .prod-item .prod-category { color: #666 !important; }
+body.light-mode .prod-item .prod-price { color: var(--primary) !important; }
+body.light-mode .prod-item .prod-stock { color: #555 !important; }
+body.light-mode .prod-item .prod-stock.low { color: var(--neon-orange) !important; }
+body.light-mode .prod-item:hover {
+    background: #f9fafb !important;
+    border-color: rgba(255,0,60,0.3) !important;
+    box-shadow: 0 8px 25px rgba(0,0,0,0.1) !important;
+}
+/* Cart items inline (generados por JS con background:#222) */
+body.light-mode #cart-items > div {
+    background: #f4f5f8 !important;
+    border-left-color: var(--primary) !important;
+    color: #111 !important;
+}
+body.light-mode #cart-items > div > div:last-child > div:first-child { color: #1a7a3a !important; }
+body.light-mode #cart-items p { color: #777 !important; }
+/* Cart panel */
+body.light-mode .cart-panel,
+body.light-mode [class*="cart"] {
+    background: #ffffff !important;
+    border-left: 1px solid #e0e3ea !important;
+    color: #111 !important;
+}
+body.light-mode .cart-summary {
+    background: #f4f5f8 !important;
+    border-top: 1px solid #e0e3ea !important;
+}
+body.light-mode .cart-summary label { color: #333 !important; }
+
+/* ---- DEV CARDS ---- */
+body.light-mode .dev-card {
+    background: #ffffff !important;
+    background-image: none !important;
+    border: 1px solid #e0e3ea !important;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.06) !important;
+}
+body.light-mode .dev-card p { color: #555 !important; }
+body.light-mode .dev-card h3 { color: var(--primary) !important; }
+/* Textarea del dev broadcast */
+body.light-mode #dev-broadcast-msg {
+    background: #f4f5f8 !important;
+    border: 1px solid #ccd1da !important;
+    color: #111 !important;
+}
+
+/* ---- REPORT CARDS ---- */
+body.light-mode .report-card {
+    background: #ffffff !important;
+    background-image: none !important;
+    border: 1px solid #e0e3ea !important;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.06) !important;
+}
+body.light-mode .report-card h3 { color: #111 !important; }
+body.light-mode .report-card p { color: #555 !important; }
+body.light-mode .report-preview-container {
+    background: #f4f5f8 !important;
+    border: 1px solid #e0e3ea !important;
+}
+body.light-mode .report-table-compact th { color: #555 !important; }
+body.light-mode .report-table-compact th,
+body.light-mode .report-table-compact td { border-bottom: 1px solid #e0e3ea !important; }
+body.light-mode .report-summary-bar {
+    background: #f4f5f8 !important;
+    border: 1px solid #e0e3ea !important;
+}
+
+/* ---- MÉTRICAS AVANZADAS ---- */
+body.light-mode .metrics-advanced-panel,
+body.light-mode #dashboard-advanced-metrics {
+    background: #ffffff !important;
+    border: 1px solid #e0e3ea !important;
+}
+body.light-mode .metric-card-pro {
+    background: #f4f5f8 !important;
+    border: 1px solid #e0e3ea !important;
+}
+body.light-mode .metric-label { color: #555 !important; }
+body.light-mode .metric-value { color: #111 !important; }
+body.light-mode .metric-sub { color: #666 !important; }
+body.light-mode .metric-icon { opacity: 0.85; }
+
+/* ---- HISTORY (inline divs con background dark) ---- */
+body.light-mode #view-history .table-container { background: #ffffff !important; }
+
+/* ---- ESTADÍSTICAS ---- */
+body.light-mode #view-stats .table-container { background: #ffffff !important; }
+body.light-mode canvas { filter: invert(0) !important; }
+
+/* ---- ADMIN VIEW ---- */
+body.light-mode #view-admin h4 { color: #111 !important; }
+body.light-mode #view-admin > div > div {
+    background: #ffffff !important;
+    border: 1px solid #e0e3ea !important;
+}
+
+/* ---- PAPELERA / TRASH ---- */
+body.light-mode #view-trash .table-container { background: #ffffff !important; }
+
+/* ---- MEMBER DETAIL (view inline #0a0a0a) ---- */
+body.light-mode #view-member-detail,
+body.light-mode [style*="background: #0a0a0a"],
+body.light-mode [style*="background:#0a0a0a"] {
+    background: #f4f5f8 !important;
+    border-color: #e0e3ea !important;
+    color: #111 !important;
+}
+body.light-mode #member-visits-list { color: #555 !important; }
+
+/* ---- TOAST NOTIFICATIONS ---- */
+body.light-mode .toast {
+    background: #ffffff !important;
+    border: 1px solid #dde1e7 !important;
+    color: #111 !important;
+    box-shadow: 0 8px 25px rgba(0,0,0,0.12) !important;
+}
+
+/* ---- CLOSE BUTTON ---- */
+body.light-mode .close-btn {
+    background: rgba(0,0,0,0.06) !important;
+    color: #333 !important;
+    border: 1px solid #ddd !important;
+}
+body.light-mode .close-btn:hover { background: rgba(255,0,60,0.1) !important; color: var(--primary) !important; }
+
+/* ---- BOTÓN THEME TOGGLE ---- */
+body.light-mode #btn-theme-toggle {
+    background: rgba(0,0,0,0.05) !important;
+    border-color: #ccc !important;
+    color: #333 !important;
+}
+
+/* ---- HAMBURGER ---- */
+body.light-mode .hamburger-menu-btn {
+    background: rgba(0,0,0,0.07) !important;
+    color: #333 !important;
+}
+
+/* ---- CONFIRM/PROMPT DIALOGS ---- */
+body.light-mode #modal-confirm .modal-content,
+body.light-mode #modal-prompt .modal-content {
+    background: #ffffff !important;
+}
+body.light-mode #confirm-title,
+body.light-mode #prompt-title { color: #111 !important; }
+body.light-mode #confirm-message,
+body.light-mode #prompt-message { color: #555 !important; }
+
+/* ---- LOGIN ---- */
+body.light-mode #login-screen {
+    background: #eef0f4 !important;
+}
+body.light-mode .login-box {
+    background: #ffffff !important;
+    border: 1px solid rgba(255,0,60,0.15) !important;
+    box-shadow: 0 20px 60px rgba(0,0,0,0.12) !important;
+}
+body.light-mode .login-box h1,
+body.light-mode .login-box h2,
+body.light-mode .login-box p { color: #222 !important; }
+
+/* ---- SCROLLBAR ---- */
+body.light-mode ::-webkit-scrollbar-track { background: #eef0f4 !important; }
+body.light-mode ::-webkit-scrollbar-thumb { background: #ccc !important; }
+body.light-mode ::-webkit-scrollbar-thumb:hover { background: var(--primary) !important; }
+
+/* ---- FILTERS BAR labels/icons ---- */
+body.light-mode .filters-bar label,
+body.light-mode .filters-bar .date-group label { color: #555 !important; }
+body.light-mode .filters-bar i { color: #777 !important; }
+
+/* ---- SECTION HEADER ---- */
+body.light-mode .section-header { color: #111 !important; }
+
+/* ---- INLINE DARK ELEMENTS (HTML hardcoded) ---- */
+/* Tarjetas stats avanzadas (inline metric-sub color:#888) */
+body.light-mode .metric-sub[style*="color:#888"],
+body.light-mode [style*="color:#888"],
+body.light-mode [style*="color: #888"],
+body.light-mode [style*="color:#aaa"],
+body.light-mode [style*="color: #aaa"],
+body.light-mode [style*="color:#666"],
+body.light-mode [style*="color: #666"],
+body.light-mode [style*="color:#555"],
+body.light-mode [style*="color: #555"] {
+    color: #444 !important;
+}
+body.light-mode [style*="color:#fff"],
+body.light-mode [style*="color: #fff"],
+body.light-mode [style*="color:#ffffff"],
+body.light-mode [style*="color: #ffffff"] {
+    color: #111 !important;
+}
+/* Excepción: no cambiar colores de badge/status (neon green, orange, primary) */
+body.light-mode [style*="color:var(--primary)"],
+body.light-mode [style*="color: var(--primary)"],
+body.light-mode [style*="color:var(--neon-green)"],
+body.light-mode [style*="color: var(--neon-green)"],
+body.light-mode [style*="color:var(--neon-orange)"],
+body.light-mode [style*="color: var(--neon-orange)"],
+body.light-mode [style*="color:#4488ff"],
+body.light-mode [style*="color:#aa44ff"],
+body.light-mode [style*="color:#00c864"],
+body.light-mode [style*="color:#ff003c"],
+body.light-mode [style*="color:#ffaa00"],
+body.light-mode [style*="color:#d32f2f"] {
+    color: inherit !important;
+}
+
+/* ---- KIOSK: no aplica modo light ---- */
+body.kiosk-body.light-mode {
+    background-color: #050505 !important;
+    color: #fff !important;
+}
