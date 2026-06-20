@@ -1,14 +1,9 @@
 {
   "name": "Sistema Atlas Gym",
   "short_name": "Atlas Gym",
-  "description": "Sistema de gestión para Atlas Gym: socios, accesos, tienda, finanzas y reportes.",
-  "lang": "es",
-  "dir": "ltr",
-  "categories": ["business", "productivity", "fitness"],
   "start_url": "./index.html",
   "display": "standalone",
-  "orientation": "any",
-  "background_color": "#050505",
+  "background_color": "#000000",
   "theme_color": "#ff003c",
   "icons": [
     {

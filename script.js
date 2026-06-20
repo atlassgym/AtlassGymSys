@@ -34,12 +34,31 @@ let history = [];
 let users = [];
 let cart = [];
 let selectedMemberId = null;
-let prices = {
+// Precios por defecto. Fuente de verdad real = Firebase (config/prices).
+// Estos solo se usan si Firebase aun no tiene precios guardados.
+const DEFAULT_PRICES = {
     "visit": 50, "weekly": 200, "biweekly": 350,
     "monthly": 500, "student": 400,
     "quarterly": 1200, "semiannual": 2200, "annual": 4000,
     "couple": 900, "family3": 1300, "family4": 1600
 };
+let prices = { ...DEFAULT_PRICES };
+
+// Mapa llave -> id del input en la pantalla de Configuracion de Precios
+const PRICE_INPUT_MAP = {
+    "visit": "conf-visit", "weekly": "conf-weekly", "biweekly": "conf-biweekly",
+    "monthly": "conf-monthly", "student": "conf-student",
+    "quarterly": "conf-quarterly", "semiannual": "conf-semiannual", "annual": "conf-annual",
+    "couple": "conf-couple", "family3": "conf-family3", "family4": "conf-family4"
+};
+
+// Refresca los inputs de la pantalla de precios con el objeto `prices` actual
+function syncPriceInputs() {
+    for (const [key, id] of Object.entries(PRICE_INPUT_MAP)) {
+        const el = document.getElementById(id);
+        if (el && prices[key] !== undefined) el.value = prices[key];
+    }
+}
 
 const PLAN_NAMES = {
     "visit": "Visita",
@@ -252,6 +271,24 @@ window.app = {
             }
         });
         
+        // Real-time PRICES listener — fuente unica de verdad = Firebase.
+        // Mantiene `prices` y los inputs SIEMPRE sincronizados; nunca revierten solos.
+        db.onDataChange('config/prices', (data) => {
+            if (data && typeof data === 'object') {
+                // Mezcla: defaults como base + lo guardado en Firebase encima.
+                // Asi llaves nuevas (couple/family3...) nunca quedan en $0.
+                prices = { ...DEFAULT_PRICES, ...data };
+            } else {
+                prices = { ...DEFAULT_PRICES };
+            }
+            syncPriceInputs();
+            // Si hay un modal de precio abierto, refrescar su monto mostrado
+            const regModal = document.getElementById('modal-register');
+            if (regModal && regModal.style.display === 'flex') this.updateRegisterPrice();
+            const renewModal = document.getElementById('modal-renew-pro');
+            if (renewModal && renewModal.style.display === 'flex') this.updateRenewPrice();
+        });
+
         // Hamburger Menu Logic
         const hamburger = document.getElementById('hamburger-menu');
         const sidebar = document.querySelector('.sidebar');
@@ -356,245 +393,242 @@ window.app = {
     },
 
     // 2.5. ESTADÍSTICAS PRO
+    statsPeriod: '6m',
+
+    setStatsPeriod: function(period, ev) {
+        this.statsPeriod = period;
+        document.querySelectorAll('.stats-period-btn').forEach(b => b.classList.remove('active'));
+        if (period !== 'custom' && ev && ev.currentTarget) ev.currentTarget.classList.add('active');
+        this.renderStats();
+    },
+
+    getStatsRange: function() {
+        const now = new Date();
+        let end = new Date(); end.setHours(23, 59, 59, 999);
+        let start;
+        const p = this.statsPeriod;
+        const som = (y, m) => { const d = new Date(y, m, 1); d.setHours(0, 0, 0, 0); return d; };
+        if (p === 'thisMonth') start = som(now.getFullYear(), now.getMonth());
+        else if (p === 'lastMonth') {
+            start = som(now.getFullYear(), now.getMonth() - 1);
+            end = new Date(now.getFullYear(), now.getMonth(), 0); end.setHours(23, 59, 59, 999);
+        }
+        else if (p === '3m') start = som(now.getFullYear(), now.getMonth() - 2);
+        else if (p === '6m') start = som(now.getFullYear(), now.getMonth() - 5);
+        else if (p === '12m') start = som(now.getFullYear(), now.getMonth() - 11);
+        else if (p === 'thisYear') { start = new Date(now.getFullYear(), 0, 1); start.setHours(0, 0, 0, 0); }
+        else if (p === 'all') start = new Date(2000, 0, 1);
+        else if (p === 'custom') {
+            const s = document.getElementById('stats-start').value;
+            const e = document.getElementById('stats-end').value;
+            start = s ? new Date(s + 'T00:00:00') : som(now.getFullYear(), now.getMonth() - 5);
+            if (e) { end = new Date(e + 'T23:59:59'); }
+        }
+        else start = som(now.getFullYear(), now.getMonth() - 5);
+        return { start, end };
+    },
+
+    isExpenseType: function(t) {
+        const s = String(t).toLowerCase();
+        return s === 'gasto' || s === 'salida' || s === 'egreso';
+    },
+
     renderStats: function() {
         if (!app.charts) app.charts = {};
+        if (typeof Chart === 'undefined') return;
         const isLight = document.body.classList.contains('light-mode');
         const gridColor = isLight ? '#e0e0e0' : '#222';
         const tickColor = isLight ? '#555' : '#888';
         const legendColor = isLight ? '#333' : '#fff';
+        const C = { red: '#ff003c', green: '#00ff41', orange: '#ffaa00', blue: '#4488ff', purple: '#aa44ff', cyan: '#00e5ff' };
 
-        // 1. Gráfica de Afluencia Horaria (Area Chart)
+        const { start, end } = this.getStatsRange();
+        const lbl = document.getElementById('stats-range-label');
+        if (lbl) lbl.innerText = `${start.toLocaleDateString()} — ${end.toLocaleDateString()}`;
+        const inRange = (d) => { const t = new Date(d).getTime(); return t >= start.getTime() && t <= end.getTime(); };
+
+        const fVisits = visits.filter(v => v.date && inRange(v.date));
+        const fFinances = finances.filter(f => f.date && inRange(f.date));
+        const fMembersReg = members.filter(m => m.registeredAt && inRange(m.registeredAt));
+
+        // ---- KPIs del periodo ----
+        let income = 0, expense = 0, cash = 0, card = 0, incomeCount = 0;
+        let incInscr = 0, incRenov = 0, incTienda = 0, incOtros = 0;
+        fFinances.forEach(f => {
+            const amt = Number(f.amount) || 0;
+            if (this.isExpenseType(f.type)) { expense += amt; return; }
+            income += amt; incomeCount++;
+            if (f.metodoPago === 'Tarjeta') card += amt; else cash += amt;
+            const t = String(f.type).toLowerCase();
+            const desc = String(f.desc || '').toLowerCase();
+            if (t.includes('inscri') || t === 'registro') incInscr += amt;
+            else if (t.includes('renov')) incRenov += amt;
+            else if (t.includes('tienda') || t.includes('venta') || desc.includes('tienda')) incTienda += amt;
+            else incOtros += amt;
+        });
+        const balance = income - expense;
+        const ticket = incomeCount ? Math.round(income / incomeCount) : 0;
+        const visitsOk = fVisits.filter(v => v.status === 'success').length;
+        const today = new Date();
+        const activeNow = members.filter(m => (new Date(m.expiryDate) - today) >= 0).length;
+
+        const kpis = [
+            { label: 'Ingresos', value: '$' + income.toLocaleString(), color: C.green, icon: 'fa-arrow-up' },
+            { label: 'Gastos', value: '$' + expense.toLocaleString(), color: C.red, icon: 'fa-arrow-down' },
+            { label: 'Balance', value: '$' + balance.toLocaleString(), color: balance >= 0 ? C.orange : C.red, icon: 'fa-scale-balanced' },
+            { label: 'Ticket prom.', value: '$' + ticket.toLocaleString(), color: C.cyan, icon: 'fa-receipt' },
+            { label: 'Movimientos', value: fFinances.length, color: C.blue, icon: 'fa-list' },
+            { label: 'Nuevos socios', value: fMembersReg.length, color: C.purple, icon: 'fa-user-plus' },
+            { label: 'Visitas', value: visitsOk, color: C.red, icon: 'fa-door-open' },
+            { label: 'Socios activos', value: activeNow, color: C.green, icon: 'fa-id-card' }
+        ];
+        const kpiBox = document.getElementById('stats-kpis');
+        if (kpiBox) {
+            kpiBox.innerHTML = kpis.map(k => `
+                <div class="stats-kpi-card" style="border-left:3px solid ${k.color};">
+                    <div class="skc-icon" style="color:${k.color};"><i class="fas ${k.icon}"></i></div>
+                    <div class="skc-body">
+                        <div class="skc-value" style="color:${k.color};">${k.value}</div>
+                        <div class="skc-label">${k.label}</div>
+                    </div>
+                </div>`).join('');
+        }
+
+        // ---- Agrupar por mes dentro del rango ----
+        const monthKey = (d) => d.toLocaleString('es', { month: 'short' }) + ' ' + d.getFullYear();
+        const months = {};
+        let cur = new Date(start.getFullYear(), start.getMonth(), 1);
+        const lastM = new Date(end.getFullYear(), end.getMonth(), 1);
+        let guard = 0;
+        while (cur <= lastM && guard < 36) {
+            months[monthKey(cur)] = { income: 0, expense: 0, cash: 0, card: 0, regs: 0, sortDate: new Date(cur) };
+            cur = new Date(cur.getFullYear(), cur.getMonth() + 1, 1);
+            guard++;
+        }
+        const ensure = (d) => {
+            const k = monthKey(d);
+            if (!months[k]) months[k] = { income: 0, expense: 0, cash: 0, card: 0, regs: 0, sortDate: new Date(d.getFullYear(), d.getMonth(), 1) };
+            return months[k];
+        };
+        fFinances.forEach(f => {
+            const m = ensure(new Date(f.date)); const amt = Number(f.amount) || 0;
+            if (this.isExpenseType(f.type)) m.expense += amt;
+            else { m.income += amt; if (f.metodoPago === 'Tarjeta') m.card += amt; else m.cash += amt; }
+        });
+        fMembersReg.forEach(mem => { ensure(new Date(mem.registeredAt)).regs++; });
+        const mKeys = Object.keys(months).sort((a, b) => months[a].sortDate - months[b].sortDate);
+
+        // Guardar para exportar CSV
+        this._statsCache = { start, end, income, expense, balance, cash, card, incInscr, incRenov, incTienda, incOtros, months, mKeys, visitsOk, newMembers: fMembersReg.length };
+
+        const baseScales = {
+            x: { ticks: { color: tickColor }, grid: { color: gridColor } },
+            y: { ticks: { color: tickColor }, grid: { color: gridColor }, beginAtZero: true }
+        };
+        const mk = (id, cfg) => {
+            const el = document.getElementById(id); if (!el) return;
+            if (app.charts[id]) app.charts[id].destroy();
+            app.charts[id] = new Chart(el, cfg);
+        };
+
+        // 1. Afluencia horaria
         const visitHours = new Array(24).fill(0);
-        visits.forEach(v => {
-            const h = new Date(v.date).getHours();
-            visitHours[h]++;
-        });
-
-        if (app.charts.visits) app.charts.visits.destroy();
-        app.charts.visits = new Chart(document.getElementById('chart-visits'), {
+        fVisits.forEach(v => visitHours[new Date(v.date).getHours()]++);
+        mk('chart-visits', {
             type: 'line',
-            data: {
-                labels: Array.from({length: 24}, (_, i) => `${i}:00`),
-                datasets: [{
-                    label: 'Visitas',
-                    data: visitHours,
-                    backgroundColor: 'rgba(255, 0, 60, 0.2)', // --primary con opacidad
-                    borderColor: '#ff003c', // --primary
-                    fill: true,
-                    tension: 0.4 // Suavizado
-                }]
-            },
-            options: {
-                responsive: true,
-                plugins: {
-                    legend: { labels: { color: legendColor } }
-                },
-                scales: {
-                    x: { ticks: { color: tickColor }, grid: { color: gridColor } },
-                    y: { ticks: { color: tickColor }, grid: { color: gridColor } }
-                }
-            }
+            data: { labels: Array.from({ length: 24 }, (_, i) => `${i}:00`), datasets: [{ label: 'Visitas', data: visitHours, backgroundColor: 'rgba(255,0,60,0.2)', borderColor: C.red, fill: true, tension: 0.4 }] },
+            options: { responsive: true, plugins: { legend: { labels: { color: legendColor } } }, scales: baseScales }
         });
 
-        // 2. Gráfica de Rendimiento Mensual (Grouped Bar)
-        const months = {}; // { 'Ene 2023': { income: 0, expense: 0, cash: 0, card: 0 } }
-        finances.forEach(f => {
-            const d = new Date(f.date);
-            const key = `${d.toLocaleString('es', { month: 'short' })} ${d.getFullYear()}`;
-            if (!months[key]) months[key] = { income: 0, expense: 0, cash: 0, card: 0, sortDate: d };
-            
-            if (String(f.type).toLowerCase() === 'gasto' || String(f.type).toLowerCase() === 'salida' || String(f.type).toLowerCase() === 'egreso') {
-                months[key].expense += Number(f.amount);
-            } else {
-                const amt = Number(f.amount);
-                months[key].income += amt;
-                if (f.metodoPago === 'Tarjeta') months[key].card += amt;
-                else months[key].cash += amt;
-            }
-        });
-
-        // Ordenar cronológicamente
-        const sortedKeys = Object.keys(months).sort((a, b) => months[a].sortDate - months[b].sortDate);
-        const incomeData = sortedKeys.map(k => months[k].income);
-        const expenseData = sortedKeys.map(k => months[k].expense);
-        
-        // Custom tooltip data mapping
-        const breakdownData = sortedKeys.map(k => ({ cash: months[k].cash, card: months[k].card }));
-
-        if (app.charts.finances) app.charts.finances.destroy();
-        app.charts.finances = new Chart(document.getElementById('chart-finances'), {
+        // 2. Rendimiento mensual (ingresos vs gastos)
+        mk('chart-finances', {
             type: 'bar',
-            data: {
-                labels: sortedKeys,
-                datasets: [
-                    {
-                        label: 'Ingresos',
-                        data: incomeData,
-                        backgroundColor: '#00ff41' // --neon-green
-                    },
-                    {
-                        label: 'Gastos',
-                        data: expenseData,
-                        backgroundColor: '#ff003c' // --primary
-                    }
-                ]
-            },
-            options: {
-                responsive: true,
-                plugins: {
-                    legend: { labels: { color: legendColor } },
-                    tooltip: {
-                        callbacks: {
-                            afterLabel: function(context) {
-                                if (context.dataset.label === 'Ingresos') {
-                                    const index = context.dataIndex;
-                                    const bd = breakdownData[index];
-                                    return ` (Efectivo: $${bd.cash.toLocaleString()} | Tarjeta: $${bd.card.toLocaleString()})`;
-                                }
-                                return '';
-                            }
-                        }
-                    }
-                },
-                scales: {
-                    x: { ticks: { color: tickColor }, grid: { color: gridColor } },
-                    y: { ticks: { color: tickColor }, grid: { color: gridColor } }
-                }
-            }
+            data: { labels: mKeys, datasets: [
+                { label: 'Ingresos', data: mKeys.map(k => months[k].income), backgroundColor: C.green },
+                { label: 'Gastos', data: mKeys.map(k => months[k].expense), backgroundColor: C.red }
+            ] },
+            options: { responsive: true, plugins: { legend: { labels: { color: legendColor } }, tooltip: { callbacks: { afterLabel: (ctx) => { if (ctx.dataset.label === 'Ingresos') { const m = months[mKeys[ctx.dataIndex]]; return ` (Efvo: $${m.cash.toLocaleString()} | Tarj: $${m.card.toLocaleString()})`; } return ''; } } } }, scales: baseScales }
         });
 
-        // 3. Distribución por Plan (Doughnut)
+        // 3. Distribución por plan (foto actual)
         const planCounts = {};
-        members.forEach(m => {
-            const planName = PLAN_NAMES[m.plan] || m.plan || 'Sin Plan';
-            planCounts[planName] = (planCounts[planName] || 0) + 1;
+        members.forEach(m => { const n = PLAN_NAMES[m.plan] || m.plan || 'Sin Plan'; planCounts[n] = (planCounts[n] || 0) + 1; });
+        const planColors = ['#ff003c', '#ff4466', '#ff6680', '#ff8899', '#00ff41', '#00cc33', '#ffaa00', '#ff8800', '#4488ff', '#aa44ff', '#ff44aa'];
+        mk('chart-plans', {
+            type: 'doughnut',
+            data: { labels: Object.keys(planCounts), datasets: [{ data: Object.values(planCounts), backgroundColor: planColors, borderColor: '#0a0a0a', borderWidth: 2 }] },
+            options: { responsive: true, plugins: { legend: { position: 'bottom', labels: { color: tickColor, padding: 12, font: { size: 11 } } } } }
         });
-        const planLabels = Object.keys(planCounts);
-        const planData = Object.values(planCounts);
-        const planColors = ['#ff003c','#ff4466','#ff6680','#ff8899','#00ff41','#00cc33','#ffaa00','#ff8800','#4488ff','#aa44ff','#ff44aa'];
 
-        const planCanvas = document.getElementById('chart-plans');
-        if (planCanvas) {
-            if (app.charts.plans) app.charts.plans.destroy();
-            app.charts.plans = new Chart(planCanvas, {
-                type: 'doughnut',
-                data: {
-                    labels: planLabels,
-                    datasets: [{ data: planData, backgroundColor: planColors.slice(0, planLabels.length), borderColor: '#0a0a0a', borderWidth: 2 }]
-                },
-                options: {
-                    responsive: true,
-                    plugins: { legend: { position: 'bottom', labels: { color: tickColor, padding: 12, font: { size: 11 } } } }
-                }
-            });
-        }
-
-        // 4. Visitas por Día de la Semana (Bar)
-        const dayNames = ['Dom','Lun','Mar','Mié','Jue','Vie','Sáb'];
+        // 4. Visitas por día de la semana
+        const dayNames = ['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb'];
         const dayVisits = new Array(7).fill(0);
-        visits.forEach(v => { if (v.status === 'success') dayVisits[new Date(v.date).getDay()]++; });
-
-        const dowCanvas = document.getElementById('chart-day-of-week');
-        if (dowCanvas) {
-            if (app.charts.dayOfWeek) app.charts.dayOfWeek.destroy();
-            app.charts.dayOfWeek = new Chart(dowCanvas, {
-                type: 'bar',
-                data: {
-                    labels: dayNames,
-                    datasets: [{
-                        label: 'Visitas',
-                        data: dayVisits,
-                        backgroundColor: dayVisits.map(v => { const max = Math.max(...dayVisits); return `rgba(255, 0, 60, ${max > 0 ? 0.3 + (v/max)*0.7 : 0.3})`; }),
-                        borderColor: '#ff003c', borderWidth: 1, borderRadius: 6
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    plugins: { legend: { display: false } },
-                    scales: {
-                        x: { ticks: { color: tickColor }, grid: { display: false } },
-                        y: { ticks: { color: tickColor }, grid: { color: gridColor }, beginAtZero: true }
-                    }
-                }
-            });
-        }
-
-        // 5. Tendencia de Nuevos Registros (Últimos 6 meses)
-        const regMonths = {};
-        const nowDate = new Date();
-        for (let i = 5; i >= 0; i--) {
-            const d = new Date(nowDate.getFullYear(), nowDate.getMonth() - i, 1);
-            const key = d.toLocaleString('es', { month: 'short' }) + ' ' + d.getFullYear();
-            regMonths[key] = { registrations: 0, revenue: 0, sortDate: d };
-        }
-        members.forEach(m => {
-            if (!m.registeredAt) return;
-            const d = new Date(m.registeredAt);
-            const key = d.toLocaleString('es', { month: 'short' }) + ' ' + d.getFullYear();
-            if (regMonths[key] !== undefined) regMonths[key].registrations++;
+        fVisits.forEach(v => { if (v.status === 'success') dayVisits[new Date(v.date).getDay()]++; });
+        const maxDay = Math.max(...dayVisits);
+        mk('chart-day-of-week', {
+            type: 'bar',
+            data: { labels: dayNames, datasets: [{ label: 'Visitas', data: dayVisits, backgroundColor: dayVisits.map(v => `rgba(255,0,60,${maxDay > 0 ? 0.3 + (v / maxDay) * 0.7 : 0.3})`), borderColor: C.red, borderWidth: 1, borderRadius: 6 }] },
+            options: { responsive: true, plugins: { legend: { display: false } }, scales: { x: { ticks: { color: tickColor }, grid: { display: false } }, y: baseScales.y } }
         });
-        finances.forEach(f => {
-            const d = new Date(f.date);
-            const key = d.toLocaleString('es', { month: 'short' }) + ' ' + d.getFullYear();
-            const typeStr = String(f.type).toLowerCase();
-            const isExp = typeStr === 'gasto' || typeStr === 'salida' || typeStr === 'egreso';
-            if (!isExp && regMonths[key] !== undefined) regMonths[key].revenue += Number(f.amount);
+
+        // 5. Tendencia de nuevos socios
+        mk('chart-reg-trend', {
+            type: 'line',
+            data: { labels: mKeys, datasets: [{ label: 'Nuevos Socios', data: mKeys.map(k => months[k].regs), borderColor: C.orange, backgroundColor: 'rgba(255,170,0,0.1)', fill: true, tension: 0.4, pointBackgroundColor: C.orange, pointRadius: 4 }] },
+            options: { responsive: true, plugins: { legend: { labels: { color: legendColor } } }, scales: { x: baseScales.x, y: { ticks: { color: tickColor, stepSize: 1 }, grid: { color: gridColor }, beginAtZero: true } } }
         });
-        const trendKeys = Object.keys(regMonths);
-        const regTrendData = trendKeys.map(k => regMonths[k].registrations);
-        const revTrendData = trendKeys.map(k => regMonths[k].revenue);
 
-        const regCanvas = document.getElementById('chart-reg-trend');
-        if (regCanvas) {
-            if (app.charts.regTrend) app.charts.regTrend.destroy();
-            app.charts.regTrend = new Chart(regCanvas, {
-                type: 'line',
-                data: {
-                    labels: trendKeys,
-                    datasets: [{
-                        label: 'Nuevos Socios', data: regTrendData,
-                        borderColor: '#ffaa00', backgroundColor: 'rgba(255,170,0,0.1)',
-                        fill: true, tension: 0.4, pointBackgroundColor: '#ffaa00', pointRadius: 5
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    plugins: { legend: { labels: { color: legendColor } } },
-                    scales: {
-                        x: { ticks: { color: tickColor }, grid: { color: gridColor } },
-                        y: { ticks: { color: tickColor, stepSize: 1 }, grid: { color: gridColor }, beginAtZero: true }
-                    }
-                }
-            });
-        }
+        // 6. Tendencia de ingresos
+        mk('chart-rev-trend', {
+            type: 'line',
+            data: { labels: mKeys, datasets: [{ label: 'Ingresos', data: mKeys.map(k => months[k].income), borderColor: C.green, backgroundColor: 'rgba(0,255,65,0.1)', fill: true, tension: 0.4, pointBackgroundColor: C.green, pointRadius: 4 }] },
+            options: { responsive: true, plugins: { legend: { labels: { color: legendColor } }, tooltip: { callbacks: { label: (ctx) => 'Ingresos: $' + ctx.parsed.y.toLocaleString() } } }, scales: { x: baseScales.x, y: { ticks: { color: tickColor, callback: v => '$' + v.toLocaleString() }, grid: { color: gridColor }, beginAtZero: true } } }
+        });
 
-        // 6. Tendencia de Ingresos (Últimos 6 meses)
-        const revCanvas = document.getElementById('chart-rev-trend');
-        if (revCanvas) {
-            if (app.charts.revTrend) app.charts.revTrend.destroy();
-            app.charts.revTrend = new Chart(revCanvas, {
-                type: 'line',
-                data: {
-                    labels: trendKeys,
-                    datasets: [{
-                        label: 'Ingresos', data: revTrendData,
-                        borderColor: '#00ff41', backgroundColor: 'rgba(0,255,65,0.1)',
-                        fill: true, tension: 0.4, pointBackgroundColor: '#00ff41', pointRadius: 5
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    plugins: {
-                        legend: { labels: { color: legendColor } },
-                        tooltip: { callbacks: { label: function(ctx) { return 'Ingresos: $' + ctx.parsed.y.toLocaleString(); } } }
-                    },
-                    scales: {
-                        x: { ticks: { color: tickColor }, grid: { color: gridColor } },
-                        y: { ticks: { color: tickColor, callback: v => '$' + v.toLocaleString() }, grid: { color: gridColor }, beginAtZero: true }
-                    }
-                }
-            });
-        }
+        // 7. NUEVA: Método de pago
+        mk('chart-payment', {
+            type: 'doughnut',
+            data: { labels: ['Efectivo', 'Tarjeta'], datasets: [{ data: [cash, card], backgroundColor: [C.green, C.blue], borderColor: '#0a0a0a', borderWidth: 2 }] },
+            options: { responsive: true, plugins: { legend: { position: 'bottom', labels: { color: tickColor } }, tooltip: { callbacks: { label: (ctx) => ` ${ctx.label}: $${ctx.parsed.toLocaleString()}` } } } }
+        });
+
+        // 8. NUEVA: Ingresos por tipo
+        mk('chart-income-type', {
+            type: 'bar',
+            data: { labels: ['Inscripción', 'Renovación', 'Tienda', 'Otros'], datasets: [{ label: 'Ingresos', data: [incInscr, incRenov, incTienda, incOtros], backgroundColor: [C.red, C.orange, C.green, C.purple], borderRadius: 6 }] },
+            options: { responsive: true, plugins: { legend: { display: false }, tooltip: { callbacks: { label: (ctx) => '$' + ctx.parsed.y.toLocaleString() } } }, scales: { x: baseScales.x, y: { ticks: { color: tickColor, callback: v => '$' + v.toLocaleString() }, grid: { color: gridColor }, beginAtZero: true } } }
+        });
+    },
+
+    exportStatsCSV: function() {
+        const c = this._statsCache;
+        if (!c) { showToast('error', 'Primero abre las estadísticas'); return; }
+        const rows = [];
+        rows.push(['ATLAS GYM - Estadisticas']);
+        rows.push(['Periodo', c.start.toLocaleDateString(), 'a', c.end.toLocaleDateString()]);
+        rows.push([]);
+        rows.push(['Resumen', 'Valor']);
+        rows.push(['Ingresos', c.income]);
+        rows.push(['Gastos', c.expense]);
+        rows.push(['Balance', c.balance]);
+        rows.push(['Efectivo', c.cash]);
+        rows.push(['Tarjeta', c.card]);
+        rows.push(['Ingreso Inscripciones', c.incInscr]);
+        rows.push(['Ingreso Renovaciones', c.incRenov]);
+        rows.push(['Ingreso Tienda', c.incTienda]);
+        rows.push(['Ingreso Otros', c.incOtros]);
+        rows.push(['Visitas exitosas', c.visitsOk]);
+        rows.push(['Nuevos socios', c.newMembers]);
+        rows.push([]);
+        rows.push(['Mes', 'Ingresos', 'Gastos', 'Efectivo', 'Tarjeta', 'Nuevos socios']);
+        c.mKeys.forEach(k => { const m = c.months[k]; rows.push([k, m.income, m.expense, m.cash, m.card, m.regs]); });
+        const csv = rows.map(r => r.map(cell => `"${String(cell).replace(/"/g, '""')}"`).join(',')).join('\n');
+        const blob = new Blob(['﻿' + csv], { type: 'text/csv;charset=utf-8;' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url; a.download = `atlas_estadisticas_${new Date().toISOString().slice(0, 10)}.csv`; a.click();
+        URL.revokeObjectURL(url);
+        showToast('success', 'CSV exportado');
     },
 
     // 3. DASHBOARD
@@ -2065,39 +2099,67 @@ window.app = {
 
     // 8. OTROS
     loadConfig: async function() {
-        const c = await db.get('config/prices');
-        if(c) {
-            prices = c;
-            // Map keys to input IDs
-            const map = {
-                "visit": "conf-visit", "weekly": "conf-weekly", "biweekly": "conf-biweekly",
-                "monthly": "conf-monthly", "student": "conf-student",
-                "quarterly": "conf-quarterly", "semiannual": "conf-semiannual", "annual": "conf-annual",
-                "couple": "conf-couple", "family3": "conf-family3", "family4": "conf-family4"
-            };
-            for (const [key, id] of Object.entries(map)) {
-                const el = document.getElementById(id);
-                if (el && c[key] !== undefined) el.value = c[key];
+        // Lectura inicial. El listener realtime de init() mantiene esto sincronizado,
+        // pero este fetch llena los inputs lo antes posible al entrar.
+        try {
+            const c = await db.get('config/prices');
+            prices = (c && typeof c === 'object') ? { ...DEFAULT_PRICES, ...c } : { ...DEFAULT_PRICES };
+        } catch (e) {
+            prices = { ...DEFAULT_PRICES };
+        }
+        syncPriceInputs();
+    },
+
+    saveConfig: async function() {
+        // Construye el nuevo objeto a partir de los inputs, pero de forma SEGURA:
+        // si un input esta vacio o invalido, conserva el precio actual (no lo pone en 0).
+        const newPrices = { ...prices };
+        let invalid = 0;
+        for (const [key, id] of Object.entries(PRICE_INPUT_MAP)) {
+            const el = document.getElementById(id);
+            if (!el) continue;
+            const raw = el.value.trim();
+            if (raw === '') continue;                 // vacio -> conservar actual
+            const num = Number(raw);
+            if (isNaN(num) || num < 0) { invalid++; continue; }
+            newPrices[key] = num;
+        }
+
+        try {
+            await db.set('config/prices', newPrices);   // Firebase = fuente de verdad
+            prices = newPrices;
+            syncPriceInputs();
+            this.logAction('Config Precios', 'Se actualizaron los precios de los planes.');
+            if (invalid > 0) {
+                showToast('error', `Guardado, pero ${invalid} campo(s) invalido(s) se ignoraron`);
+            } else {
+                showToast('success', 'Precios guardados en la nube');
             }
+        } catch (e) {
+            showToast('error', 'No se pudo guardar. Revisa tu conexion.');
         }
     },
-    saveConfig: function() {
-        const newPrices = {
-            "visit": Number(document.getElementById('conf-visit').value),
-            "weekly": Number(document.getElementById('conf-weekly').value),
-            "biweekly": Number(document.getElementById('conf-biweekly').value),
-            "monthly": Number(document.getElementById('conf-monthly').value),
-            "student": Number(document.getElementById('conf-student').value),
-            "quarterly": Number(document.getElementById('conf-quarterly').value),
-            "semiannual": Number(document.getElementById('conf-semiannual').value),
-            "annual": Number(document.getElementById('conf-annual').value),
-            "couple": Number(document.getElementById('conf-couple').value),
-            "family3": Number(document.getElementById('conf-family3').value),
-            "family4": Number(document.getElementById('conf-family4').value)
-        };
-        db.set('config/prices', newPrices);
-        prices = newPrices;
-        showToast('success', 'Configurado');
+
+    // === RESPALDO: exportar toda la base de datos a un archivo JSON ===
+    exportBackup: async function() {
+        if (currentUser.role !== 'admin' && currentUser.role !== 'dev') {
+            return showToast('error', 'Acceso denegado');
+        }
+        try {
+            showToast('success', 'Generando respaldo...');
+            const all = await db.get('/') || {};
+            const blob = new Blob([JSON.stringify(all, null, 2)], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            const stamp = new Date().toISOString().slice(0, 19).replace(/[:T]/g, '-');
+            a.href = url;
+            a.download = `atlas_respaldo_${stamp}.json`;
+            a.click();
+            URL.revokeObjectURL(url);
+            this.logAction('Respaldo', 'Se exporto un respaldo completo de la base de datos.');
+        } catch (e) {
+            showToast('error', 'No se pudo generar el respaldo');
+        }
     },
 
     loadEmployees: function() {

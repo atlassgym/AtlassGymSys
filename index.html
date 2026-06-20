@@ -4,10 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>ATLAS GYM | SISTEMA</title>
-    <link rel="preconnect" href="https://cdnjs.cloudflare.com" crossorigin>
-    <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="stylesheet" href="style.css?v=5">
-    <link rel="stylesheet" href="glow.css?v=1">
     <link rel="manifest" href="manifest.json">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -28,7 +25,6 @@
     </div>
 
     <div id="login-screen">
-        <div class="login-floor"></div>
         <img src="Logo/ATLAS.png" style="width:160px; margin-bottom:30px; filter:drop-shadow(0 0 15px #ff003c);">
         <div class="login-box">
             <h2 style="color:var(--primary); font-family:'Rajdhani'; margin-bottom:10px; font-size:2rem;">SISTEMA DE ACCESO</h2>
@@ -471,6 +467,12 @@
                             </div>
                         </div>
                         <button class="btn" style="width:100%; margin-top:20px;" onclick="app.saveConfig()">GUARDAR CAMBIOS</button>
+                        <p style="color:#666; font-size:0.75rem; margin-top:10px; text-align:center;">
+                            <i class="fas fa-cloud"></i> Los precios se guardan en la nube (Firebase) y no se borran al reiniciar.
+                        </p>
+                        <button class="btn btn-outline admin-only" style="width:100%; margin-top:15px; border-color:var(--neon-green); color:var(--neon-green);" onclick="app.exportBackup()">
+                            <i class="fas fa-download"></i> DESCARGAR RESPALDO (JSON)
+                        </button>
                     </div>
                     
                     <div style="background:var(--panel); padding:30px; border-radius:12px; border:var(--border);">
@@ -610,6 +612,32 @@
 
             <section id="view-stats" class="view-section">
                 <h1><i class="fas fa-chart-bar" style="color:var(--primary); margin-right:10px; filter:drop-shadow(0 0 8px rgba(255,0,60,0.4));"></i> Estadisticas Profesionales</h1>
+
+                <!-- CONTROLES / FILTROS -->
+                <div class="stats-controls">
+                    <div class="stats-period-btns">
+                        <button class="stats-period-btn" data-period="thisMonth" onclick="app.setStatsPeriod('thisMonth', event)">Este mes</button>
+                        <button class="stats-period-btn" data-period="lastMonth" onclick="app.setStatsPeriod('lastMonth', event)">Mes pasado</button>
+                        <button class="stats-period-btn" data-period="3m" onclick="app.setStatsPeriod('3m', event)">3M</button>
+                        <button class="stats-period-btn active" data-period="6m" onclick="app.setStatsPeriod('6m', event)">6M</button>
+                        <button class="stats-period-btn" data-period="12m" onclick="app.setStatsPeriod('12m', event)">12M</button>
+                        <button class="stats-period-btn" data-period="thisYear" onclick="app.setStatsPeriod('thisYear', event)">Año</button>
+                        <button class="stats-period-btn" data-period="all" onclick="app.setStatsPeriod('all', event)">Todo</button>
+                    </div>
+                    <div class="stats-range-tools">
+                        <input type="date" id="stats-start" class="stats-date" title="Desde">
+                        <span style="color:#666;">—</span>
+                        <input type="date" id="stats-end" class="stats-date" title="Hasta">
+                        <button class="stats-mini-btn" onclick="app.setStatsPeriod('custom', event)"><i class="fas fa-filter"></i> Aplicar</button>
+                        <button class="stats-mini-btn" onclick="app.exportStatsCSV()"><i class="fas fa-file-csv"></i> CSV</button>
+                        <button class="stats-mini-btn" onclick="window.print()"><i class="fas fa-print"></i></button>
+                    </div>
+                </div>
+                <div style="color:#666; font-size:0.8rem; margin:0 0 20px;">Periodo mostrado: <span id="stats-range-label" style="color:var(--primary); font-weight:600;">—</span></div>
+
+                <!-- KPIs DEL PERIODO -->
+                <div class="stats-kpi-grid" id="stats-kpis"></div>
+
                 <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 30px;">
                     <div class="table-container" style="padding: 20px; background: #111;">
                         <h3 style="font-family: 'Rajdhani'; margin-bottom: 20px; color: var(--primary);">Afluencia Horaria</h3>
@@ -632,12 +660,22 @@
                 </div>
                 <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 30px; margin-top: 30px;">
                     <div class="table-container" style="padding: 20px; background: #111;">
-                        <h3 style="font-family: 'Rajdhani'; margin-bottom: 20px; color: var(--neon-orange);">Tendencia de Nuevos Socios (6 meses)</h3>
+                        <h3 style="font-family: 'Rajdhani'; margin-bottom: 20px; color: var(--neon-orange);">Tendencia de Nuevos Socios</h3>
                         <canvas id="chart-reg-trend"></canvas>
                     </div>
                     <div class="table-container" style="padding: 20px; background: #111;">
-                        <h3 style="font-family: 'Rajdhani'; margin-bottom: 20px; color: var(--neon-green);">Tendencia de Ingresos (6 meses)</h3>
+                        <h3 style="font-family: 'Rajdhani'; margin-bottom: 20px; color: var(--neon-green);">Tendencia de Ingresos</h3>
                         <canvas id="chart-rev-trend"></canvas>
+                    </div>
+                </div>
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 30px; margin-top: 30px;">
+                    <div class="table-container" style="padding: 20px; background: #111;">
+                        <h3 style="font-family: 'Rajdhani'; margin-bottom: 20px; color: var(--neon-green);">Ingresos por Método de Pago</h3>
+                        <canvas id="chart-payment"></canvas>
+                    </div>
+                    <div class="table-container" style="padding: 20px; background: #111;">
+                        <h3 style="font-family: 'Rajdhani'; margin-bottom: 20px; color: var(--primary);">Ingresos por Tipo</h3>
+                        <canvas id="chart-income-type"></canvas>
                     </div>
                 </div>
             </section>
@@ -928,12 +966,30 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
     <script type="module" src="firebase-config.js"></script>
     <script type="module" src="script.js?v=5"></script>
-    <script src="glow.js?v=1" defer></script>
     <script>
         if ('serviceWorker' in navigator) {
-            navigator.serviceWorker.register('./sw.js')
-                .then(() => console.log('Service Worker Registrado'))
-                .catch((err) => console.log('Error SW:', err));
+            // ¿Ya había un SW controlando la pagina? Si no, es la primera visita
+            // (no recargar). Si si, un cambio de controlador = actualizacion real.
+            const hadController = !!navigator.serviceWorker.controller;
+            navigator.serviceWorker.register('./sw.js').then((reg) => {
+                // Si entra un SW nuevo, activarlo de inmediato
+                reg.addEventListener('updatefound', () => {
+                    const nw = reg.installing;
+                    if (!nw) return;
+                    nw.addEventListener('statechange', () => {
+                        if (nw.state === 'installed' && navigator.serviceWorker.controller) {
+                            nw.postMessage('SKIP_WAITING');
+                        }
+                    });
+                });
+            }).catch((err) => console.log('Error SW:', err));
+
+            let _reloaded = false;
+            navigator.serviceWorker.addEventListener('controllerchange', () => {
+                if (_reloaded || !hadController) return; // no recargar en primera visita
+                _reloaded = true;
+                location.reload();
+            });
         }
     </script>
 </body>
