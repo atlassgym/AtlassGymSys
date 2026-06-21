@@ -125,6 +125,64 @@ function memberAttendanceKeys(code) {
     return visits.filter(v => String(v.code) === String(code) && v.status === 'success').map(v => localDateKey(v.date));
 }
 
+// ===== LOGROS / INSIGNIAS =====
+// Catálogo de insignias. `test` recibe el objeto de logros del socio.
+const BADGES = [
+    { key: 'week',    name: 'Primera semana', req: '7 días seguidos',            icon: 'ti-flame',          color: '#00ff41', test: a => a.best >= 7 },
+    { key: 'const',   name: 'Constante',      req: '30 días seguidos',           icon: 'ti-calendar-stats', color: '#ffaa00', test: a => a.best >= 30 },
+    { key: 'early',   name: 'Madrugador',     req: '10 entradas antes de 7am',   icon: 'ti-sunrise',        color: '#4488ff', test: a => a.early >= 10 },
+    { key: 'unstop',  name: 'Imparable',      req: '100 días seguidos',          icon: 'ti-bolt',           color: '#aa44ff', test: a => a.best >= 100 },
+    { key: 'weekend', name: 'Finde guerrero', req: '8 días de fin de semana',    icon: 'ti-barbell',        color: '#ff003c', test: a => a.weekendDays >= 8 },
+    { key: 'legend',  name: 'Leyenda Atlas',  req: '365 días seguidos',          icon: 'ti-crown',          color: '#ffd700', test: a => a.best >= 365 }
+];
+
+// Logros de UN socio (para la ficha). Devuelve métricas para evaluar insignias.
+function getMemberAchievements(code) {
+    const now = new Date();
+    const ym = now.getFullYear() + '-' + String(now.getMonth() + 1).padStart(2, '0');
+    const keys = [];
+    let early = 0;
+    const weekend = new Set();
+    const month = new Set();
+    visits.forEach(v => {
+        if (v.status !== 'success' || String(v.code) !== String(code)) return;
+        const d = new Date(v.date);
+        const k = localDateKey(d);
+        keys.push(k);
+        if (d.getHours() < 7) early++;
+        const dow = d.getDay();
+        if (dow === 0 || dow === 6) weekend.add(k);
+        if (k.indexOf(ym) === 0) month.add(k);
+    });
+    const stk = computeStreak(keys);
+    return { best: stk.best, current: stk.current, early, weekendDays: weekend.size, monthDays: month.size, totalVisits: keys.length };
+}
+
+// Índice de logros de TODOS los socios (1 sola pasada por visitas). Para la sección y el dashboard.
+function buildAchievementsIndex() {
+    const now = new Date();
+    const ym = now.getFullYear() + '-' + String(now.getMonth() + 1).padStart(2, '0');
+    const idx = {};
+    visits.forEach(v => {
+        if (v.status !== 'success') return;
+        const c = String(v.code);
+        let e = idx[c];
+        if (!e) e = idx[c] = { keys: [], early: 0, weekend: new Set(), month: new Set() };
+        const d = new Date(v.date);
+        const k = localDateKey(d);
+        e.keys.push(k);
+        if (d.getHours() < 7) e.early++;
+        const dow = d.getDay();
+        if (dow === 0 || dow === 6) e.weekend.add(k);
+        if (k.indexOf(ym) === 0) e.month.add(k);
+    });
+    return members.map(m => {
+        const e = idx[String(m.code)] || { keys: [], early: 0, weekend: new Set(), month: new Set() };
+        const stk = computeStreak(e.keys);
+        return { m, best: stk.best, current: stk.current, early: e.early, weekendDays: e.weekend.size, monthDays: e.month.size };
+    });
+}
+
 const PLAN_NAMES = {
     "visit": "Visita",
     "weekly": "Semanal",
@@ -445,7 +503,8 @@ window.app = {
         const target = document.getElementById(`view-${viewId}`);
         if(target) target.classList.add('active');
         document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
-        if(event && event.currentTarget) event.currentTarget.classList.add('active');
+        const navBtn = document.querySelector(`.nav-btn[onclick="app.nav('${viewId}')"]`);
+        if (navBtn) navBtn.classList.add('active');
 
         if(viewId === 'dashboard') this.calcStats();
         if(viewId === 'finances') this.loadFinances('default'); 
@@ -455,6 +514,7 @@ window.app = {
         if(viewId === 'reports') this.reports.init();
         if(viewId === 'dev') this.dev.loadUsers();
         if(viewId === 'stats') this.renderStats();
+        if(viewId === 'logros') this.renderLogros();
     },
 
     // 2.5. ESTADÍSTICAS PRO
@@ -699,6 +759,7 @@ window.app = {
     // 3. DASHBOARD
     calcStats: function() {
         this.renderDashLoyalty();
+        this.renderDashConstancia();
         const today = new Date();
         const startOfDay = new Date(); startOfDay.setHours(0,0,0,0);
         const todayVisits = visits.filter(v => new Date(v.date) >= startOfDay && v.status === 'success');
@@ -1270,16 +1331,21 @@ window.app = {
             ${groupHtml}
         `;
 
-        // Antigüedad y racha (flamita)
+        // Antigüedad, racha (flamita) e insignias
         const _loyaltyEl = document.getElementById('member-loyalty-content');
         if (_loyaltyEl) {
-            const _stk = computeStreak(memberAttendanceKeys(m.code));
+            const _ach = getMemberAchievements(m.code);
+            const _earned = BADGES.filter(b => b.test(_ach));
+            const _chips = _earned.length
+                ? `<div class="loyalty-chips">${_earned.map(b => `<span class="lb-chip" style="color:${b.color}; border-color:${b.color}66;"><i class="ti ${b.icon}"></i> ${b.name}</span>`).join('')}</div>`
+                : `<div class="loyalty-chips"><span style="color:#555; font-size:0.8rem;"><i class="fas fa-lock" style="margin-right:5px;"></i>Sin insignias aún</span></div>`;
             _loyaltyEl.innerHTML = `
                 <div class="loyalty-badges">
                     <div class="loyalty-badge"><i class="fas fa-medal" style="color:var(--neon-orange);"></i><div><b>${tenureText(m.registeredAt)}</b><small>Antigüedad</small></div></div>
-                    <div class="loyalty-badge"><i class="fas fa-fire" style="color:#ff6a00;"></i><div><b>${_stk.current} día${_stk.current === 1 ? '' : 's'}</b><small>Racha actual</small></div></div>
-                    <div class="loyalty-badge"><i class="fas fa-trophy" style="color:#ffd700;"></i><div><b>${_stk.best} día${_stk.best === 1 ? '' : 's'}</b><small>Mejor racha</small></div></div>
-                </div>`;
+                    <div class="loyalty-badge"><i class="fas fa-fire" style="color:#ff6a00;"></i><div><b>${_ach.current} día${_ach.current === 1 ? '' : 's'}</b><small>Racha actual</small></div></div>
+                    <div class="loyalty-badge"><i class="fas fa-trophy" style="color:#ffd700;"></i><div><b>${_ach.best} día${_ach.best === 1 ? '' : 's'}</b><small>Mejor racha</small></div></div>
+                </div>
+                ${_chips}`;
         }
 
         document.getElementById('edit-name').value = m.name;
@@ -2288,15 +2354,21 @@ window.app = {
     },
 
     // Top 5 socios más antiguos para el Dashboard
+    // Solo socios vigentes (activos y por vencer). Se excluyen los vencidos/inactivos.
     renderDashLoyalty: function() {
         const ul = document.getElementById('dash-loyalty-list');
         if (!ul) return;
+        const now = new Date();
         const ranked = members
-            .filter(m => m.registeredAt)
+            .filter(m => {
+                if (!m.registeredAt) return false;
+                const days = Math.ceil((new Date(m.expiryDate) - now) / (1000 * 60 * 60 * 24));
+                return days >= 0; // activos + por vencer; fuera los vencidos
+            })
             .sort((a, b) => new Date(a.registeredAt) - new Date(b.registeredAt))
             .slice(0, 5);
         if (ranked.length === 0) {
-            ul.innerHTML = '<li style="color:#555; padding:6px 0;">Sin socios registrados aun</li>';
+            ul.innerHTML = '<li style="color:#555; padding:6px 0;">Sin socios vigentes</li>';
             return;
         }
         const medal = ['#ffd700', '#c0c0c0', '#cd7f32'];
@@ -2306,6 +2378,106 @@ window.app = {
                 <span style="flex:1; color:#fff; font-weight:600; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${m.name}</span>
                 <span style="color:var(--neon-orange); font-size:0.8rem; white-space:nowrap; flex-shrink:0;">${tenureText(m.registeredAt)}</span>
             </li>`).join('');
+    },
+
+    // Mini ranking de constancia del mes para el Dashboard (top 5)
+    renderDashConstancia: function() {
+        const ul = document.getElementById('dash-constancia-list');
+        if (!ul) return;
+        const top = buildAchievementsIndex()
+            .filter(a => a.monthDays > 0)
+            .sort((x, y) => y.monthDays - x.monthDays || y.current - x.current)
+            .slice(0, 5);
+        if (top.length === 0) {
+            ul.innerHTML = '<li style="color:#555; padding:6px 0;">Sin asistencias este mes</li>';
+            return;
+        }
+        const medal = ['#ffd700', '#c0c0c0', '#cd7f32'];
+        ul.innerHTML = top.map((a, i) => `
+            <li style="display:flex; align-items:center; gap:10px; padding:7px 0; border-bottom:1px solid #1a1a1a;">
+                <span style="font-family:'Rajdhani',sans-serif; font-weight:800; font-size:1.1rem; color:${medal[i] || '#666'}; width:26px; flex-shrink:0;">#${i + 1}</span>
+                <span style="flex:1; color:#fff; font-weight:600; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${a.m.name}</span>
+                <span style="color:#ff6a00; font-weight:700; font-size:0.85rem; flex-shrink:0;" title="Racha actual"><i class="fas fa-fire"></i> ${a.current}</span>
+                <span style="color:#9aa; font-size:0.8rem; flex-shrink:0;" title="Días asistidos este mes">${a.monthDays}d</span>
+            </li>`).join('');
+    },
+
+    // Sección completa de Logros: insignias + ranking de constancia del mes
+    renderLogros: function() {
+        const list = buildAchievementsIndex();
+
+        // Insignias (catálogo): se "encienden" si al menos un socio las tiene
+        const badgesEl = document.getElementById('logros-badges');
+        if (badgesEl) {
+            badgesEl.innerHTML = BADGES.map(b => {
+                const count = list.filter(a => b.test(a)).length;
+                const on = count > 0;
+                return `
+                    <div class="ach-badge ${on ? 'on' : 'off'}" onclick="app.showBadgeMembers('${b.key}')" title="Ver quién tiene esta insignia">
+                        ${on ? '<i class="ti ti-check ach-rib"></i>' : '<i class="ti ti-lock ach-lock"></i>'}
+                        <div class="ach-ic" style="${on ? `color:${b.color}; box-shadow:0 0 18px ${b.color}66;` : ''}"><i class="ti ${b.icon}"></i></div>
+                        <div class="ach-nm">${b.name}</div>
+                        <div class="ach-rq">${b.req}</div>
+                        <div class="ach-ct">${on ? count + ' socio' + (count === 1 ? '' : 's') : 'Nadie aún'}</div>
+                    </div>`;
+            }).join('');
+        }
+
+        // Ranking de constancia del mes (top 10 por días asistidos)
+        const now = new Date();
+        const monthName = now.toLocaleString('es', { month: 'long' });
+        const titleEl = document.getElementById('logros-ranking-title');
+        if (titleEl) titleEl.innerHTML = `<i class="ti ti-trophy" style="color:#ffd700;"></i> Ranking de Constancia · ${monthName.charAt(0).toUpperCase() + monthName.slice(1)}`;
+
+        const ranking = list
+            .filter(a => a.monthDays > 0)
+            .sort((x, y) => y.monthDays - x.monthDays || y.current - x.current)
+            .slice(0, 10);
+        const rkEl = document.getElementById('logros-ranking');
+        if (rkEl) {
+            rkEl.innerHTML = ranking.length === 0
+                ? '<div style="color:#666; padding:24px; text-align:center; background:#101010; border:1px solid #1c1c1c; border-radius:12px;">Aún no hay asistencias registradas este mes</div>'
+                : ranking.map((a, i) => {
+                    const col = i === 0 ? '#ffd700' : (i === 1 ? '#c0c0c0' : (i === 2 ? '#cd7f32' : '#666'));
+                    return `
+                        <div class="ach-rk" onclick="app.openMemberDetail('${a.m.id}')" title="Ver ficha">
+                            <span class="ach-pos" style="color:${col};">${i + 1}</span>
+                            <span class="ach-name">${a.m.name}</span>
+                            <span class="ach-flame" title="Racha actual"><i class="ti ti-flame"></i> ${a.current}</span>
+                            <span class="ach-days" title="Días asistidos este mes">${a.monthDays} días</span>
+                        </div>`;
+                }).join('');
+        }
+    },
+
+    // Muestra QUIÉNES tienen una insignia (al hacer clic en ella)
+    showBadgeMembers: function(key) {
+        const b = BADGES.find(x => x.key === key);
+        if (!b) return;
+        // Métrica relevante según la insignia (para ordenar y mostrar)
+        const metric = a => (b.key === 'early' ? a.early : (b.key === 'weekend' ? a.weekendDays : a.best));
+        const statText = a => {
+            if (b.key === 'early') return `${a.early} entradas tempranas`;
+            if (b.key === 'weekend') return `${a.weekendDays} días de finde`;
+            return `Mejor racha: ${a.best} días`;
+        };
+        const winners = buildAchievementsIndex().filter(a => b.test(a)).sort((x, y) => metric(y) - metric(x));
+
+        document.getElementById('badge-modal-title').innerHTML = `<i class="ti ${b.icon}" style="color:${b.color};"></i> ${b.name}`;
+        document.getElementById('badge-modal-sub').innerHTML = `${b.req} · ${winners.length} socio${winners.length === 1 ? '' : 's'}`;
+        const box = document.getElementById('badge-members-list');
+        if (winners.length === 0) {
+            box.innerHTML = '<div style="color:#666; padding:30px; text-align:center;">Nadie ha desbloqueado esta insignia todavía</div>';
+        } else {
+            box.innerHTML = winners.map((a, i) => `
+                <div class="badge-member-row" onclick="app.closeModal('modal-badge-members'); app.openMemberDetail('${a.m.id}')" title="Ver ficha">
+                    <span class="bm-pos">${i + 1}</span>
+                    <span class="bm-name">${a.m.name}</span>
+                    <span class="bm-code">${a.m.code}</span>
+                    <span class="bm-stat" style="color:${b.color};">${statText(a)}</span>
+                </div>`).join('');
+        }
+        document.getElementById('modal-badge-members').style.display = 'flex';
     },
 
     loadEmployees: function() {

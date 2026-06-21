@@ -1,6 +1,7 @@
 /* style.css - EDICIÓN FINAL: ROJO INTENSO + ARREGLO BORDE NARANJA */
 @import url('https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css');
 @import url('https://fonts.googleapis.com/css2?family=Rajdhani:wght@500;600;700;800&family=Inter:wght@300;400;600&display=swap');
+@import url('https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@2.47.0/tabler-icons.min.css');
 
 :root {
     --primary: #ff003c; /* Rojo Atlas */
@@ -4056,7 +4057,74 @@ body.light-mode .loyalty-badge b { color: #111; }
     .kiosk-streak-corner .streak-txt { font-size: 0.78rem; }
 }
 
-/* ===== Fila del Dashboard: Cumpleaños | Top Antigüedad | Acceso Kiosco ===== */
+/* ===== Fila del Dashboard: Cumpleaños | Top Antigüedad | Constancia ===== */
 .dash-trio { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 30px; }
 /* Al colapsar el sidebar (<=992px) se apilan en una sola columna */
 @media (max-width: 992px) { .dash-trio { grid-template-columns: 1fr; } }
+.dash-constancia-panel { transition: border-color 0.2s, box-shadow 0.2s; }
+.dash-constancia-panel:hover { border-color: rgba(255,215,0,0.4) !important; box-shadow: 0 0 20px rgba(255,215,0,0.12); }
+
+/* ===== Botón Acceso Kiosco (header del Dashboard) ===== */
+.dash-kiosk-btn {
+    display: flex; align-items: center; gap: 14px; text-decoration: none;
+    background: linear-gradient(145deg, rgba(0,255,65,0.09), rgba(0,255,65,0.02));
+    border: 1px solid rgba(0,255,65,0.35); border-radius: 12px;
+    padding: 12px 22px; min-width: 320px; transition: all 0.2s ease;
+}
+.dash-kiosk-btn:hover { border-color: var(--neon-green); box-shadow: 0 0 22px rgba(0,255,65,0.3); transform: translateY(-2px); }
+.dash-kiosk-btn .dki { width: 46px; height: 46px; border-radius: 10px; background: rgba(0,255,65,0.1); display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+.dash-kiosk-btn .dki i { color: var(--neon-green); font-size: 1.4rem; filter: drop-shadow(0 0 8px rgba(0,255,65,0.5)); }
+.dash-kiosk-btn .dkt { display: flex; flex-direction: column; line-height: 1.2; }
+.dash-kiosk-btn .dkt1 { color: #fff; font-family: 'Rajdhani', sans-serif; font-weight: 800; font-size: 1.15rem; letter-spacing: 2px; text-transform: uppercase; }
+.dash-kiosk-btn .dkt2 { color: #7aa890; font-size: 0.78rem; }
+.dash-kiosk-btn .dka { color: var(--neon-green); margin-left: 12px; font-size: 0.9rem; }
+@media (max-width: 560px) { .dash-kiosk-btn { width: 100%; min-width: 0; } }
+
+/* ===== Sección Logros de Racha ===== */
+/* Toda la sección usa la tipografía Rajdhani (como el mockup) */
+#view-logros { font-family: 'Rajdhani', sans-serif; }
+#view-logros h1 { font-family: 'Rajdhani', sans-serif; letter-spacing: 1px; }
+#view-logros p { font-family: 'Rajdhani', sans-serif; letter-spacing: 0.3px; }
+.ach-section-head { display: flex; align-items: center; gap: 10px; color: #fff; font-family: 'Rajdhani', sans-serif; font-weight: 800; font-size: 1.2rem; letter-spacing: 2px; text-transform: uppercase; margin-bottom: 18px; }
+.ach-section-head i { font-size: 1.25rem; filter: drop-shadow(0 0 8px currentColor); }
+.ach-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; }
+@media (max-width: 992px) { .ach-grid { grid-template-columns: repeat(2, 1fr); } }
+@media (max-width: 560px) { .ach-grid { grid-template-columns: 1fr; } }
+.ach-badge { position: relative; background: linear-gradient(145deg, #121212, #0b0b0b); border: 1px solid #1d1d1d; border-radius: 14px; padding: 22px 14px; text-align: center; }
+.ach-badge .ach-ic { width: 62px; height: 62px; border-radius: 50%; background: #161616; display: flex; align-items: center; justify-content: center; font-size: 1.7rem; margin: 0 auto 12px; color: #666; }
+.ach-badge .ach-nm { color: #fff; font-family: 'Rajdhani', sans-serif; font-weight: 700; font-size: 1.08rem; }
+.ach-badge .ach-rq { color: #888; font-size: 0.8rem; margin-top: 3px; }
+.ach-badge .ach-ct { color: #666; font-size: 0.74rem; margin-top: 9px; text-transform: uppercase; letter-spacing: 0.5px; }
+.ach-badge.on .ach-ct { color: #9aa; }
+.ach-badge.off { opacity: 0.5; filter: grayscale(0.7); }
+.ach-rib { position: absolute; top: 12px; right: 14px; color: var(--neon-green); font-size: 0.95rem; }
+.ach-lock { position: absolute; top: 12px; right: 14px; color: #555; font-size: 0.85rem; }
+.ach-rk { display: flex; align-items: center; gap: 14px; padding: 13px 16px; background: #101010; border: 1px solid #1c1c1c; border-radius: 10px; margin-bottom: 8px; cursor: pointer; transition: all 0.15s; }
+.ach-rk:hover { border-color: #333; background: #141414; }
+.ach-pos { font-family: 'Rajdhani', sans-serif; font-weight: 800; font-size: 1.35rem; width: 34px; text-align: center; flex-shrink: 0; }
+.ach-name { flex: 1; color: #fff; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.ach-flame { color: #ff6a00; font-weight: 700; flex-shrink: 0; }
+.ach-days { color: #9aa; font-size: 0.85rem; width: 78px; text-align: right; flex-shrink: 0; }
+/* Insignia clickeable (abre quién la tiene) */
+.ach-badge { cursor: pointer; transition: transform 0.15s, border-color 0.15s, box-shadow 0.15s; }
+.ach-badge:hover { transform: translateY(-3px); border-color: #383838; box-shadow: 0 8px 22px rgba(0,0,0,0.45); }
+
+/* Modal: lista de socios con una insignia */
+.badge-member-row { display: flex; align-items: center; gap: 14px; padding: 12px 14px; border-bottom: 1px solid #1a1a1a; cursor: pointer; transition: background 0.15s; }
+.badge-member-row:hover { background: #141414; }
+.bm-pos { font-family: 'Rajdhani', sans-serif; font-weight: 800; color: #666; width: 26px; text-align: center; flex-shrink: 0; }
+.bm-name { flex: 1; color: #fff; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.bm-code { color: var(--primary); font-weight: 700; font-size: 0.85rem; flex-shrink: 0; }
+.bm-stat { font-size: 0.82rem; font-weight: 600; flex-shrink: 0; min-width: 130px; text-align: right; }
+body.light-mode .badge-member-row:hover { background: #f2f2f2; }
+body.light-mode .bm-name { color: #111; }
+
+/* Insignias en la ficha del socio */
+.loyalty-chips { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; }
+.lb-chip { display: inline-flex; align-items: center; gap: 6px; font-size: 0.78rem; font-weight: 600; padding: 5px 12px; border-radius: 20px; border: 1px solid; background: rgba(255,255,255,0.02); }
+
+/* Modo claro */
+body.light-mode .ach-badge { background: #fff; border-color: #e2e2e2; }
+body.light-mode .ach-badge .ach-nm { color: #111; }
+body.light-mode .ach-rk { background: #fff; border-color: #e2e2e2; }
+body.light-mode .ach-name { color: #111; }
