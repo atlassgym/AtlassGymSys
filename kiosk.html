@@ -13,6 +13,9 @@
     <!-- Confetti Canvas for Birthday Celebration -->
     <canvas id="confetti-canvas" style="position:fixed; top:0; left:0; width:100%; height:100%; pointer-events:none; z-index:9999;"></canvas>
 
+    <!-- Racha (flamita) en la esquina, no estorba el mensaje central -->
+    <div id="k-streak" class="kiosk-streak-corner" aria-hidden="true"></div>
+
     <!-- Birthday Overlay Message -->
     <div id="birthday-overlay" class="birthday-overlay">
         <div class="birthday-content">
@@ -75,6 +78,26 @@
         const msg = document.getElementById('k-msg');
         const sub = document.getElementById('k-sub');
         const body = document.body;
+
+        // ===== RACHA (FLAMITA) =====
+        // Cada día con ingreso suma 1. Solo se perdonan sábado y domingo;
+        // faltar un día entre semana rompe la racha.
+        function kLocalKey(d) { const x = new Date(d); return x.getFullYear() + '-' + String(x.getMonth() + 1).padStart(2, '0') + '-' + String(x.getDate()).padStart(2, '0'); }
+        function kGapWeekend(aKey, bKey) {
+            const a = new Date(aKey + 'T00:00:00'), b = new Date(bKey + 'T00:00:00');
+            const d = new Date(a); d.setDate(d.getDate() + 1);
+            while (d < b) { const w = d.getDay(); if (w !== 0 && w !== 6) return false; d.setDate(d.getDate() + 1); }
+            return true;
+        }
+        function kComputeStreak(keysArr) {
+            const keys = Array.from(new Set(keysArr)).sort();
+            if (keys.length === 0) return { current: 0, best: 0 };
+            let best = 1, run = 1;
+            for (let i = 1; i < keys.length; i++) { if (kGapWeekend(keys[i - 1], keys[i])) run++; else run = 1; if (run > best) best = run; }
+            let cur = 1;
+            for (let i = keys.length - 1; i > 0; i--) { if (kGapWeekend(keys[i - 1], keys[i])) cur++; else break; }
+            return { current: cur, best };
+        }
 
         // Detect Touch Device
         const isTouch = ('ontouchstart' in window) || (navigator.maxTouchPoints > 0);
@@ -237,7 +260,17 @@
                         setErrorState(`Membresía vencida el día ${new Date(m.expiryDate).toLocaleDateString()}`, "");
                         db.add("visits", { code: code, name: m.name, date: new Date().toISOString(), status: "expired", reason: "Membresía Vencida" });
                     } else {
-                        setSuccessState(m.name, days, m.expiryDate, m.dob);
+                        // Calcular racha (incluye el ingreso de hoy)
+                        let streak = { current: 1, best: 1 };
+                        try {
+                            const visitsData = await db.get("visits") || {};
+                            const keys = Object.values(visitsData)
+                                .filter(v => String(v.code) === String(code) && v.status === "success")
+                                .map(v => kLocalKey(v.date));
+                            keys.push(kLocalKey(new Date()));
+                            streak = kComputeStreak(keys);
+                        } catch (e) { /* si falla, racha mínima */ }
+                        setSuccessState(m.name, days, m.expiryDate, m.dob, streak);
                         db.add("visits", { code: code, name: m.name, date: new Date().toISOString(), status: "success" });
                     }
                 }
@@ -266,9 +299,23 @@
             }, 4000);
         }
 
-        function setSuccessState(name, days, expiryDate, dob) {
+        function setSuccessState(name, days, expiryDate, dob, streak) {
             const firstName = name.split(' ')[0];
             const birthdayMonth = isBirthdayMonth(dob);
+
+            // Racha en la esquina superior derecha (no estorba el mensaje central)
+            const sNum = streak ? streak.current : 0;
+            const isRecord = streak && streak.current >= streak.best && streak.current > 1;
+            const streakEl = document.getElementById('k-streak');
+            if (streakEl) {
+                if (sNum > 0) {
+                    streakEl.innerHTML = `<i class="fas fa-fire flame"></i><span class="streak-num">${sNum}</span><span class="streak-txt">día${sNum === 1 ? '' : 's'} seguido${sNum === 1 ? '' : 's'}${isRecord ? '<br>¡RÉCORD!' : ''}</span>`;
+                    streakEl.classList.add('show');
+                } else {
+                    streakEl.classList.remove('show');
+                    streakEl.innerHTML = '';
+                }
+            }
 
             body.style.transition = "background-color 0.5s ease";
             body.style.backgroundImage = 'none';
@@ -309,6 +356,8 @@
             body.style.backgroundImage = "radial-gradient(circle, #1a0000 0%, #000000 80%)";
             msg.innerHTML = '';
             sub.innerHTML = '';
+            const se = document.getElementById('k-streak');
+            if (se) { se.classList.remove('show'); se.innerHTML = ''; }
         }
     </script>
 </body>

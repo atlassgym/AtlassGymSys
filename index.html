@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>ATLAS GYM | SISTEMA</title>
-    <link rel="stylesheet" href="style.css?v=5">
+    <link rel="stylesheet" href="style.css?v=8">
     <link rel="manifest" href="manifest.json">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -140,7 +140,7 @@
     </div>
 </div>
 
-                <div style="display:grid; grid-template-columns: 1fr 1fr; gap:30px;">
+                <div class="dash-trio">
                     <div class="table-container" style="padding:28px; background:linear-gradient(145deg, #111 0%, #0a0a0a 100%); border:1px solid #222; border-radius:14px; position:relative; overflow:hidden;">
                         <div style="position:absolute; top:0; left:0; right:0; height:2px; background:linear-gradient(90deg, transparent, var(--primary), transparent); opacity:0.5;"></div>
                         <h4 style="color:#fff; margin-bottom:18px; display:flex; align-items:center; gap:12px; font-family:'Rajdhani',sans-serif; font-size:1.1rem; letter-spacing:1px; text-transform:uppercase;">
@@ -150,6 +150,16 @@
                             Cumpleanos del Mes
                         </h4>
                         <ul id="bday-list" style="list-style:none; color:#aaa; font-size:0.9rem; line-height:2;"></ul>
+                    </div>
+                    <div class="table-container" style="padding:28px; background:linear-gradient(145deg, #111 0%, #0a0a0a 100%); border:1px solid #222; border-radius:14px; position:relative; overflow:hidden;">
+                        <div style="position:absolute; top:0; left:0; right:0; height:2px; background:linear-gradient(90deg, transparent, var(--neon-orange), transparent); opacity:0.5;"></div>
+                        <h4 style="color:#fff; margin-bottom:18px; display:flex; align-items:center; gap:12px; font-family:'Rajdhani',sans-serif; font-size:1.1rem; letter-spacing:1px; text-transform:uppercase;">
+                            <div style="width:35px; height:35px; border-radius:10px; background:rgba(255,170,0,0.08); display:flex; align-items:center; justify-content:center;">
+                                <i class="fas fa-medal" style="color:var(--neon-orange); font-size:1.1rem; filter:drop-shadow(0 0 8px rgba(255,170,0,0.5));"></i>
+                            </div>
+                            Top Antiguedad
+                        </h4>
+                        <ul id="dash-loyalty-list" style="list-style:none; color:#aaa; font-size:0.9rem; line-height:1.8; margin:0; padding:0;"></ul>
                     </div>
                     <div class="table-container" style="padding:28px; text-align:center; background:linear-gradient(145deg, #111 0%, #080808 100%); border:1px solid #222; border-radius:14px; display:flex; flex-direction:column; justify-content:center; align-items:center; position:relative; overflow:hidden;">
                         <div style="position:absolute; top:0; left:0; right:0; height:2px; background:linear-gradient(90deg, transparent, var(--neon-green), transparent); opacity:0.4;"></div>
@@ -223,6 +233,7 @@
                     <h1 data-testid="members-heading"><i class="fas fa-users" style="color:var(--primary); margin-right:10px; filter:drop-shadow(0 0 8px rgba(255,0,60,0.3));"></i> Directorio de Socios</h1>
                     <div style="display:flex; gap:10px; align-items:center;">
                         <button id="btn-delete-all-inactive" class="btn" onclick="app.deleteAllInactive()" style="display:none; background:#c62828; border-color:#c62828;" title="Eliminar todos los inactivos"><i class="fas fa-trash-alt"></i> ELIMINAR INACTIVOS</button>
+                        <button class="btn btn-outline" onclick="app.openLoyaltyRanking()" title="Ranking de antigüedad y rachas"><i class="fas fa-medal"></i> ANTIGÜEDAD</button>
                         <button class="btn" onclick="app.openRegisterModal()"><i class="fas fa-plus"></i> NUEVO SOCIO</button>
                     </div>
                 </div>
@@ -795,7 +806,8 @@
     <div id="modal-member-detail" class="modal">
     <div class="modal-content" style="width: 600px; border-top: 5px solid var(--primary);">
         <div id="member-info-content"></div>
-        
+        <div id="member-loyalty-content"></div>
+
         <div class="form-grid" style="margin-top:20px; border-top:1px solid #222; padding-top:20px;">
             <div>
                 <label style="color:#666; font-size:0.8rem;">Nombre Completo</label>
@@ -839,6 +851,28 @@
             <button class="btn" style="flex:1" onclick="app.downloadMemberCard()"><i class="fas fa-download"></i> Descargar</button>
             <button class="btn btn-outline" style="flex:1" onclick="app.closeModal('modal-card')">Volver</button>
         </div>
+    </div>
+</div>
+
+<div id="modal-loyalty" class="modal">
+    <div class="modal-content" style="width: 760px; max-width:95vw; max-height:90vh; display:flex; flex-direction:column; border-top:5px solid var(--neon-orange);">
+        <h2 style="font-family:'Rajdhani'; margin-bottom:6px;"><i class="fas fa-medal" style="color:var(--neon-orange);"></i> Antigüedad y Lealtad</h2>
+        <p style="color:#888; font-size:0.85rem; margin-bottom:14px;">Socios ordenados del más antiguo al más nuevo. Toca un socio para ver su ficha.</p>
+        <div style="display:flex; align-items:center; gap:10px; flex-wrap:wrap; margin-bottom:14px;">
+            <label style="color:#aaa; font-size:0.9rem;">Mostrar socios con más de</label>
+            <input type="number" id="loyalty-min-months" value="0" min="0" style="width:80px; text-align:center;" oninput="app.renderLoyalty()">
+            <label style="color:#aaa; font-size:0.9rem;">meses</label>
+            <span id="loyalty-summary" style="margin-left:auto; color:#ccc; font-size:0.85rem;"></span>
+        </div>
+        <div class="table-container" style="overflow-y:auto; flex:1;">
+            <table style="width:100%;">
+                <thead>
+                    <tr><th>#</th><th>Nombre</th><th>Código</th><th>Antigüedad</th><th title="Racha actual"><i class="fas fa-fire"></i> Racha</th><th title="Mejor racha"><i class="fas fa-trophy"></i> Mejor</th></tr>
+                </thead>
+                <tbody id="loyalty-table-body"></tbody>
+            </table>
+        </div>
+        <button class="btn btn-outline" style="margin-top:16px;" onclick="app.closeModal('modal-loyalty')">Cerrar</button>
     </div>
 </div>
 
@@ -965,7 +999,7 @@
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
     <script type="module" src="firebase-config.js"></script>
-    <script type="module" src="script.js?v=5"></script>
+    <script type="module" src="script.js?v=7"></script>
     <script>
         if ('serviceWorker' in navigator) {
             // ¿Ya había un SW controlando la pagina? Si no, es la primera visita

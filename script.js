@@ -60,6 +60,71 @@ function syncPriceInputs() {
     }
 }
 
+// ===== ANTIGÜEDAD Y RACHAS (FLAMITA) =====
+// Clave de fecha local 'YYYY-MM-DD'
+function localDateKey(d) {
+    const x = new Date(d);
+    return x.getFullYear() + '-' + String(x.getMonth() + 1).padStart(2, '0') + '-' + String(x.getDate()).padStart(2, '0');
+}
+// ¿Todos los días ESTRICTAMENTE entre aKey y bKey son fin de semana? (sáb/dom)
+// Si hay un día entre semana sin asistir, la racha se rompe.
+function gapIsOnlyWeekend(aKey, bKey) {
+    const a = new Date(aKey + 'T00:00:00');
+    const b = new Date(bKey + 'T00:00:00');
+    const d = new Date(a); d.setDate(d.getDate() + 1);
+    while (d < b) {
+        const dow = d.getDay();
+        if (dow !== 0 && dow !== 6) return false;
+        d.setDate(d.getDate() + 1);
+    }
+    return true;
+}
+// Calcula racha actual y mejor racha a partir de fechas 'YYYY-MM-DD' con asistencia
+function computeStreak(dateKeys) {
+    const keys = Array.from(new Set(dateKeys)).sort();
+    if (keys.length === 0) return { current: 0, best: 0, last: null };
+    let best = 1, run = 1;
+    for (let i = 1; i < keys.length; i++) {
+        if (gapIsOnlyWeekend(keys[i - 1], keys[i])) run++; else run = 1;
+        if (run > best) best = run;
+    }
+    let curRun = 1;
+    for (let i = keys.length - 1; i > 0; i--) {
+        if (gapIsOnlyWeekend(keys[i - 1], keys[i])) curRun++; else break;
+    }
+    const todayKey = localDateKey(new Date());
+    const lastKey = keys[keys.length - 1];
+    let current;
+    if (lastKey === todayKey || gapIsOnlyWeekend(lastKey, todayKey)) current = curRun; // viva
+    else current = 0; // faltó un día entre semana -> perdida
+    return { current, best, last: lastKey };
+}
+// Antigüedad en texto legible
+function tenureText(registeredAt) {
+    if (!registeredAt) return '—';
+    const r = new Date(registeredAt), now = new Date();
+    let months = (now.getFullYear() - r.getFullYear()) * 12 + (now.getMonth() - r.getMonth());
+    if (now.getDate() < r.getDate()) months--;
+    if (months < 0) months = 0;
+    const y = Math.floor(months / 12), m = months % 12;
+    if (y > 0) return `${y} año${y === 1 ? '' : 's'}${m > 0 ? ' ' + m + ' mes' + (m === 1 ? '' : 'es') : ''}`;
+    if (m > 0) return `${m} mes${m === 1 ? '' : 'es'}`;
+    const days = Math.floor((now - r) / 86400000);
+    return `${days} día${days === 1 ? '' : 's'}`;
+}
+// Antigüedad en meses (para ordenar/filtrar)
+function tenureMonths(registeredAt) {
+    if (!registeredAt) return 0;
+    const r = new Date(registeredAt), now = new Date();
+    let months = (now.getFullYear() - r.getFullYear()) * 12 + (now.getMonth() - r.getMonth());
+    if (now.getDate() < r.getDate()) months--;
+    return Math.max(0, months);
+}
+// Fechas de asistencia (visitas exitosas) de un socio por código
+function memberAttendanceKeys(code) {
+    return visits.filter(v => String(v.code) === String(code) && v.status === 'success').map(v => localDateKey(v.date));
+}
+
 const PLAN_NAMES = {
     "visit": "Visita",
     "weekly": "Semanal",
@@ -633,6 +698,7 @@ window.app = {
 
     // 3. DASHBOARD
     calcStats: function() {
+        this.renderDashLoyalty();
         const today = new Date();
         const startOfDay = new Date(); startOfDay.setHours(0,0,0,0);
         const todayVisits = visits.filter(v => new Date(v.date) >= startOfDay && v.status === 'success');
@@ -1203,7 +1269,19 @@ window.app = {
             </div>
             ${groupHtml}
         `;
-        
+
+        // Antigüedad y racha (flamita)
+        const _loyaltyEl = document.getElementById('member-loyalty-content');
+        if (_loyaltyEl) {
+            const _stk = computeStreak(memberAttendanceKeys(m.code));
+            _loyaltyEl.innerHTML = `
+                <div class="loyalty-badges">
+                    <div class="loyalty-badge"><i class="fas fa-medal" style="color:var(--neon-orange);"></i><div><b>${tenureText(m.registeredAt)}</b><small>Antigüedad</small></div></div>
+                    <div class="loyalty-badge"><i class="fas fa-fire" style="color:#ff6a00;"></i><div><b>${_stk.current} día${_stk.current === 1 ? '' : 's'}</b><small>Racha actual</small></div></div>
+                    <div class="loyalty-badge"><i class="fas fa-trophy" style="color:#ffd700;"></i><div><b>${_stk.best} día${_stk.best === 1 ? '' : 's'}</b><small>Mejor racha</small></div></div>
+                </div>`;
+        }
+
         document.getElementById('edit-name').value = m.name;
         document.getElementById('edit-phone').value = m.phone || '';
 
@@ -2160,6 +2238,74 @@ window.app = {
         } catch (e) {
             showToast('error', 'No se pudo generar el respaldo');
         }
+    },
+
+    // === RANKING DE ANTIGÜEDAD / LEALTAD ===
+    openLoyaltyRanking: function() {
+        const modal = document.getElementById('modal-loyalty');
+        if (!modal) return;
+        modal.style.display = 'flex';
+        this.renderLoyalty();
+    },
+
+    renderLoyalty: function() {
+        const minInput = document.getElementById('loyalty-min-months');
+        const minMonths = minInput ? (Number(minInput.value) || 0) : 0;
+        const tbody = document.getElementById('loyalty-table-body');
+        const summary = document.getElementById('loyalty-summary');
+        if (!tbody) return;
+
+        // Más antiguo primero (registeredAt ascendente)
+        const ranked = members
+            .filter(m => m.registeredAt && tenureMonths(m.registeredAt) >= minMonths)
+            .sort((a, b) => new Date(a.registeredAt) - new Date(b.registeredAt));
+
+        if (summary) {
+            const oldest = ranked[0];
+            summary.innerHTML = oldest
+                ? `Socio más antiguo: <b style="color:var(--neon-orange);">${oldest.name}</b> (${tenureText(oldest.registeredAt)}) · ${ranked.length} socio(s)`
+                : 'Sin socios en este filtro';
+        }
+
+        if (ranked.length === 0) {
+            tbody.innerHTML = '<tr><td colspan="6" style="text-align:center; padding:30px; color:#666;">Sin resultados</td></tr>';
+            return;
+        }
+
+        tbody.innerHTML = ranked.map((m, i) => {
+            const stk = computeStreak(memberAttendanceKeys(m.code));
+            const rankColor = i === 0 ? '#ffd700' : (i === 1 ? '#c0c0c0' : (i === 2 ? '#cd7f32' : '#666'));
+            return `
+                <tr style="cursor:pointer;" onclick="app.closeModal('modal-loyalty'); app.openMemberDetail('${m.id}')">
+                    <td style="font-weight:800; color:${rankColor}; font-family:'Rajdhani'; font-size:1.1rem;">#${i + 1}</td>
+                    <td style="font-weight:600; color:#fff;">${m.name}</td>
+                    <td style="color:var(--primary); font-weight:bold;">${m.code}</td>
+                    <td style="color:var(--neon-orange);">${tenureText(m.registeredAt)}</td>
+                    <td><i class="fas fa-fire" style="color:#ff6a00;"></i> ${stk.current}</td>
+                    <td><i class="fas fa-trophy" style="color:#ffd700;"></i> ${stk.best}</td>
+                </tr>`;
+        }).join('');
+    },
+
+    // Top 5 socios más antiguos para el Dashboard
+    renderDashLoyalty: function() {
+        const ul = document.getElementById('dash-loyalty-list');
+        if (!ul) return;
+        const ranked = members
+            .filter(m => m.registeredAt)
+            .sort((a, b) => new Date(a.registeredAt) - new Date(b.registeredAt))
+            .slice(0, 5);
+        if (ranked.length === 0) {
+            ul.innerHTML = '<li style="color:#555; padding:6px 0;">Sin socios registrados aun</li>';
+            return;
+        }
+        const medal = ['#ffd700', '#c0c0c0', '#cd7f32'];
+        ul.innerHTML = ranked.map((m, i) => `
+            <li style="display:flex; align-items:center; gap:10px; padding:7px 0; border-bottom:1px solid #1a1a1a; cursor:pointer;" onclick="app.openMemberDetail('${m.id}')" title="Ver ficha">
+                <span style="font-family:'Rajdhani',sans-serif; font-weight:800; font-size:1.1rem; color:${medal[i] || '#666'}; width:26px; flex-shrink:0;">#${i + 1}</span>
+                <span style="flex:1; color:#fff; font-weight:600; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${m.name}</span>
+                <span style="color:var(--neon-orange); font-size:0.8rem; white-space:nowrap; flex-shrink:0;">${tenureText(m.registeredAt)}</span>
+            </li>`).join('');
     },
 
     loadEmployees: function() {
