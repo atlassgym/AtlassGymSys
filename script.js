@@ -179,7 +179,7 @@ function buildAchievementsIndex() {
     return members.map(m => {
         const e = idx[String(m.code)] || { keys: [], early: 0, weekend: new Set(), month: new Set() };
         const stk = computeStreak(e.keys);
-        return { m, best: stk.best, current: stk.current, early: e.early, weekendDays: e.weekend.size, monthDays: e.month.size };
+        return { m, best: stk.best, current: stk.current, early: e.early, weekendDays: e.weekend.size, monthDays: e.month.size, totalDays: new Set(e.keys).size };
     });
 }
 
@@ -2387,11 +2387,11 @@ window.app = {
         const ul = document.getElementById('dash-constancia-list');
         if (!ul) return;
         const top = buildAchievementsIndex()
-            .filter(a => a.monthDays > 0)
-            .sort((x, y) => y.monthDays - x.monthDays || y.current - x.current)
+            .filter(a => a.current >= 1)
+            .sort((x, y) => y.current - x.current || y.best - x.best || y.totalDays - x.totalDays)
             .slice(0, 5);
         if (top.length === 0) {
-            ul.innerHTML = '<li style="color:#555; padding:6px 0;">Sin asistencias este mes</li>';
+            ul.innerHTML = '<li style="color:#555; padding:6px 0;">Sin rachas activas</li>';
             return;
         }
         const medal = ['#ffd700', '#c0c0c0', '#cd7f32'];
@@ -2400,7 +2400,7 @@ window.app = {
                 <span style="font-family:'Rajdhani',sans-serif; font-weight:800; font-size:1.1rem; color:${medal[i] || '#666'}; width:26px; flex-shrink:0;">#${i + 1}</span>
                 <span style="flex:1; color:#fff; font-weight:600; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${a.m.name}</span>
                 <span style="color:#ff6a00; font-weight:700; font-size:0.85rem; flex-shrink:0;" title="Racha actual"><i class="fas fa-fire"></i> ${a.current}</span>
-                <span style="color:#9aa; font-size:0.8rem; flex-shrink:0;" title="Días asistidos este mes">${a.monthDays}d</span>
+                <span style="color:#9aa; font-size:0.8rem; flex-shrink:0;" title="Mejor racha (récord)">réc ${a.best}</span>
             </li>`).join('');
     },
 
@@ -2425,20 +2425,18 @@ window.app = {
             }).join('');
         }
 
-        // Ranking de constancia del mes (top 10 por días asistidos)
-        const now = new Date();
-        const monthName = now.toLocaleString('es', { month: 'long' });
+        // Ranking por RACHA ACTIVA (permanente, no mensual). Si pierdes la racha, bajas.
         const titleEl = document.getElementById('logros-ranking-title');
-        if (titleEl) titleEl.innerHTML = `<i class="ti ti-trophy" style="color:#ffd700;"></i> Ranking de Constancia · ${monthName.charAt(0).toUpperCase() + monthName.slice(1)}`;
+        if (titleEl) titleEl.innerHTML = `<i class="ti ti-trophy" style="color:#ffd700;"></i> Ranking de Rachas`;
 
         const ranking = list
-            .filter(a => a.monthDays > 0)
-            .sort((x, y) => y.monthDays - x.monthDays || y.current - x.current)
+            .filter(a => a.current >= 1)
+            .sort((x, y) => y.current - x.current || y.best - x.best || y.totalDays - x.totalDays)
             .slice(0, 10);
         const rkEl = document.getElementById('logros-ranking');
         if (rkEl) {
             rkEl.innerHTML = ranking.length === 0
-                ? '<div style="color:#666; padding:24px; text-align:center; background:#101010; border:1px solid #1c1c1c; border-radius:12px;">Aún no hay asistencias registradas este mes</div>'
+                ? '<div style="color:#666; padding:24px; text-align:center; background:#101010; border:1px solid #1c1c1c; border-radius:12px;">Nadie tiene una racha activa ahora mismo</div>'
                 : ranking.map((a, i) => {
                     const col = i === 0 ? '#ffd700' : (i === 1 ? '#c0c0c0' : (i === 2 ? '#cd7f32' : '#666'));
                     return `
@@ -2446,7 +2444,7 @@ window.app = {
                             <span class="ach-pos" style="color:${col};">${i + 1}</span>
                             <span class="ach-name">${a.m.name}</span>
                             <span class="ach-flame" title="Racha actual"><i class="ti ti-flame"></i> ${a.current}</span>
-                            <span class="ach-days" title="Días asistidos este mes">${a.monthDays} días</span>
+                            <span class="ach-days" title="Mejor racha (récord)">récord ${a.best}</span>
                         </div>`;
                 }).join('');
         }

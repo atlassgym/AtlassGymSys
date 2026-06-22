@@ -96,7 +96,33 @@
             for (let i = 1; i < keys.length; i++) { if (kGapWeekend(keys[i - 1], keys[i])) run++; else run = 1; if (run > best) best = run; }
             let cur = 1;
             for (let i = keys.length - 1; i > 0; i--) { if (kGapWeekend(keys[i - 1], keys[i])) cur++; else break; }
-            return { current: cur, best };
+            // Racha "viva": solo cuenta si la última asistencia conecta con hoy (igual que la app)
+            const todayKey = kLocalKey(new Date());
+            const lastKey = keys[keys.length - 1];
+            const current = (lastKey === todayKey || kGapWeekend(lastKey, todayKey)) ? cur : 0;
+            return { current, best };
+        }
+
+        // Posición del socio en el Ranking de Rachas (racha activa; desempate por récord y días totales)
+        function kComputeRankPosition(visitsData, code, todayKey) {
+            const idx = {};
+            Object.values(visitsData).forEach(function (v) {
+                if (v.status !== 'success') return;
+                const c = String(v.code);
+                (idx[c] = idx[c] || []).push(kLocalKey(v.date));
+            });
+            // El socio actual incluye su ingreso de hoy (aún no escrito en la BD)
+            const cc = String(code);
+            (idx[cc] = idx[cc] || []).push(todayKey);
+
+            const list = Object.keys(idx).map(function (c) {
+                const stk = kComputeStreak(idx[c]);
+                return { code: c, current: stk.current, best: stk.best, total: new Set(idx[c]).size };
+            }).filter(function (a) { return a.current >= 1; })
+              .sort(function (x, y) { return y.current - x.current || y.best - x.best || y.total - x.total; });
+
+            const pos = list.findIndex(function (a) { return a.code === cc; });
+            return { position: pos >= 0 ? pos + 1 : null, total: list.length };
         }
 
         // Detect Touch Device
@@ -260,17 +286,21 @@
                         setErrorState(`Membresía vencida el día ${new Date(m.expiryDate).toLocaleDateString()}`, "");
                         db.add("visits", { code: code, name: m.name, date: new Date().toISOString(), status: "expired", reason: "Membresía Vencida" });
                     } else {
-                        // Calcular racha (incluye el ingreso de hoy)
+                        // Calcular racha y posición en el ranking (incluye el ingreso de hoy)
                         let streak = { current: 1, best: 1 };
+                        let rank = { position: null, total: 0 };
                         try {
                             const visitsData = await db.get("visits") || {};
+                            const todayKey = kLocalKey(new Date());
                             const keys = Object.values(visitsData)
                                 .filter(v => String(v.code) === String(code) && v.status === "success")
                                 .map(v => kLocalKey(v.date));
-                            keys.push(kLocalKey(new Date()));
+                            keys.push(todayKey);
                             streak = kComputeStreak(keys);
+                            const validCodes = new Set(membersList.map(mm => String(mm.code)));
+                            rank = kComputeRankPosition(visitsData, code, todayKey, validCodes);
                         } catch (e) { /* si falla, racha mínima */ }
-                        setSuccessState(m.name, days, m.expiryDate, m.dob, streak);
+                        setSuccessState(m.name, days, m.expiryDate, m.dob, streak, rank);
                         db.add("visits", { code: code, name: m.name, date: new Date().toISOString(), status: "success" });
                     }
                 }
@@ -299,17 +329,20 @@
             }, 4000);
         }
 
-        function setSuccessState(name, days, expiryDate, dob, streak) {
+        function setSuccessState(name, days, expiryDate, dob, streak, rank) {
             const firstName = name.split(' ')[0];
             const birthdayMonth = isBirthdayMonth(dob);
 
-            // Racha en la esquina superior derecha (no estorba el mensaje central)
+            // Racha + posición en el ranking, en la esquina superior derecha (no estorba el mensaje central)
             const sNum = streak ? streak.current : 0;
             const isRecord = streak && streak.current >= streak.best && streak.current > 1;
+            const posTxt = (rank && rank.position) ? `Top #${rank.position}` : '';
+            const recTxt = isRecord ? '¡RÉCORD!' : '';
+            const extra = [recTxt, posTxt].filter(Boolean).join(' · ');
             const streakEl = document.getElementById('k-streak');
             if (streakEl) {
                 if (sNum > 0) {
-                    streakEl.innerHTML = `<i class="fas fa-fire flame"></i><span class="streak-num">${sNum}</span><span class="streak-txt">día${sNum === 1 ? '' : 's'} seguido${sNum === 1 ? '' : 's'}${isRecord ? '<br>¡RÉCORD!' : ''}</span>`;
+                    streakEl.innerHTML = `<i class="fas fa-fire flame"></i><span class="streak-num">${sNum}</span><span class="streak-txt">día${sNum === 1 ? '' : 's'} seguido${sNum === 1 ? '' : 's'}${extra ? '<br>' + extra : ''}</span>`;
                     streakEl.classList.add('show');
                 } else {
                     streakEl.classList.remove('show');
