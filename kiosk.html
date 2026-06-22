@@ -104,7 +104,8 @@
         }
 
         // Posición del socio en el Ranking de Rachas (racha activa; desempate por récord y días totales)
-        function kComputeRankPosition(visitsData, code, todayKey) {
+        // validCodes: solo cuenta socios actuales (igual que la app), ignora códigos de socios borrados.
+        function kComputeRankPosition(visitsData, code, todayKey, validCodes) {
             const idx = {};
             Object.values(visitsData).forEach(function (v) {
                 if (v.status !== 'success') return;
@@ -118,8 +119,9 @@
             const list = Object.keys(idx).map(function (c) {
                 const stk = kComputeStreak(idx[c]);
                 return { code: c, current: stk.current, best: stk.best, total: new Set(idx[c]).size };
-            }).filter(function (a) { return a.current >= 1; })
-              .sort(function (x, y) { return y.current - x.current || y.best - x.best || y.total - x.total; });
+            }).filter(function (a) {
+                return a.current >= 1 && (!validCodes || validCodes.has(a.code));
+            }).sort(function (x, y) { return y.current - x.current || y.best - x.best || y.total - x.total; });
 
             const pos = list.findIndex(function (a) { return a.code === cc; });
             return { position: pos >= 0 ? pos + 1 : null, total: list.length };
@@ -336,16 +338,22 @@
             // Racha + posición en el ranking, en la esquina superior derecha (no estorba el mensaje central)
             const sNum = streak ? streak.current : 0;
             const isRecord = streak && streak.current >= streak.best && streak.current > 1;
-            const posTxt = (rank && rank.position) ? `Top #${rank.position}` : '';
+            const pos = rank && rank.position;
+            const isLeader = pos === 1;
+            let posTxt = '';
+            if (pos === 1) posTxt = '<i class="fas fa-crown" style="color:#ffd700;"></i> LÍDER #1';
+            else if (pos === 2 || pos === 3) posTxt = `<i class="fas fa-medal" style="color:#ffaa00;"></i> Top #${pos}`;
+            else if (pos) posTxt = `Top #${pos}`;
             const recTxt = isRecord ? '¡RÉCORD!' : '';
             const extra = [recTxt, posTxt].filter(Boolean).join(' · ');
             const streakEl = document.getElementById('k-streak');
             if (streakEl) {
                 if (sNum > 0) {
+                    streakEl.classList.toggle('leader', !!isLeader);
                     streakEl.innerHTML = `<i class="fas fa-fire flame"></i><span class="streak-num">${sNum}</span><span class="streak-txt">día${sNum === 1 ? '' : 's'} seguido${sNum === 1 ? '' : 's'}${extra ? '<br>' + extra : ''}</span>`;
                     streakEl.classList.add('show');
                 } else {
-                    streakEl.classList.remove('show');
+                    streakEl.classList.remove('show', 'leader');
                     streakEl.innerHTML = '';
                 }
             }
@@ -390,7 +398,7 @@
             msg.innerHTML = '';
             sub.innerHTML = '';
             const se = document.getElementById('k-streak');
-            if (se) { se.classList.remove('show'); se.innerHTML = ''; }
+            if (se) { se.classList.remove('show', 'leader'); se.innerHTML = ''; }
         }
     </script>
 </body>

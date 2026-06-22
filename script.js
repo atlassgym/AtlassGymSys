@@ -2398,7 +2398,7 @@ window.app = {
         ul.innerHTML = top.map((a, i) => `
             <li style="display:flex; align-items:center; gap:10px; padding:7px 0; border-bottom:1px solid #1a1a1a;">
                 <span style="font-family:'Rajdhani',sans-serif; font-weight:800; font-size:1.1rem; color:${medal[i] || '#666'}; width:26px; flex-shrink:0;">#${i + 1}</span>
-                <span style="flex:1; color:#fff; font-weight:600; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${a.m.name}</span>
+                <span style="flex:1; color:#fff; font-weight:600; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${i === 0 ? '<i class="fas fa-crown" style="color:#ffd700; margin-right:5px; filter:drop-shadow(0 0 5px rgba(255,215,0,0.6));"></i>' : ''}${a.m.name}</span>
                 <span style="color:#ff6a00; font-weight:700; font-size:0.85rem; flex-shrink:0;" title="Racha actual"><i class="fas fa-fire"></i> ${a.current}</span>
                 <span style="color:#9aa; font-size:0.8rem; flex-shrink:0;" title="Mejor racha (récord)">réc ${a.best}</span>
             </li>`).join('');
@@ -2439,10 +2439,13 @@ window.app = {
                 ? '<div style="color:#666; padding:24px; text-align:center; background:#101010; border:1px solid #1c1c1c; border-radius:12px;">Nadie tiene una racha activa ahora mismo</div>'
                 : ranking.map((a, i) => {
                     const col = i === 0 ? '#ffd700' : (i === 1 ? '#c0c0c0' : (i === 2 ? '#cd7f32' : '#666'));
+                    const rankClass = i < 3 ? ' ach-rk-' + (i + 1) : '';
+                    const crown = i === 0 ? '<i class="ti ti-crown ach-crown"></i>' : '';
+                    const leader = i === 0 ? '<span class="ach-leader">LÍDER</span>' : '';
                     return `
-                        <div class="ach-rk" onclick="app.openMemberDetail('${a.m.id}')" title="Ver ficha">
+                        <div class="ach-rk${rankClass}" onclick="app.openMemberDetail('${a.m.id}')" title="Ver ficha">
                             <span class="ach-pos" style="color:${col};">${i + 1}</span>
-                            <span class="ach-name">${a.m.name}</span>
+                            <span class="ach-name">${crown}${a.m.name}${leader}</span>
                             <span class="ach-flame" title="Racha actual"><i class="ti ti-flame"></i> ${a.current}</span>
                             <span class="ach-days" title="Mejor racha (récord)">récord ${a.best}</span>
                         </div>`;

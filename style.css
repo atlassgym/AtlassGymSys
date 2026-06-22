@@ -4119,6 +4119,21 @@ body.light-mode .loyalty-badge b { color: #111; }
 body.light-mode .badge-member-row:hover { background: #f2f2f2; }
 body.light-mode .bm-name { color: #111; }
 
+/* ===== Primeros lugares del Ranking de Rachas (oro / plata / bronce) ===== */
+.ach-rk-1 { border: 1px solid rgba(255,215,0,0.55); background: linear-gradient(90deg, rgba(255,215,0,0.13), rgba(255,215,0,0.02)); box-shadow: 0 0 18px rgba(255,215,0,0.18); }
+.ach-rk-2 { border: 1px solid rgba(192,192,192,0.45); background: linear-gradient(90deg, rgba(192,192,192,0.11), rgba(192,192,192,0.02)); }
+.ach-rk-3 { border: 1px solid rgba(205,127,50,0.45); background: linear-gradient(90deg, rgba(205,127,50,0.12), rgba(205,127,50,0.02)); }
+.ach-rk-1:hover { border-color: rgba(255,215,0,0.8); background: linear-gradient(90deg, rgba(255,215,0,0.17), rgba(255,215,0,0.03)); }
+.ach-rk-2:hover { border-color: rgba(192,192,192,0.7); background: linear-gradient(90deg, rgba(192,192,192,0.15), rgba(192,192,192,0.03)); }
+.ach-rk-3:hover { border-color: rgba(205,127,50,0.7); background: linear-gradient(90deg, rgba(205,127,50,0.16), rgba(205,127,50,0.03)); }
+.ach-rk-1 .ach-pos { font-size: 1.7rem; }
+.ach-crown { color: #ffd700; margin-right: 7px; filter: drop-shadow(0 0 6px rgba(255,215,0,0.6)); }
+.ach-leader { display: inline-block; background: linear-gradient(135deg, #ffd700, #ffaa00); color: #3a2c00; font-size: 0.62rem; font-weight: 800; padding: 2px 9px; border-radius: 20px; margin-left: 9px; letter-spacing: 1px; vertical-align: middle; }
+
+/* Kiosko: sello dorado cuando el socio es LÍDER (#1) */
+.kiosk-streak-corner.leader { border-color: rgba(255,215,0,0.85); box-shadow: 0 0 32px rgba(255,215,0,0.6); }
+.kiosk-streak-corner.leader .flame { color: #ffd700; }
+
 /* Insignias en la ficha del socio */
 .loyalty-chips { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; }
 .lb-chip { display: inline-flex; align-items: center; gap: 6px; font-size: 0.78rem; font-weight: 600; padding: 5px 12px; border-radius: 20px; border: 1px solid; background: rgba(255,255,255,0.02); }
