@@ -433,6 +433,7 @@ window.app = {
             members = Object.entries(data).map(([id, value]) => ({ id, ...value }));
             this.renderMembers();
             this.calcStats();
+            if (document.getElementById('view-logros')?.classList.contains('active')) this.renderLogros();
         });
         db.onDataChange('products', (data) => {
             products = Object.entries(data).map(([id, value]) => ({ id, ...value }));
@@ -445,6 +446,7 @@ window.app = {
         db.onDataChange('visits', (data) => {
             visits = Object.entries(data).map(([id, value]) => ({ id, ...value }));
             this.calcStats();
+            if (document.getElementById('view-logros')?.classList.contains('active')) this.renderLogros();
         });
         
         // Listener REAL-TIME para Alertas de Acceso (Req 2)
