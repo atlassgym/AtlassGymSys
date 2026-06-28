@@ -439,7 +439,8 @@ window.app = {
         
         db.onDataChange('members', (data) => {
             members = Object.entries(data).map(([id, value]) => ({ id, ...value }));
-            this.autoPurgeOldInactive();
+            this._dataReady = true; // Firebase ya respondió con los socios
+            // this.autoPurgeOldInactive(); // DESACTIVADO temporalmente mientras diagnosticamos
             this.renderMembers();
             this.calcStats();
             if (document.getElementById('view-logros')?.classList.contains('active')) this.renderLogros();
@@ -799,6 +800,16 @@ window.app = {
 
     // 3. DASHBOARD
     calcStats: function() {
+        // Mientras Firebase no ha respondido, mostrar "cargando" en vez de ceros que asustan
+        if (!this._dataReady) {
+            ['stat-visits', 'stat-active', 'stat-expiring', 'stat-inactive'].forEach(id => {
+                const e = document.getElementById(id);
+                if (e && e.getAttribute('data-hidden') !== 'true') e.innerText = '…';
+            });
+            const dl = document.getElementById('dash-loyalty-list'); if (dl) dl.innerHTML = '<li style="color:#666; padding:6px 0;">Cargando…</li>';
+            const dc = document.getElementById('dash-constancia-list'); if (dc) dc.innerHTML = '<li style="color:#666; padding:6px 0;">Cargando…</li>';
+            return;
+        }
         this.renderDashLoyalty();
         this.renderDashConstancia();
         const today = new Date();
