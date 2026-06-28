@@ -439,6 +439,7 @@ window.app = {
         
         db.onDataChange('members', (data) => {
             members = Object.entries(data).map(([id, value]) => ({ id, ...value }));
+            this.autoPurgeOldInactive();
             this.renderMembers();
             this.calcStats();
             if (document.getElementById('view-logros')?.classList.contains('active')) this.renderLogros();
@@ -2390,6 +2391,29 @@ window.app = {
         old.forEach(m => db.delete(`members/${m.id}`));
         this.logAction('Limpieza Inactivos', `Se eliminaron permanentemente ${old.length} socios con +3 meses de inactividad.`);
         showToast('success', `${old.length} socios eliminados. Espacio liberado.`);
+    },
+
+    // Limpieza AUTOMÁTICA: borra socios vencidos hace +3 meses al cargar (1 vez por sesión)
+    autoPurgeOldInactive: function() {
+        if (this._autoCleanupDone) return;
+        if (!members.length) return;               // esperar a que carguen los datos
+        if (!currentUser || (currentUser.role !== 'admin' && currentUser.role !== 'dev')) return; // solo admin/dev
+        this._autoCleanupDone = true;              // correr 1 sola vez por sesión
+
+        const cutoff = new Date();
+        cutoff.setMonth(cutoff.getMonth() - 3);
+        const old = members.filter(m => m.expiryDate && new Date(m.expiryDate) < cutoff);
+        if (old.length === 0) return;
+
+        // Salvaguarda: si se intentaría borrar a TODOS, es muy probable un error de fecha/reloj -> no borrar
+        if (old.length === members.length) {
+            showToast('error', 'Limpieza automática cancelada (revisar fecha del equipo)');
+            return;
+        }
+
+        old.forEach(m => db.delete(`members/${m.id}`));
+        this.logAction('Limpieza Automática', `Se eliminaron automáticamente ${old.length} socios con +3 meses de inactividad.`);
+        showToast('success', `${old.length} socios inactivos (+3 meses) eliminados automáticamente`);
     },
 
     // ===== FIADOS / CUENTAS POR COBRAR =====
