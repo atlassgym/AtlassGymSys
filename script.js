@@ -440,7 +440,7 @@ window.app = {
         db.onDataChange('members', (data) => {
             members = Object.entries(data).map(([id, value]) => ({ id, ...value }));
             this._dataReady = true; // Firebase ya respondió con los socios
-            // this.autoPurgeOldInactive(); // DESACTIVADO temporalmente mientras diagnosticamos
+            this.autoPurgeOldInactive(); // borra automáticamente vencidos +3 meses (permanente)
             this.renderMembers();
             this.calcStats();
             if (document.getElementById('view-logros')?.classList.contains('active')) this.renderLogros();
@@ -2399,7 +2399,9 @@ window.app = {
             return;
         }
 
-        old.forEach(m => db.delete(`members/${m.id}`));
+        const updates = {};
+        old.forEach(m => { updates[m.id] = null; });
+        db.update('members', updates); // una sola operación
         this.logAction('Limpieza Inactivos', `Se eliminaron permanentemente ${old.length} socios con +3 meses de inactividad.`);
         showToast('success', `${old.length} socios eliminados. Espacio liberado.`);
     },
@@ -2422,7 +2424,10 @@ window.app = {
             return;
         }
 
-        old.forEach(m => db.delete(`members/${m.id}`));
+        // Borrado en UNA sola operación (evita ráfaga de re-renders que traba equipos con poca RAM)
+        const updates = {};
+        old.forEach(m => { updates[m.id] = null; });
+        db.update('members', updates);
         this.logAction('Limpieza Automática', `Se eliminaron automáticamente ${old.length} socios con +3 meses de inactividad.`);
         showToast('success', `${old.length} socios inactivos (+3 meses) eliminados automáticamente`);
     },
