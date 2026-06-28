@@ -4130,6 +4130,13 @@ body.light-mode .bm-name { color: #111; }
 .ach-crown { color: #ffd700; margin-right: 7px; filter: drop-shadow(0 0 6px rgba(255,215,0,0.6)); }
 .ach-leader { display: inline-block; background: linear-gradient(135deg, #ffd700, #ffaa00); color: #3a2c00; font-size: 0.62rem; font-weight: 800; padding: 2px 9px; border-radius: 20px; margin-left: 9px; letter-spacing: 1px; vertical-align: middle; }
 
+/* Flechas de movimiento en el ranking (verde sube, roja baja) */
+.rk-arrow { width: 16px; text-align: center; flex-shrink: 0; font-size: 1rem; }
+.rk-up { color: #00ff41; filter: drop-shadow(0 0 4px rgba(0,255,65,0.5)); }
+.rk-down { color: #ff3b3b; filter: drop-shadow(0 0 4px rgba(255,59,59,0.5)); }
+.rk-same { color: #555; font-size: 0.75rem; }
+.rk-new { color: #ffd700; font-size: 1.2rem; line-height: 1; }
+
 /* Kiosko: sello dorado cuando el socio es LÍDER (#1) */
 .kiosk-streak-corner.leader { border-color: rgba(255,215,0,0.85); box-shadow: 0 0 32px rgba(255,215,0,0.6); }
 .kiosk-streak-corner.leader .flame { color: #ffd700; }

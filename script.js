@@ -32,8 +32,11 @@ let visits = [];
 let trash = [];
 let history = [];
 let users = [];
+let debts = []; // fiados / cuentas por cobrar
 let cart = [];
 let selectedMemberId = null;
+// Foto del ranking (para las flechas de subió/bajó). Se guarda en Firebase 1 vez/día.
+let rankingSnapshot = { date: null, positions: {} };
 // Precios por defecto. Fuente de verdad real = Firebase (config/prices).
 // Estos solo se usan si Firebase aun no tiene precios guardados.
 const DEFAULT_PRICES = {
@@ -412,6 +415,11 @@ window.app = {
             if (renewModal && renewModal.style.display === 'flex') this.updateRenewPrice();
         });
 
+        // Foto del ranking de rachas (para las flechas subió/bajó)
+        db.onDataChange('config/rankingSnapshot', (data) => {
+            rankingSnapshot = (data && data.positions) ? data : { date: null, positions: {} };
+        });
+
         // Hamburger Menu Logic
         const hamburger = document.getElementById('hamburger-menu');
         const sidebar = document.querySelector('.sidebar');
@@ -489,6 +497,12 @@ window.app = {
             users = Object.entries(data).map(([id, value]) => ({ id, ...value }));
             if (document.getElementById('view-admin').classList.contains('active')) this.loadEmployees();
         });
+        db.onDataChange('debts', (data) => {
+            debts = Object.entries(data).map(([id, value]) => ({ id, ...value }));
+            if (document.getElementById('view-debts')?.classList.contains('active')) this.renderDebts();
+            const md = document.getElementById('modal-member-detail');
+            if (md && md.style.display === 'flex' && selectedMemberId) this.renderMemberDebts(selectedMemberId);
+        });
 
         this.nav('dashboard');
         // Restore theme mode from localStorage
@@ -517,6 +531,7 @@ window.app = {
         if(viewId === 'dev') this.dev.loadUsers();
         if(viewId === 'stats') this.renderStats();
         if(viewId === 'logros') this.renderLogros();
+        if(viewId === 'debts') this.renderDebts();
     },
 
     // 2.5. ESTADÍSTICAS PRO
@@ -581,9 +596,15 @@ window.app = {
         // ---- KPIs del periodo ----
         let income = 0, expense = 0, cash = 0, card = 0, incomeCount = 0;
         let incInscr = 0, incRenov = 0, incTienda = 0, incOtros = 0;
+        const expenseByCat = {};
         fFinances.forEach(f => {
             const amt = Number(f.amount) || 0;
-            if (this.isExpenseType(f.type)) { expense += amt; return; }
+            if (this.isExpenseType(f.type)) {
+                expense += amt;
+                const cat = f.categoria || 'Sin categoría';
+                expenseByCat[cat] = (expenseByCat[cat] || 0) + amt;
+                return;
+            }
             income += amt; incomeCount++;
             if (f.metodoPago === 'Tarjeta') card += amt; else cash += amt;
             const t = String(f.type).toLowerCase();
@@ -723,6 +744,23 @@ window.app = {
         mk('chart-income-type', {
             type: 'bar',
             data: { labels: ['Inscripción', 'Renovación', 'Tienda', 'Otros'], datasets: [{ label: 'Ingresos', data: [incInscr, incRenov, incTienda, incOtros], backgroundColor: [C.red, C.orange, C.green, C.purple], borderRadius: 6 }] },
+            options: { responsive: true, plugins: { legend: { display: false }, tooltip: { callbacks: { label: (ctx) => '$' + ctx.parsed.y.toLocaleString() } } }, scales: { x: baseScales.x, y: { ticks: { color: tickColor, callback: v => '$' + v.toLocaleString() }, grid: { color: gridColor }, beginAtZero: true } } }
+        });
+
+        // 9. NUEVA: Gastos por categoría
+        const ecLabels = Object.keys(expenseByCat);
+        const ecData = Object.values(expenseByCat);
+        const ecColors = ['#ff003c', '#ffaa00', '#4488ff', '#aa44ff', '#00e5ff', '#ff6a00', '#00ff41', '#ff44aa', '#ffd700', '#cd7f32', '#888', '#c0c0c0'];
+        mk('chart-expense-cat', {
+            type: 'doughnut',
+            data: { labels: ecLabels.length ? ecLabels : ['Sin gastos'], datasets: [{ data: ecData.length ? ecData : [1], backgroundColor: ecLabels.length ? ecColors : ['#222'], borderColor: '#0a0a0a', borderWidth: 2 }] },
+            options: { responsive: true, plugins: { legend: { position: 'bottom', labels: { color: tickColor, padding: 10, font: { size: 11 } } }, tooltip: { callbacks: { label: (ctx) => ` ${ctx.label}: $${ctx.parsed.toLocaleString()}` } } } }
+        });
+
+        // 10. NUEVA: Ingresos vs Gastos del periodo
+        mk('chart-inc-exp', {
+            type: 'bar',
+            data: { labels: ['Ingresos', 'Gastos', 'Balance'], datasets: [{ label: '$', data: [income, expense, income - expense], backgroundColor: [C.green, C.red, (income - expense) >= 0 ? C.orange : C.red], borderRadius: 6 }] },
             options: { responsive: true, plugins: { legend: { display: false }, tooltip: { callbacks: { label: (ctx) => '$' + ctx.parsed.y.toLocaleString() } } }, scales: { x: baseScales.x, y: { ticks: { color: tickColor, callback: v => '$' + v.toLocaleString() }, grid: { color: gridColor }, beginAtZero: true } } }
         });
     },
@@ -1164,6 +1202,8 @@ window.app = {
         // Register Loop
         let mainMemberName = "";
         let mainMemberPhone = "";
+        let mainMemberId = null;
+        let mainMemberCode = "";
         let messagesToSend = [];
 
         membersToRegister.forEach((m, index) => {
@@ -1171,6 +1211,7 @@ window.app = {
             if (index === 0) {
                 mainMemberName = m.name;
                 mainMemberPhone = m.phone;
+                mainMemberCode = code;
             }
 
             const newMember = {
@@ -1184,8 +1225,9 @@ window.app = {
                 groupId: groupId // Persist group link
             };
 
-            db.add("members", newMember);
-            
+            const _newRef = db.add("members", newMember);
+            if (index === 0) mainMemberId = _newRef.id;
+
             // Prepare Professional Welcome Message
             const planName = PLAN_NAMES[plan] || plan.toUpperCase();
             const startDateStr = new Date(registeredAt).toLocaleDateString('es-MX', { day: '2-digit', month: 'long', year: 'numeric' });
@@ -1216,7 +1258,11 @@ window.app = {
 
         // Finance Log (Single Entry)
         const displayPlan = PLAN_NAMES[plan] || plan.toUpperCase();
-        this.addFinanceLog('INSCRIPCION', price, `Plan ${displayPlan} (${count} Socios) - Titular: ${mainMemberName}`, paymentMethod);
+        if (paymentMethod === 'Fiado') {
+            this.addDebt({ id: mainMemberId, name: mainMemberName, code: mainMemberCode }, `Inscripción ${displayPlan} (${count} socio${count === 1 ? '' : 's'})`, price, 'inscripcion');
+        } else {
+            this.addFinanceLog('INSCRIPCION', price, `Plan ${displayPlan} (${count} Socios) - Titular: ${mainMemberName}`, paymentMethod);
+        }
         this.logAction('Registro Múltiple', `Se registraron ${count} socios bajo el plan ${displayPlan}. Pago: ${paymentMethod}.`);
         
         showToast('success', 'Registro exitoso');
@@ -1349,6 +1395,7 @@ window.app = {
                 </div>
                 ${_chips}`;
         }
+        this.renderMemberDebts(m.id);
 
         document.getElementById('edit-name').value = m.name;
         document.getElementById('edit-phone').value = m.phone || '';
@@ -1608,7 +1655,11 @@ window.app = {
             db.update(`members/${primaryMember.id}`, { expiryDate: newExpiryISO, plan: plan });
         }
 
-        this.addFinanceLog('RENOVACION', price, `Socio: ${renewUser}`, paymentMethod);
+        if (paymentMethod === 'Fiado') {
+            this.addDebt({ id: primaryMember.id, name: primaryMember.name, code: primaryMember.code }, `Renovación ${displayPlan}`, price, 'renovacion');
+        } else {
+            this.addFinanceLog('RENOVACION', price, `Socio: ${renewUser}`, paymentMethod);
+        }
         this.logAction('Renovación', `Se renovó - ${renewDescription}. Pago: ${paymentMethod}.`);
 
         showToast('success', 'Renovación exitosa');
@@ -1939,6 +1990,9 @@ window.app = {
         const paymentMethod = document.querySelector('input[name="store-payment-method"]:checked').value;
         const total = cart.reduce((sum, item) => sum + item.price, 0);
         const grouped = cart.reduce((acc, item) => { acc[item.id] = (acc[item.id] || 0) + 1; return acc; }, {});
+
+        if (paymentMethod === 'Fiado') { this.checkoutFiado(total, grouped); return; }
+
         Object.keys(grouped).forEach(id => {
             const p = products.find(x => x.id === id);
             db.update(`products/${id}`, { stock: p.stock - grouped[id] });
@@ -2064,7 +2118,7 @@ window.app = {
             const badgeClass = f.isExpense ? 'gasto' : 'ingreso';
             const metodoDisplay = f.metodoPago || 'N/A';
             
-            html += `<tr><td style="font-size:0.85rem; color:#888;">${f.dateObj.toLocaleDateString()} <br> <small>${f.dateObj.toLocaleTimeString()}</small></td><td><span class="badge-fin ${badgeClass}">${f.type}</span></td><td style="font-weight:600; color:#fff;">${f.desc}</td><td style="color:#aaa;">${f.user}</td><td style="color:#aaa;">${metodoDisplay}</td><td style="font-family:'Rajdhani'; font-size:1.1rem; font-weight:bold; color:${amountColor}">${sign}$${Number(f.amount).toLocaleString()}</td><td style="text-align:right">${(currentUser.role === 'admin' || currentUser.role === 'dev') ? `<button onclick="app.delFin('${f.id}')" style="color:#666; background:none; border:none; cursor:pointer;"><i class="fas fa-trash"></i></button>` : ''}</td></tr>`;
+            html += `<tr><td style="font-size:0.85rem; color:#888;">${f.dateObj.toLocaleDateString()} <br> <small>${f.dateObj.toLocaleTimeString()}</small></td><td><span class="badge-fin ${badgeClass}">${f.type}</span></td><td style="font-weight:600; color:#fff;">${f.categoria ? `<span style="display:inline-block; background:rgba(255,170,0,0.12); color:var(--neon-orange); font-size:0.68rem; padding:2px 8px; border-radius:10px; margin-right:6px; vertical-align:middle;">${f.categoria}</span>` : ''}${f.desc}</td><td style="color:#aaa;">${f.user}</td><td style="color:#aaa;">${metodoDisplay}</td><td style="font-family:'Rajdhani'; font-size:1.1rem; font-weight:bold; color:${amountColor}">${sign}$${Number(f.amount).toLocaleString()}</td><td style="text-align:right">${(currentUser.role === 'admin' || currentUser.role === 'dev') ? `<button onclick="app.delFin('${f.id}')" style="color:#666; background:none; border:none; cursor:pointer;"><i class="fas fa-trash"></i></button>` : ''}</td></tr>`;
         });
         list.innerHTML = html || '<tr><td colspan="7" style="text-align:center; padding:20px; color:#666;">Sin movimientos</td></tr>';
         
@@ -2075,18 +2129,22 @@ window.app = {
         if(balEl) { balEl.innerText = `$${balance.toLocaleString()}`; balEl.style.color = balance >= 0 ? 'var(--neon-orange)' : 'var(--primary)'; }
     },
 
-    addFinanceLog: function(type, amount, desc, metodoPago = 'N/A') {
+    addFinanceLog: function(type, amount, desc, metodoPago = 'N/A', categoria = null) {
         if(!amount || isNaN(amount)) return;
-        db.add("finances", { type, amount: Number(amount), desc, user: currentUser.username, date: new Date().toISOString(), metodoPago });
+        const rec = { type, amount: Number(amount), desc, user: currentUser.username, date: new Date().toISOString(), metodoPago };
+        if (categoria) rec.categoria = categoria;
+        db.add("finances", rec);
         if(document.getElementById('view-finances').classList.contains('active')) this.loadFinances();
     },
 
     openExpenseModal: function() { document.getElementById('modal-expense').style.display = 'flex'; },
     saveExpense: function() {
         const desc = document.getElementById('exp-desc').value, amount = document.getElementById('exp-amount').value;
+        const catEl = document.getElementById('exp-category');
+        const categoria = catEl ? catEl.value : 'Otro';
         if(!desc || !amount) return showToast('error', 'Incompleto');
-        this.addFinanceLog('gasto', amount, desc);
-        this.logAction('Registro Gasto', `Se registró un gasto de $${amount} por "${desc}".`);
+        this.addFinanceLog('gasto', amount, desc, 'N/A', categoria);
+        this.logAction('Registro Gasto', `Gasto de $${amount} (${categoria}): "${desc}".`);
         showToast('success', 'Registrado');
         this.closeModal('modal-expense');
     },
@@ -2155,7 +2213,7 @@ window.app = {
                 + '<td>' + f.dateObj.toLocaleDateString('es-MX') + '</td>'
                 + '<td>' + f.dateObj.toLocaleTimeString('es-MX',{hour:'2-digit',minute:'2-digit'}) + '</td>'
                 + '<td><span class="' + bc + '">' + f.type + '</span></td>'
-                + '<td>' + (f.desc || '') + '</td>'
+                + '<td>' + (f.categoria ? '[' + f.categoria + '] ' : '') + (f.desc || '') + '</td>'
                 + '<td>' + (f.user || '') + '</td>'
                 + '<td>' + (f.metodoPago || 'N/A') + '</td>'
                 + '<td class="' + ac + '">' + sign + '$' + amt.toLocaleString() + '</td>'
@@ -2308,6 +2366,125 @@ window.app = {
         }
     },
 
+    // === LIBERAR ESPACIO: eliminar socios con +3 meses vencidos (PERMANENTE) ===
+    purgeOldInactive: async function() {
+        if (currentUser.role !== 'admin' && currentUser.role !== 'dev') return showToast('error', 'Acceso denegado');
+        const cutoff = new Date();
+        cutoff.setMonth(cutoff.getMonth() - 3); // vencidos hace más de 3 meses
+        const old = members.filter(m => m.expiryDate && new Date(m.expiryDate) < cutoff);
+        if (old.length === 0) return showToast('error', 'No hay socios con más de 3 meses de vencidos');
+
+        const confirmed = await customConfirm(
+            'Liberar espacio',
+            `Se eliminarán PERMANENTEMENTE ${old.length} socio(s) cuya membresía venció hace más de 3 meses. ` +
+            `Esta acción NO se puede deshacer (no van a la papelera). ¿Continuar?`
+        );
+        if (!confirmed) return;
+
+        const password = await customPrompt('Confirmar eliminación', 'Contraseña de ADMINISTRADOR:', '', 'password');
+        if (password !== 'AtlassCC') {
+            if (password !== null) showToast('error', 'Contraseña incorrecta');
+            return;
+        }
+
+        old.forEach(m => db.delete(`members/${m.id}`));
+        this.logAction('Limpieza Inactivos', `Se eliminaron permanentemente ${old.length} socios con +3 meses de inactividad.`);
+        showToast('success', `${old.length} socios eliminados. Espacio liberado.`);
+    },
+
+    // ===== FIADOS / CUENTAS POR COBRAR =====
+    addDebt: function(member, concept, amount, type) {
+        if (!member || !member.id) { showToast('error', 'Socio inválido para fiado'); return; }
+        db.add('debts', {
+            memberId: member.id, memberName: member.name, memberCode: member.code || '',
+            concept: concept, amount: Number(amount) || 0, type: type || 'otro',
+            date: new Date().toISOString(), status: 'pendiente', createdBy: currentUser.username
+        });
+        this.logAction('Fiado', `${member.name} fió: ${concept} ($${amount}).`);
+    },
+
+    memberSaldo: function(memberId) {
+        return debts.filter(d => String(d.memberId) === String(memberId) && d.status === 'pendiente')
+                    .reduce((s, d) => s + (Number(d.amount) || 0), 0);
+    },
+
+    payDebt: async function(id, metodoPago) {
+        const d = debts.find(x => x.id === id);
+        if (!d || d.status !== 'pendiente') return;
+        const confirmed = await customConfirm('Cobrar fiado', `¿Cobrar "${d.concept}" de ${d.memberName} por $${Number(d.amount).toLocaleString()} (${metodoPago})?`);
+        if (!confirmed) return;
+        db.update('debts/' + id, { status: 'pagada', paidDate: new Date().toISOString(), paidBy: currentUser.username, metodoPago: metodoPago });
+        this.addFinanceLog('PAGO FIADO', d.amount, `${d.concept} - ${d.memberName}`, metodoPago);
+        this.logAction('Pago Fiado', `${d.memberName} pagó fiado: ${d.concept} ($${d.amount}). Pago: ${metodoPago}.`);
+        showToast('success', 'Fiado cobrado');
+    },
+
+    renderDebts: function() {
+        const tbody = document.getElementById('debts-table-body');
+        const totalEl = document.getElementById('debts-total');
+        const countEl = document.getElementById('debts-count');
+        if (!tbody) return;
+        const pending = debts.filter(d => d.status === 'pendiente').sort((a, b) => new Date(a.date) - new Date(b.date));
+        const total = pending.reduce((s, d) => s + (Number(d.amount) || 0), 0);
+        if (totalEl) totalEl.innerText = '$' + total.toLocaleString();
+        if (countEl) countEl.innerText = pending.length;
+        if (pending.length === 0) {
+            tbody.innerHTML = '<tr><td colspan="6" style="text-align:center; padding:40px; color:#666;">No hay fiados pendientes</td></tr>';
+            return;
+        }
+        tbody.innerHTML = pending.map(d => `
+            <tr>
+                <td style="color:#888; font-size:0.85rem;">${new Date(d.date).toLocaleDateString()}</td>
+                <td style="font-weight:600; color:#fff; cursor:pointer;" onclick="app.openMemberDetail('${d.memberId}')">${d.memberName} <small style="color:var(--primary);">${d.memberCode || ''}</small></td>
+                <td>${d.concept}</td>
+                <td style="color:var(--neon-orange); font-weight:bold; font-family:'Rajdhani';">$${Number(d.amount).toLocaleString()}</td>
+                <td style="color:#888;">${d.createdBy || ''}</td>
+                <td style="text-align:right; white-space:nowrap;">
+                    <button class="btn btn-outline" style="padding:5px 10px; border-color:var(--neon-green); color:var(--neon-green);" onclick="app.payDebt('${d.id}','Efectivo')"><i class="fas fa-money-bill-wave"></i> Efvo</button>
+                    <button class="btn btn-outline" style="padding:5px 10px; border-color:#4488ff; color:#4488ff;" onclick="app.payDebt('${d.id}','Tarjeta')"><i class="fas fa-credit-card"></i> Tarj</button>
+                </td>
+            </tr>`).join('');
+    },
+
+    renderMemberDebts: function(memberId) {
+        const el = document.getElementById('member-debts-content');
+        if (!el) return;
+        const pending = debts.filter(d => String(d.memberId) === String(memberId) && d.status === 'pendiente');
+        if (pending.length === 0) { el.innerHTML = ''; return; }
+        const total = pending.reduce((s, d) => s + (Number(d.amount) || 0), 0);
+        el.innerHTML = `
+            <div style="margin-top:20px; background:rgba(255,170,0,0.06); border:1px solid rgba(255,170,0,0.3); border-radius:8px; padding:14px;">
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
+                    <h4 style="margin:0; color:var(--neon-orange); text-transform:uppercase; font-size:0.9rem;"><i class="fas fa-receipt"></i> Saldo Pendiente (Fiado)</h4>
+                    <span style="font-family:'Rajdhani'; font-weight:800; font-size:1.3rem; color:var(--neon-orange);">$${total.toLocaleString()}</span>
+                </div>
+                ${pending.map(d => `
+                    <div style="display:flex; justify-content:space-between; align-items:center; padding:6px 0; border-bottom:1px solid #222; font-size:0.85rem;">
+                        <span style="color:#ccc;">${d.concept} <small style="color:#666;">${new Date(d.date).toLocaleDateString()}</small></span>
+                        <span style="display:flex; align-items:center; gap:8px;">
+                            <b style="color:#fff;">$${Number(d.amount).toLocaleString()}</b>
+                            <button class="btn btn-outline" style="padding:3px 9px; font-size:0.7rem; border-color:var(--neon-green); color:var(--neon-green);" onclick="app.payDebt('${d.id}','Efectivo')">Efvo</button>
+                            <button class="btn btn-outline" style="padding:3px 9px; font-size:0.7rem; border-color:#4488ff; color:#4488ff;" onclick="app.payDebt('${d.id}','Tarjeta')">Tarj</button>
+                        </span>
+                    </div>`).join('')}
+            </div>`;
+    },
+
+    checkoutFiado: async function(total, grouped) {
+        const code = await customPrompt('Fiar venta', 'Código del socio que se lleva los productos a cuenta:');
+        if (!code) return;
+        const member = members.find(m => String(m.code) === String(code).trim());
+        if (!member) return showToast('error', 'No se encontró un socio con ese código');
+        const confirmed = await customConfirm('Confirmar fiado', `¿Fiar $${total.toLocaleString()} en productos a ${member.name}?`);
+        if (!confirmed) return;
+        const concept = 'Tienda: ' + [...new Set(cart.map(i => i.name))].join(', ').slice(0, 60);
+        Object.keys(grouped).forEach(id => { const p = products.find(x => x.id === id); if (p) db.update(`products/${id}`, { stock: p.stock - grouped[id] }); });
+        this.addDebt(member, concept, total, 'tienda');
+        this.printReceipt(member.name + ' (FIADO)', total, 'Productos a cuenta');
+        this.clearCart();
+        showToast('success', `Fiado registrado a ${member.name}`);
+    },
+
     // === RANKING DE ANTIGÜEDAD / LEALTAD ===
     openLoyaltyRanking: function() {
         const modal = document.getElementById('modal-loyalty');
@@ -2425,14 +2602,27 @@ window.app = {
             }).join('');
         }
 
-        // Ranking por RACHA ACTIVA (permanente, no mensual). Si pierdes la racha, bajas.
+        // Ranking por RACHA ACTIVA (permanente). Si pierdes la racha, bajas; otro sube.
         const titleEl = document.getElementById('logros-ranking-title');
         if (titleEl) titleEl.innerHTML = `<i class="ti ti-trophy" style="color:#ffd700;"></i> Ranking de Rachas`;
 
-        const ranking = list
+        const fullRanking = list
             .filter(a => a.current >= 1)
-            .sort((x, y) => y.current - x.current || y.best - x.best || y.totalDays - x.totalDays)
-            .slice(0, 10);
+            .sort((x, y) => y.current - x.current || y.best - x.best || y.totalDays - x.totalDays);
+
+        // Posiciones actuales y flechas vs la foto anterior (subió/bajó)
+        const curPositions = {};
+        fullRanking.forEach((a, i) => { curPositions[a.m.code] = i + 1; });
+        const prevPos = (rankingSnapshot && rankingSnapshot.positions) || {};
+        const arrowFor = (code, pos) => {
+            const p = prevPos[code];
+            if (p === undefined || p === null) return '<span class="rk-arrow rk-new" title="Nuevo en el ranking">&bull;</span>';
+            if (pos < p) return `<span class="rk-arrow rk-up" title="Subió ${p - pos} lugar(es)"><i class="fas fa-caret-up"></i></span>`;
+            if (pos > p) return `<span class="rk-arrow rk-down" title="Bajó ${pos - p} lugar(es)"><i class="fas fa-caret-down"></i></span>`;
+            return '<span class="rk-arrow rk-same" title="Sin cambio"><i class="fas fa-minus"></i></span>';
+        };
+
+        const ranking = fullRanking.slice(0, 10);
         const rkEl = document.getElementById('logros-ranking');
         if (rkEl) {
             rkEl.innerHTML = ranking.length === 0
@@ -2445,11 +2635,19 @@ window.app = {
                     return `
                         <div class="ach-rk${rankClass}" onclick="app.openMemberDetail('${a.m.id}')" title="Ver ficha">
                             <span class="ach-pos" style="color:${col};">${i + 1}</span>
+                            ${arrowFor(a.m.code, i + 1)}
                             <span class="ach-name">${crown}${a.m.name}${leader}</span>
                             <span class="ach-flame" title="Racha actual"><i class="ti ti-flame"></i> ${a.current}</span>
                             <span class="ach-days" title="Mejor racha (récord)">récord ${a.best}</span>
                         </div>`;
                 }).join('');
+        }
+
+        // Actualizar la foto del ranking 1 vez al día (base de las flechas de mañana)
+        const _todayKey = localDateKey(new Date());
+        if (fullRanking.length && (!rankingSnapshot || rankingSnapshot.date !== _todayKey)) {
+            rankingSnapshot = { date: _todayKey, positions: curPositions }; // evita doble escritura en el mismo tick
+            db.set('config/rankingSnapshot', rankingSnapshot);
         }
     },
 

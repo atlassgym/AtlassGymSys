@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>ATLAS GYM | SISTEMA</title>
-    <link rel="stylesheet" href="style.css?v=12">
+    <link rel="stylesheet" href="style.css?v=13">
     <link rel="manifest" href="manifest.json">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -49,6 +49,7 @@
                 <button class="nav-btn" onclick="app.nav('logros')"><i class="fas fa-fire"></i> Logros</button>
                 <button class="nav-btn" onclick="app.nav('store')"><i class="fas fa-shopping-bag"></i> Tienda</button>
                 <button class="nav-btn" onclick="app.nav('finances')"><i class="fas fa-cash-register"></i> Finanzas</button>
+                <button class="nav-btn" onclick="app.nav('debts')"><i class="fas fa-hand-holding-usd"></i> Fiados</button>
                 <button class="nav-btn" onclick="app.nav('trash')"><i class="fas fa-trash-alt"></i> Papelera</button>
                 
                 <div id="admin-menu" style="display:none; border-top:1px solid #333; margin-top:20px; padding-top:20px;">
@@ -249,6 +250,31 @@
                 <div id="logros-ranking"></div>
             </section>
 
+            <section id="view-debts" class="view-section">
+                <h1><i class="fas fa-hand-holding-usd" style="color:var(--neon-orange); margin-right:10px; filter:drop-shadow(0 0 8px rgba(255,170,0,0.4));"></i> Cuentas por Cobrar (Fiados)</h1>
+                <p style="color:#888; margin-top:-30px; margin-bottom:24px;">Socios que se llevaron productos o membresías a cuenta. Cobra el total cuando paguen.</p>
+
+                <div style="display:flex; gap:20px; flex-wrap:wrap; margin-bottom:24px;">
+                    <div class="table-container" style="padding:18px 24px; background:linear-gradient(145deg,#111,#0a0a0a); border:1px solid #222; border-radius:12px; min-width:200px;">
+                        <div style="color:#888; font-size:0.8rem; text-transform:uppercase; letter-spacing:1px;">Total por cobrar</div>
+                        <div id="debts-total" style="font-family:'Rajdhani'; font-weight:800; font-size:2rem; color:var(--neon-orange);">$0</div>
+                    </div>
+                    <div class="table-container" style="padding:18px 24px; background:linear-gradient(145deg,#111,#0a0a0a); border:1px solid #222; border-radius:12px; min-width:160px;">
+                        <div style="color:#888; font-size:0.8rem; text-transform:uppercase; letter-spacing:1px;">Fiados pendientes</div>
+                        <div id="debts-count" style="font-family:'Rajdhani'; font-weight:800; font-size:2rem; color:#fff;">0</div>
+                    </div>
+                </div>
+
+                <div class="table-container">
+                    <table>
+                        <thead>
+                            <tr><th>Fecha</th><th>Socio</th><th>Concepto</th><th>Monto</th><th>Registró</th><th style="text-align:right;">Cobrar</th></tr>
+                        </thead>
+                        <tbody id="debts-table-body"></tbody>
+                    </table>
+                </div>
+            </section>
+
             <section id="view-members" class="view-section">
                 <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px;">
                     <h1 data-testid="members-heading"><i class="fas fa-users" style="color:var(--primary); margin-right:10px; filter:drop-shadow(0 0 8px rgba(255,0,60,0.3));"></i> Directorio de Socios</h1>
@@ -317,6 +343,8 @@
                         <label for="pay-efectivo" class="pay-label"><i class="fas fa-money-bill-wave"></i> Efectivo</label>
                         <input type="radio" name="store-payment-method" value="Tarjeta" id="pay-tarjeta">
                         <label for="pay-tarjeta" class="pay-label"><i class="fas fa-credit-card"></i> Tarjeta</label>
+                        <input type="radio" name="store-payment-method" value="Fiado" id="pay-fiado">
+                        <label for="pay-fiado" class="pay-label"><i class="fas fa-hand-holding-usd"></i> Fiado</label>
                     </div>
                 </div>
 
@@ -457,9 +485,24 @@
             <h2 style="color:var(--primary);">Registrar Gasto</h2>
             <p style="color:#666; margin-bottom:20px;">Registra salidas de dinero (Luz, Agua, Pagos, etc.)</p>
             
+            <label style="color:#aaa; font-size:0.8rem;">Categoría</label>
+            <select id="exp-category" style="margin-bottom:12px;">
+                <option value="Renta">Renta</option>
+                <option value="Nómina">Nómina / Sueldos</option>
+                <option value="Luz">Luz</option>
+                <option value="Agua">Agua</option>
+                <option value="Internet">Internet / Teléfono</option>
+                <option value="Mantenimiento">Mantenimiento</option>
+                <option value="Limpieza">Limpieza</option>
+                <option value="Equipo">Equipo / Máquinas</option>
+                <option value="Insumos">Insumos / Tienda</option>
+                <option value="Marketing">Marketing</option>
+                <option value="Impuestos">Impuestos</option>
+                <option value="Otro" selected>Otro</option>
+            </select>
             <input type="text" id="exp-desc" placeholder="Descripción del Gasto (ej. Pago de Luz)">
             <input type="number" id="exp-amount" placeholder="Monto ($)">
-            
+
             <button class="btn" style="width:100%; background:var(--primary);" onclick="app.saveExpense()">REGISTRAR SALIDA</button>
         </div>
     </div>
@@ -504,6 +547,9 @@
                         </p>
                         <button class="btn btn-outline admin-only" style="width:100%; margin-top:15px; border-color:var(--neon-green); color:var(--neon-green);" onclick="app.exportBackup()">
                             <i class="fas fa-download"></i> DESCARGAR RESPALDO (JSON)
+                        </button>
+                        <button class="btn btn-outline admin-only" style="width:100%; margin-top:10px; border-color:#888; color:#aaa;" onclick="app.purgeOldInactive()" title="Elimina permanentemente socios vencidos hace más de 3 meses">
+                            <i class="fas fa-broom"></i> LIBERAR ESPACIO (VENCIDOS +3 MESES)
                         </button>
                     </div>
                     
@@ -710,6 +756,16 @@
                         <canvas id="chart-income-type"></canvas>
                     </div>
                 </div>
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 30px; margin-top: 30px;">
+                    <div class="table-container" style="padding: 20px; background: #111;">
+                        <h3 style="font-family: 'Rajdhani'; margin-bottom: 20px; color: var(--neon-orange);">Gastos por Categoría</h3>
+                        <canvas id="chart-expense-cat"></canvas>
+                    </div>
+                    <div class="table-container" style="padding: 20px; background: #111;">
+                        <h3 style="font-family: 'Rajdhani'; margin-bottom: 20px; color: var(--neon-green);">Ingresos vs Gastos (periodo)</h3>
+                        <canvas id="chart-inc-exp"></canvas>
+                    </div>
+                </div>
             </section>
 
             <section id="view-reports" class="view-section">
@@ -812,6 +868,9 @@
                         <label style="display:flex; align-items:center; gap:5px; cursor:pointer; color:#fff;">
                             <input type="radio" name="reg-payment-method" value="Tarjeta"> Tarjeta
                         </label>
+                        <label style="display:flex; align-items:center; gap:5px; cursor:pointer; color:#fff;">
+                            <input type="radio" name="reg-payment-method" value="Fiado"> Fiado
+                        </label>
                     </div>
                 </div>
 
@@ -828,6 +887,7 @@
     <div class="modal-content" style="width: 600px; border-top: 5px solid var(--primary);">
         <div id="member-info-content"></div>
         <div id="member-loyalty-content"></div>
+        <div id="member-debts-content"></div>
 
         <div class="form-grid" style="margin-top:20px; border-top:1px solid #222; padding-top:20px;">
             <div>
@@ -973,6 +1033,10 @@
                     <input type="radio" name="renew-payment-method" value="Tarjeta">
                     <i class="fas fa-credit-card"></i> Tarjeta
                 </label>
+                <label class="renew-payment-option">
+                    <input type="radio" name="renew-payment-method" value="Fiado">
+                    <i class="fas fa-hand-holding-usd"></i> Fiado
+                </label>
             </div>
         </div>
 
@@ -1029,7 +1093,7 @@
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
     <script type="module" src="firebase-config.js"></script>
-    <script type="module" src="script.js?v=14"></script>
+    <script type="module" src="script.js?v=17"></script>
     <script>
         if ('serviceWorker' in navigator) {
             // ¿Ya había un SW controlando la pagina? Si no, es la primera visita
