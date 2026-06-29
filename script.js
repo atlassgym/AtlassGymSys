@@ -1177,7 +1177,7 @@ window.app = {
 
         // Validation Loop
         for (let i = 1; i <= count; i++) {
-            const name = document.getElementById(`reg-name-${i}`).value.trim();
+            const name = document.getElementById(`reg-name-${i}`).value.trim().toUpperCase();
             const phone = document.getElementById(`reg-phone-${i}`).value.trim();
             
             if (!name || !phone) {
@@ -1731,7 +1731,7 @@ window.app = {
     saveMemberEdit: function() {
         if(currentUser.role !== 'admin' && currentUser.role !== 'dev') return showToast('error', 'Acceso denegado');
         const member = members.find(x => String(x.id) === String(selectedMemberId));
-        const newName = document.getElementById('edit-name').value;
+        const newName = document.getElementById('edit-name').value.trim().toUpperCase();
         const newPhone = document.getElementById('edit-phone').value;
         db.update(`members/${selectedMemberId}`, { 
             name: newName,
