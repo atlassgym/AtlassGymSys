@@ -16,6 +16,9 @@
     <!-- Racha (flamita) en la esquina, no estorba el mensaje central -->
     <div id="k-streak" class="kiosk-streak-corner" aria-hidden="true"></div>
 
+    <!-- Indicador de conexión (verde = conectado, rojo = sin conexión) -->
+    <div id="k-conn" title="Conexión" style="position:fixed; top:18px; left:18px; width:12px; height:12px; border-radius:50%; background:#666; box-shadow:0 0 10px #666; z-index:60;"></div>
+
     <!-- Birthday Overlay Message -->
     <div id="birthday-overlay" class="birthday-overlay">
         <div class="birthday-content">
@@ -61,7 +64,7 @@
 
     <script type="module">
         import { database } from './firebase-config.js';
-        import { ref, get, push, set } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-database.js";
+        import { ref, get, push, set, onValue } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-database.js";
 
         const db = {
             get: async (key) => {
@@ -70,10 +73,35 @@
             },
             add: (collection, data) => {
                 const newRef = push(ref(database, collection));
-                set(newRef, data);
+                return set(newRef, data);
             }
         };
-        
+
+        // ===== CACHÉ EN TIEMPO REAL =====
+        // Suscribirse una vez a socios y visitas. Así cada ingreso se resuelve al
+        // instante desde memoria (sin descargar en cada código) y aguanta cortes de red.
+        let membersCache = null;   // { id: socio }  (null = aún no carga)
+        let visitsCache = {};      // { id: visita }
+        let isOnline = true;
+
+        onValue(ref(database, 'members'),
+            (snap) => { membersCache = snap.exists() ? snap.val() : {}; },
+            (err) => { console.error('members listener', err); });
+        onValue(ref(database, 'visits'),
+            (snap) => { visitsCache = snap.exists() ? snap.val() : {}; },
+            (err) => { console.error('visits listener', err); });
+
+        // Estado de conexión (indicador visible)
+        onValue(ref(database, '.info/connected'), (snap) => {
+            isOnline = snap.val() === true;
+            const dot = document.getElementById('k-conn');
+            if (dot) {
+                dot.style.background = isOnline ? '#00ff41' : '#ff003c';
+                dot.style.boxShadow = '0 0 10px ' + (isOnline ? '#00ff41' : '#ff003c');
+                dot.title = isOnline ? 'Conectado' : 'Sin conexión';
+            }
+        });
+
         const inp = document.getElementById('k-input');
         const msg = document.getElementById('k-msg');
         const sub = document.getElementById('k-sub');
@@ -267,16 +295,15 @@
             msg.innerHTML = '<span style="color:#fff; font-size:2rem;">PROCESANDO...</span>';
 
             try {
-                const membersData = await db.get("members");
-                if (!membersData) {
-                    setErrorState("ERROR DE CONEXIÓN", "No se pudo cargar la base de datos");
-                    db.add("visits", { code: code, name: "Desconocido", date: new Date().toISOString(), status: "error", reason: "Error BD" });
+                // Lectura desde la CACHÉ local (no se descarga la base en cada código)
+                if (membersCache === null) {
+                    setErrorState("Cargando datos...", "Espera unos segundos e intenta de nuevo");
                     resetAfterDelay();
                     return;
                 }
 
-                const membersList = Object.values(membersData);
-                const m = membersList.find(mem => mem.code === code);
+                const membersList = Object.values(membersCache);
+                const m = membersList.find(mem => String(mem.code) === String(code));
 
                 if (!m) {
                     setErrorState("Error: Código inexistente", "");
@@ -288,19 +315,18 @@
                         setErrorState(`Membresía vencida el día ${new Date(m.expiryDate).toLocaleDateString()}`, "");
                         db.add("visits", { code: code, name: m.name, date: new Date().toISOString(), status: "expired", reason: "Membresía Vencida" });
                     } else {
-                        // Calcular racha y posición en el ranking (incluye el ingreso de hoy)
+                        // Racha y ranking desde la caché local (instantáneo, sin red)
                         let streak = { current: 1, best: 1 };
                         let rank = { position: null, total: 0 };
                         try {
-                            const visitsData = await db.get("visits") || {};
                             const todayKey = kLocalKey(new Date());
-                            const keys = Object.values(visitsData)
+                            const keys = Object.values(visitsCache)
                                 .filter(v => String(v.code) === String(code) && v.status === "success")
                                 .map(v => kLocalKey(v.date));
                             keys.push(todayKey);
                             streak = kComputeStreak(keys);
                             const validCodes = new Set(membersList.map(mm => String(mm.code)));
-                            rank = kComputeRankPosition(visitsData, code, todayKey, validCodes);
+                            rank = kComputeRankPosition(visitsCache, code, todayKey, validCodes);
                         } catch (e) { /* si falla, racha mínima */ }
                         setSuccessState(m.name, days, m.expiryDate, m.dob, streak, rank);
                         db.add("visits", { code: code, name: m.name, date: new Date().toISOString(), status: "success" });
@@ -309,9 +335,8 @@
             } catch (err) {
                 console.error(err);
                 setErrorState("ERROR SISTEMA", "Intenta de nuevo");
-                db.add("visits", { code: code, name: "Sistema", date: new Date().toISOString(), status: "error", reason: "System Error" });
             }
-            
+
             resetAfterDelay();
         }
 

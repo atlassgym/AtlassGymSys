@@ -542,14 +542,9 @@
                             </div>
                         </div>
                         <button class="btn" style="width:100%; margin-top:20px;" onclick="app.saveConfig()">GUARDAR CAMBIOS</button>
-                        <p style="color:#666; font-size:0.75rem; margin-top:10px; text-align:center;">
-                            <i class="fas fa-cloud"></i> Los precios se guardan en la nube (Firebase) y no se borran al reiniciar.
-                        </p>
-                        <button class="btn btn-outline admin-only" style="width:100%; margin-top:15px; border-color:var(--neon-green); color:var(--neon-green);" onclick="app.exportBackup()">
-                            <i class="fas fa-download"></i> DESCARGAR RESPALDO (JSON)
-                        </button>
-                        <button class="btn btn-outline admin-only" style="width:100%; margin-top:10px; border-color:#888; color:#aaa;" onclick="app.purgeOldInactive()" title="Elimina permanentemente socios vencidos hace más de 3 meses">
-                            <i class="fas fa-broom"></i> LIBERAR ESPACIO (VENCIDOS +3 MESES)
+                        <p id="prices-meta" style="color:#ffaa00; font-size:0.75rem; margin-top:12px; text-align:center;">Sin cambios registrados aún.</p>
+                        <button class="btn btn-outline" style="width:100%; margin-top:12px; border-color:#4488ff; color:#4488ff;" onclick="app.forceUpdate()" title="Borra la caché y el service worker y recarga con el código más reciente">
+                            <i class="fas fa-sync-alt"></i> FORZAR ACTUALIZACIÓN (LIMPIAR CACHÉ)
                         </button>
                     </div>
                     
@@ -1093,7 +1088,7 @@
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
     <script type="module" src="firebase-config.js"></script>
-    <script type="module" src="script.js?v=22"></script>
+    <script type="module" src="script.js?v=24"></script>
     <script>
         if ('serviceWorker' in navigator) {
             // ¿Ya había un SW controlando la pagina? Si no, es la primera visita

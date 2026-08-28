@@ -33,6 +33,7 @@ let trash = [];
 let history = [];
 let users = [];
 let debts = []; // fiados / cuentas por cobrar
+let pricesDirty = false; // true = el admin está editando precios (no pisar sus cambios)
 let cart = [];
 let selectedMemberId = null;
 // Foto del ranking (para las flechas de subió/bajó). Se guarda en Firebase 1 vez/día.
@@ -407,7 +408,8 @@ window.app = {
             } else {
                 prices = { ...DEFAULT_PRICES };
             }
-            syncPriceInputs();
+            // No pisar lo que el admin está escribiendo en la pantalla de precios
+            if (!pricesDirty) syncPriceInputs();
             // Si hay un modal de precio abierto, refrescar su monto mostrado
             const regModal = document.getElementById('modal-register');
             if (regModal && regModal.style.display === 'flex') this.updateRegisterPrice();
@@ -415,9 +417,27 @@ window.app = {
             if (renewModal && renewModal.style.display === 'flex') this.updateRenewPrice();
         });
 
+        // Marcar "editando" cuando el admin toca un campo de precio (evita que una
+        // actualización remota le borre lo que escribe antes de guardar)
+        Object.values(PRICE_INPUT_MAP).forEach(id => {
+            const el = document.getElementById(id);
+            if (el) el.addEventListener('input', () => { pricesDirty = true; });
+        });
+
         // Foto del ranking de rachas (para las flechas subió/bajó)
         db.onDataChange('config/rankingSnapshot', (data) => {
             rankingSnapshot = (data && data.positions) ? data : { date: null, positions: {} };
+        });
+
+        // Sello de última actualización de precios (quién y cuándo) — para auditar cambios
+        db.onDataChange('config/pricesMeta', (meta) => {
+            const el = document.getElementById('prices-meta');
+            if (!el) return;
+            if (meta && meta.at) {
+                el.innerText = `Última actualización: ${meta.by || '?'} · ${new Date(meta.at).toLocaleString()}`;
+            } else {
+                el.innerText = 'Sin cambios registrados aún.';
+            }
         });
 
         // Hamburger Menu Logic
@@ -2327,6 +2347,12 @@ window.app = {
     },
 
     saveConfig: async function() {
+        // Solo admin/dev pueden cambiar precios (evita cambios por staff)
+        if (!currentUser || (currentUser.role !== 'admin' && currentUser.role !== 'dev')) {
+            return showToast('error', 'Solo un administrador puede cambiar los precios');
+        }
+        const ok = await customConfirm('Actualizar precios', '¿Guardar estos precios? Se aplicarán en todos los equipos.');
+        if (!ok) return;
         // Construye el nuevo objeto a partir de los inputs, pero de forma SEGURA:
         // si un input esta vacio o invalido, conserva el precio actual (no lo pone en 0).
         const newPrices = { ...prices };
@@ -2343,7 +2369,9 @@ window.app = {
 
         try {
             await db.set('config/prices', newPrices);   // Firebase = fuente de verdad
+            db.set('config/pricesMeta', { by: currentUser.username, at: new Date().toISOString() }); // sello: quién y cuándo
             prices = newPrices;
+            pricesDirty = false;
             syncPriceInputs();
             this.logAction('Config Precios', 'Se actualizaron los precios de los planes.');
             if (invalid > 0) {
@@ -2354,6 +2382,22 @@ window.app = {
         } catch (e) {
             showToast('error', 'No se pudo guardar. Revisa tu conexion.');
         }
+    },
+
+    // Borra el service worker + caché y recarga (código 100% fresco en este equipo)
+    forceUpdate: async function() {
+        try {
+            if ('serviceWorker' in navigator) {
+                const regs = await navigator.serviceWorker.getRegistrations();
+                await Promise.all(regs.map(r => r.unregister()));
+            }
+            if (window.caches) {
+                const keys = await caches.keys();
+                await Promise.all(keys.map(k => caches.delete(k)));
+            }
+        } catch (e) { /* ignorar */ }
+        showToast('success', 'Actualizando… la app se recargará');
+        setTimeout(() => location.reload(true), 700);
     },
 
     // === RESPALDO: exportar toda la base de datos a un archivo JSON ===
