@@ -3,8 +3,8 @@
   "short_name": "Atlas Gym",
   "start_url": "./index.html",
   "display": "standalone",
-  "background_color": "#000000",
-  "theme_color": "#ff003c",
+  "background_color": "#0F0F10",
+  "theme_color": "#0F0F10",
   "icons": [
     {
       "src": "Logo/ATLAS.png",

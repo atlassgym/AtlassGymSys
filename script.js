@@ -70,6 +70,12 @@ function localDateKey(d) {
     const x = new Date(d);
     return x.getFullYear() + '-' + String(x.getMonth() + 1).padStart(2, '0') + '-' + String(x.getDate()).padStart(2, '0');
 }
+// Convierte 'YYYY-MM-DD' (valor de un <input type="date">) a fecha LOCAL.
+// new Date('YYYY-MM-DD') la toma como UTC y en México la recorre al día anterior.
+function parseLocalDate(str) {
+    const [y, m, d] = String(str).split('-').map(Number);
+    return new Date(y, (m || 1) - 1, d || 1);
+}
 // ¿Todos los días ESTRICTAMENTE entre aKey y bKey son fin de semana? (sáb/dom)
 // Si hay un día entre semana sin asistir, la racha se rompe.
 function gapIsOnlyWeekend(aKey, bKey) {
@@ -132,12 +138,12 @@ function memberAttendanceKeys(code) {
 // ===== LOGROS / INSIGNIAS =====
 // Catálogo de insignias. `test` recibe el objeto de logros del socio.
 const BADGES = [
-    { key: 'week',    name: 'Primera semana', req: '7 días seguidos',            icon: 'ti-flame',          color: '#00ff41', test: a => a.best >= 7 },
-    { key: 'const',   name: 'Constante',      req: '30 días seguidos',           icon: 'ti-calendar-stats', color: '#ffaa00', test: a => a.best >= 30 },
-    { key: 'early',   name: 'Madrugador',     req: '10 entradas antes de 7am',   icon: 'ti-sunrise',        color: '#4488ff', test: a => a.early >= 10 },
-    { key: 'unstop',  name: 'Imparable',      req: '100 días seguidos',          icon: 'ti-bolt',           color: '#aa44ff', test: a => a.best >= 100 },
-    { key: 'weekend', name: 'Finde guerrero', req: '8 días de fin de semana',    icon: 'ti-barbell',        color: '#ff003c', test: a => a.weekendDays >= 8 },
-    { key: 'legend',  name: 'Leyenda Atlas',  req: '365 días seguidos',          icon: 'ti-crown',          color: '#ffd700', test: a => a.best >= 365 }
+    { key: 'week',    name: 'Primera semana', req: '7 días seguidos',            icon: 'ti-flame',          color: '#34B871', test: a => a.best >= 7 },
+    { key: 'const',   name: 'Constante',      req: '30 días seguidos',           icon: 'ti-calendar-stats', color: '#E8A33D', test: a => a.best >= 30 },
+    { key: 'early',   name: 'Madrugador',     req: '10 entradas antes de 7am',   icon: 'ti-sunrise',        color: '#5B93F5', test: a => a.early >= 10 },
+    { key: 'unstop',  name: 'Imparable',      req: '100 días seguidos',          icon: 'ti-bolt',           color: '#9B7BEA', test: a => a.best >= 100 },
+    { key: 'weekend', name: 'Finde guerrero', req: '8 días de fin de semana',    icon: 'ti-barbell',        color: '#EF4B44', test: a => a.weekendDays >= 8 },
+    { key: 'legend',  name: 'Leyenda Atlas',  req: '365 días seguidos',          icon: 'ti-crown',          color: '#D8AE4A', test: a => a.best >= 365 }
 ];
 
 // Logros de UN socio (para la ficha). Devuelve métricas para evaluar insignias.
@@ -313,6 +319,8 @@ window.app = {
         document.getElementById('app-container').removeAttribute('hidden');
         document.getElementById('user-display-name').innerText = user.name;
         document.getElementById('user-display-role').innerText = user.role.toUpperCase();
+        const avatarEl = document.getElementById('user-avatar');
+        if (avatarEl) avatarEl.innerText = String(user.name || 'U').trim().charAt(0).toUpperCase() || 'U';
 
         const applyVisibility = (hiddenSections = []) => {
             // First, make all nav buttons visible
@@ -337,7 +345,7 @@ window.app = {
         };
 
         // Set initial visibility based on role
-        document.querySelectorAll('.admin-only').forEach(e => e.style.display = (user.role === 'admin' || user.role === 'dev') ? 'inline-block' : 'none');
+        document.querySelectorAll('.admin-only').forEach(e => e.style.display = (user.role === 'admin' || user.role === 'dev') ? '' : 'none');
         const adminMenu = document.getElementById('admin-menu');
         if (adminMenu) adminMenu.style.display = (user.role === 'admin' || user.role === 'dev') ? 'block' : 'none';
         const devMenu = document.getElementById('dev-menu');
@@ -532,11 +540,12 @@ window.app = {
         if (savedTheme === 'light') {
             document.body.classList.add('light-mode');
             const btn = document.getElementById('btn-theme-toggle');
-            if (btn) { btn.innerHTML = '<i class="fas fa-moon"></i> Modo Oscuro'; btn.title = 'Cambiar a Modo Oscuro'; }
+            if (btn) { btn.innerHTML = '<i class="fas fa-moon"></i><span>Modo oscuro</span>'; btn.title = 'Cambiar a Modo Oscuro'; }
         }
     },
 
     nav: function(viewId) {
+        window.scrollTo(0, 0);
         document.querySelectorAll('.view-section').forEach(s => s.classList.remove('active'));
         const target = document.getElementById(`view-${viewId}`);
         if(target) target.classList.add('active');
@@ -600,11 +609,21 @@ window.app = {
     renderStats: function() {
         if (!app.charts) app.charts = {};
         if (typeof Chart === 'undefined') return;
-        const isLight = document.body.classList.contains('light-mode');
-        const gridColor = isLight ? '#e0e0e0' : '#222';
-        const tickColor = isLight ? '#555' : '#888';
-        const legendColor = isLight ? '#333' : '#fff';
-        const C = { red: '#ff003c', green: '#00ff41', orange: '#ffaa00', blue: '#4488ff', purple: '#aa44ff', cyan: '#00e5ff' };
+        // Colores tomados del tema actual (claro/oscuro) definido en style.css
+        const _cs = getComputedStyle(document.body);
+        const tok = (name, fallback) => (_cs.getPropertyValue(name) || '').trim() || fallback;
+        const gridColor = tok('--line', '#2A2A2F');
+        const tickColor = tok('--text-3', '#807D77');
+        const legendColor = tok('--text-2', '#B3B0A9');
+        const surfaceColor = tok('--surface', '#18181B');
+        const C = { red: tok('--danger', '#EF4B44'), green: tok('--ok', '#34B871'), orange: tok('--warn', '#E8A33D'), blue: tok('--info', '#5B93F5'), purple: tok('--violet', '#9B7BEA'), cyan: '#3DB5C9' };
+        const alpha = (hex, a) => {
+            const h = String(hex).replace('#', '');
+            if (h.length !== 6) return hex;
+            return `rgba(${parseInt(h.slice(0, 2), 16)},${parseInt(h.slice(2, 4), 16)},${parseInt(h.slice(4, 6), 16)},${a})`;
+        };
+        Chart.defaults.font.family = tok('--font', 'system-ui, sans-serif');
+        Chart.defaults.color = tickColor;
 
         const { start, end } = this.getStatsRange();
         const lbl = document.getElementById('stats-range-label');
@@ -655,10 +674,10 @@ window.app = {
         const kpiBox = document.getElementById('stats-kpis');
         if (kpiBox) {
             kpiBox.innerHTML = kpis.map(k => `
-                <div class="stats-kpi-card" style="border-left:3px solid ${k.color};">
-                    <div class="skc-icon" style="color:${k.color};"><i class="fas ${k.icon}"></i></div>
+                <div class="stats-kpi-card" style="--kpi:${k.color};">
+                    <div class="skc-icon"><i class="fas ${k.icon}"></i></div>
                     <div class="skc-body">
-                        <div class="skc-value" style="color:${k.color};">${k.value}</div>
+                        <div class="skc-value">${k.value}</div>
                         <div class="skc-label">${k.label}</div>
                     </div>
                 </div>`).join('');
@@ -706,7 +725,7 @@ window.app = {
         fVisits.forEach(v => visitHours[new Date(v.date).getHours()]++);
         mk('chart-visits', {
             type: 'line',
-            data: { labels: Array.from({ length: 24 }, (_, i) => `${i}:00`), datasets: [{ label: 'Visitas', data: visitHours, backgroundColor: 'rgba(255,0,60,0.2)', borderColor: C.red, fill: true, tension: 0.4 }] },
+            data: { labels: Array.from({ length: 24 }, (_, i) => `${i}:00`), datasets: [{ label: 'Visitas', data: visitHours, backgroundColor: alpha(C.red, 0.16), borderColor: C.red, borderWidth: 2, pointRadius: 0, fill: true, tension: 0.35 }] },
             options: { responsive: true, plugins: { legend: { labels: { color: legendColor } } }, scales: baseScales }
         });
 
@@ -714,8 +733,8 @@ window.app = {
         mk('chart-finances', {
             type: 'bar',
             data: { labels: mKeys, datasets: [
-                { label: 'Ingresos', data: mKeys.map(k => months[k].income), backgroundColor: C.green },
-                { label: 'Gastos', data: mKeys.map(k => months[k].expense), backgroundColor: C.red }
+                { label: 'Ingresos', data: mKeys.map(k => months[k].income), backgroundColor: C.green, borderRadius: 4 },
+                { label: 'Gastos', data: mKeys.map(k => months[k].expense), backgroundColor: C.red, borderRadius: 4 }
             ] },
             options: { responsive: true, plugins: { legend: { labels: { color: legendColor } }, tooltip: { callbacks: { afterLabel: (ctx) => { if (ctx.dataset.label === 'Ingresos') { const m = months[mKeys[ctx.dataIndex]]; return ` (Efvo: $${m.cash.toLocaleString()} | Tarj: $${m.card.toLocaleString()})`; } return ''; } } } }, scales: baseScales }
         });
@@ -723,11 +742,11 @@ window.app = {
         // 3. Distribución por plan (foto actual)
         const planCounts = {};
         members.forEach(m => { const n = PLAN_NAMES[m.plan] || m.plan || 'Sin Plan'; planCounts[n] = (planCounts[n] || 0) + 1; });
-        const planColors = ['#ff003c', '#ff4466', '#ff6680', '#ff8899', '#00ff41', '#00cc33', '#ffaa00', '#ff8800', '#4488ff', '#aa44ff', '#ff44aa'];
+        const planColors = [C.red, C.orange, C.green, C.blue, C.purple, C.cyan, tok('--gold', '#D8AE4A'), tok('--flame', '#F06A2A'), '#C76BA8', '#8A9099', '#6E8B3D'];
         mk('chart-plans', {
             type: 'doughnut',
-            data: { labels: Object.keys(planCounts), datasets: [{ data: Object.values(planCounts), backgroundColor: planColors, borderColor: '#0a0a0a', borderWidth: 2 }] },
-            options: { responsive: true, plugins: { legend: { position: 'bottom', labels: { color: tickColor, padding: 12, font: { size: 11 } } } } }
+            data: { labels: Object.keys(planCounts), datasets: [{ data: Object.values(planCounts), backgroundColor: planColors, borderColor: surfaceColor, borderWidth: 2 }] },
+            options: { responsive: true, aspectRatio: 1.5, cutout: '62%', plugins: { legend: { position: 'right', labels: { color: tickColor, padding: 10, boxWidth: 12, font: { size: 11 } } } } }
         });
 
         // 4. Visitas por día de la semana
@@ -737,29 +756,29 @@ window.app = {
         const maxDay = Math.max(...dayVisits);
         mk('chart-day-of-week', {
             type: 'bar',
-            data: { labels: dayNames, datasets: [{ label: 'Visitas', data: dayVisits, backgroundColor: dayVisits.map(v => `rgba(255,0,60,${maxDay > 0 ? 0.3 + (v / maxDay) * 0.7 : 0.3})`), borderColor: C.red, borderWidth: 1, borderRadius: 6 }] },
+            data: { labels: dayNames, datasets: [{ label: 'Visitas', data: dayVisits, backgroundColor: dayVisits.map(v => alpha(C.red, maxDay > 0 ? 0.3 + (v / maxDay) * 0.7 : 0.3)), borderRadius: 6 }] },
             options: { responsive: true, plugins: { legend: { display: false } }, scales: { x: { ticks: { color: tickColor }, grid: { display: false } }, y: baseScales.y } }
         });
 
         // 5. Tendencia de nuevos socios
         mk('chart-reg-trend', {
             type: 'line',
-            data: { labels: mKeys, datasets: [{ label: 'Nuevos Socios', data: mKeys.map(k => months[k].regs), borderColor: C.orange, backgroundColor: 'rgba(255,170,0,0.1)', fill: true, tension: 0.4, pointBackgroundColor: C.orange, pointRadius: 4 }] },
+            data: { labels: mKeys, datasets: [{ label: 'Nuevos Socios', data: mKeys.map(k => months[k].regs), borderColor: C.orange, backgroundColor: alpha(C.orange, 0.12), borderWidth: 2, fill: true, tension: 0.35, pointBackgroundColor: C.orange, pointRadius: 3 }] },
             options: { responsive: true, plugins: { legend: { labels: { color: legendColor } } }, scales: { x: baseScales.x, y: { ticks: { color: tickColor, stepSize: 1 }, grid: { color: gridColor }, beginAtZero: true } } }
         });
 
         // 6. Tendencia de ingresos
         mk('chart-rev-trend', {
             type: 'line',
-            data: { labels: mKeys, datasets: [{ label: 'Ingresos', data: mKeys.map(k => months[k].income), borderColor: C.green, backgroundColor: 'rgba(0,255,65,0.1)', fill: true, tension: 0.4, pointBackgroundColor: C.green, pointRadius: 4 }] },
+            data: { labels: mKeys, datasets: [{ label: 'Ingresos', data: mKeys.map(k => months[k].income), borderColor: C.green, backgroundColor: alpha(C.green, 0.12), borderWidth: 2, fill: true, tension: 0.35, pointBackgroundColor: C.green, pointRadius: 3 }] },
             options: { responsive: true, plugins: { legend: { labels: { color: legendColor } }, tooltip: { callbacks: { label: (ctx) => 'Ingresos: $' + ctx.parsed.y.toLocaleString() } } }, scales: { x: baseScales.x, y: { ticks: { color: tickColor, callback: v => '$' + v.toLocaleString() }, grid: { color: gridColor }, beginAtZero: true } } }
         });
 
         // 7. NUEVA: Método de pago
         mk('chart-payment', {
             type: 'doughnut',
-            data: { labels: ['Efectivo', 'Tarjeta'], datasets: [{ data: [cash, card], backgroundColor: [C.green, C.blue], borderColor: '#0a0a0a', borderWidth: 2 }] },
-            options: { responsive: true, plugins: { legend: { position: 'bottom', labels: { color: tickColor } }, tooltip: { callbacks: { label: (ctx) => ` ${ctx.label}: $${ctx.parsed.toLocaleString()}` } } } }
+            data: { labels: ['Efectivo', 'Tarjeta'], datasets: [{ data: [cash, card], backgroundColor: [C.green, C.blue], borderColor: surfaceColor, borderWidth: 2 }] },
+            options: { responsive: true, aspectRatio: 1.5, cutout: '62%', plugins: { legend: { position: 'right', labels: { color: tickColor, boxWidth: 12 } }, tooltip: { callbacks: { label: (ctx) => ` ${ctx.label}: $${ctx.parsed.toLocaleString()}` } } } }
         });
 
         // 8. NUEVA: Ingresos por tipo
@@ -772,11 +791,11 @@ window.app = {
         // 9. NUEVA: Gastos por categoría
         const ecLabels = Object.keys(expenseByCat);
         const ecData = Object.values(expenseByCat);
-        const ecColors = ['#ff003c', '#ffaa00', '#4488ff', '#aa44ff', '#00e5ff', '#ff6a00', '#00ff41', '#ff44aa', '#ffd700', '#cd7f32', '#888', '#c0c0c0'];
+        const ecColors = [C.red, C.orange, C.blue, C.purple, C.cyan, tok('--flame', '#F06A2A'), C.green, '#C76BA8', tok('--gold', '#D8AE4A'), tok('--bronze', '#BC7D4F'), '#8A9099', '#6E8B3D'];
         mk('chart-expense-cat', {
             type: 'doughnut',
-            data: { labels: ecLabels.length ? ecLabels : ['Sin gastos'], datasets: [{ data: ecData.length ? ecData : [1], backgroundColor: ecLabels.length ? ecColors : ['#222'], borderColor: '#0a0a0a', borderWidth: 2 }] },
-            options: { responsive: true, plugins: { legend: { position: 'bottom', labels: { color: tickColor, padding: 10, font: { size: 11 } } }, tooltip: { callbacks: { label: (ctx) => ` ${ctx.label}: $${ctx.parsed.toLocaleString()}` } } } }
+            data: { labels: ecLabels.length ? ecLabels : ['Sin gastos'], datasets: [{ data: ecData.length ? ecData : [1], backgroundColor: ecLabels.length ? ecColors : [gridColor], borderColor: surfaceColor, borderWidth: 2 }] },
+            options: { responsive: true, aspectRatio: 1.5, cutout: '62%', plugins: { legend: { position: 'right', labels: { color: tickColor, padding: 10, boxWidth: 12, font: { size: 11 } } }, tooltip: { callbacks: { label: (ctx) => ` ${ctx.label}: $${ctx.parsed.toLocaleString()}` } } } }
         });
 
         // 10. NUEVA: Ingresos vs Gastos del periodo
@@ -826,8 +845,10 @@ window.app = {
                 const e = document.getElementById(id);
                 if (e && e.getAttribute('data-hidden') !== 'true') e.innerText = '…';
             });
-            const dl = document.getElementById('dash-loyalty-list'); if (dl) dl.innerHTML = '<li style="color:#666; padding:6px 0;">Cargando…</li>';
-            const dc = document.getElementById('dash-constancia-list'); if (dc) dc.innerHTML = '<li style="color:#666; padding:6px 0;">Cargando…</li>';
+            ['bday-list', 'dash-loyalty-list', 'dash-constancia-list'].forEach(id => {
+                const el = document.getElementById(id);
+                if (el) el.innerHTML = '<li class="rk-empty">Cargando…</li>';
+            });
             return;
         }
         this.renderDashLoyalty();
@@ -838,7 +859,7 @@ window.app = {
         document.getElementById('stat-visits').innerText = todayVisits.length;
 
         let active=0, expiring=0, inactive=0;
-        document.getElementById('bday-list').innerHTML = '';
+        const bdays = [];
         members.forEach(m => {
             const exp = new Date(m.expiryDate);
             const days = Math.ceil((exp - today)/(1000*60*60*24));
@@ -846,11 +867,18 @@ window.app = {
             else { active++; if(days <= 5) expiring++; }
             if(m.dob) {
                 const [y, mo, d] = m.dob.split('-');
-                if(Number(mo)-1 === today.getMonth()) {
-                    document.getElementById('bday-list').innerHTML += `<li><i class="fas fa-caret-right"></i> <b>${d}</b> - ${m.name}</li>`;
-                }
+                if(Number(mo)-1 === today.getMonth()) bdays.push({ day: Number(d), label: d, m });
             }
         });
+        // Cumpleaños del mes, ordenados por día
+        bdays.sort((a, b) => a.day - b.day);
+        document.getElementById('bday-list').innerHTML = bdays.length
+            ? bdays.map(b => `
+                <li class="clickable" onclick="app.openMemberDetail('${b.m.id}')" title="Ver ficha">
+                    <span class="rk-day${b.day === today.getDate() ? ' today' : ''}">${b.label}</span>
+                    <span class="rk-name">${b.m.name}</span>
+                </li>`).join('')
+            : '<li class="rk-empty">Nadie cumple años este mes</li>';
         document.getElementById('stat-active').innerText = active;
         document.getElementById('stat-expiring').innerText = expiring;
         const inactiveEl = document.getElementById('stat-inactive');
@@ -918,12 +946,12 @@ window.app = {
             setEl('metric-revenue', '$' + revenueThisMonth.toLocaleString());
             setEl('metric-revenue-change', (revenueChange >= 0 ? '+' : '') + revenueChange + '%');
             const chEl = document.getElementById('metric-revenue-change');
-            if (chEl) chEl.style.color = revenueChange >= 0 ? 'var(--neon-green)' : 'var(--primary)';
+            if (chEl) chEl.style.color = revenueChange >= 0 ? 'var(--ok)' : 'var(--danger)';
             setEl('metric-new-members', newMembersThisMonth);
             const nmChange = newMembersLastMonth > 0 ? Math.round(((newMembersThisMonth - newMembersLastMonth) / newMembersLastMonth) * 100) : 0;
             setEl('metric-new-members-change', newMembersLastMonth > 0 ? (nmChange >= 0 ? '+' : '') + nmChange + '%' : 'N/A');
             const nmChEl = document.getElementById('metric-new-members-change');
-            if (nmChEl) nmChEl.style.color = nmChange >= 0 ? 'var(--neon-green)' : 'var(--primary)';
+            if (nmChEl) nmChEl.style.color = newMembersLastMonth > 0 ? (nmChange >= 0 ? 'var(--ok)' : 'var(--danger)') : '';
             setEl('metric-retention', retentionRate + '%');
             setEl('metric-store-revenue', '$' + storeRevenueThisMonth.toLocaleString());
             setEl('metric-top-plan', topPlan);
@@ -948,6 +976,7 @@ window.app = {
         const search = searchInput ? searchInput.value.toLowerCase() : "";
         const today = new Date();
         let shownCount = 0;
+        let rowsHtml = '';
 
         members.forEach(m => {
             const exp = new Date(m.expiryDate);
@@ -977,45 +1006,47 @@ window.app = {
                 shownCount++;
                 let badge = "";
                 if (days < 0) {
-                    badge = `<span style="color:var(--primary); font-weight:bold;">VENCIDO</span>`;
+                    badge = `<span class="pill pill-dot pill-danger">Vencido</span>`;
                 } else if (days <= 5) {
-                    badge = `<span style="color:var(--neon-orange); font-weight:bold;">POR VENCER</span>`;
+                    badge = `<span class="pill pill-dot pill-warn">Por vencer · ${days} d</span>`;
                 } else {
-                    badge = `<span style="color:var(--neon-green); font-weight:bold;">ACTIVO</span>`;
+                    badge = `<span class="pill pill-dot pill-ok">Activo</span>`;
                 }
 
-                tbody.innerHTML += `
-                    <tr>
-                        <td style="color:var(--primary); font-weight:bold;">${m.code}</td>
-                        <td style="font-weight:600;">${m.name}</td>
-                        <td>${new Date(m.registeredAt).toLocaleDateString()}</td>
-                        <td>${exp.toLocaleDateString()}</td>
+                rowsHtml += `
+                    <tr class="row-link" onclick="app.openMemberDetail('${m.id}')">
+                        <td class="t-code">${m.code}</td>
+                        <td class="t-strong">${m.name}</td>
+                        <td class="t-muted t-nowrap">${new Date(m.registeredAt).toLocaleDateString()}</td>
+                        <td class="t-muted t-nowrap">${exp.toLocaleDateString()}</td>
                         <td>${badge}</td>
-                        <td>
-                            <button class="btn btn-outline" style="padding:5px 10px;" onclick="app.openMemberDetail('${m.id}')">
-                                <i class="fas fa-eye"></i>
+                        <td class="t-right">
+                            <button class="btn btn-outline btn-sm" onclick="event.stopPropagation(); app.openMemberDetail('${m.id}')">
+                                Ver ficha
                             </button>
                         </td>
                     </tr>`;
             }
         });
+        tbody.innerHTML = rowsHtml;
 
-        // ESTADO VACÍO PROFESIONAL
+        // ESTADO VACÍO
         if (shownCount === 0) {
             tbody.innerHTML = `
                 <tr>
-                    <td colspan="6" style="text-align:center; padding:100px 20px; background: rgba(255,255,255,0.01);">
-                        <div style="margin-bottom:20px;">
-                            <i class="fas fa-users-slash" style="font-size:4rem; color:#222; text-shadow: 0 0 15px rgba(255,0,60,0.1);"></i>
-                        </div>
-                        <h2 style="font-family:'Rajdhani'; color:#555; letter-spacing:3px;">SIN SOCIOS</h2>
-                        <p style="color:#444; margin-bottom:30px; text-transform:uppercase; font-size:0.8rem; letter-spacing:1px;">No se encontraron registros en esta categoría</p>
-                        <button class="btn" onclick="app.filterMembers('all')" style="background:transparent; border:1px solid var(--primary); color:var(--primary); padding:12px 25px; cursor:pointer;">
-                            <i class="fas fa-redo-alt"></i> VER TODA LA LISTA
-                        </button>
+                    <td colspan="6" class="table-empty">
+                        <i class="fas fa-user-slash"></i>
+                        <strong>Sin socios</strong>
+                        No se encontraron registros con este filtro o búsqueda.<br>
+                        <button class="btn btn-outline btn-sm" onclick="app.filterMembers('all')"><i class="fas fa-rotate-left"></i> Ver toda la lista</button>
                     </td>
                 </tr>`;
         }
+
+        // Chips de filtro y contador
+        document.querySelectorAll('[data-member-filter]').forEach(b => b.classList.toggle('active', b.dataset.memberFilter === filter));
+        const countEl = document.getElementById('members-count');
+        if (countEl) countEl.innerText = `${shownCount} de ${members.length} socio${members.length === 1 ? '' : 's'}`;
 
         const titleMap = { 
             'all': 'SOCIOS', 
@@ -1088,7 +1119,7 @@ window.app = {
         const isLight = body.classList.toggle('light-mode');
         const btn = document.getElementById('btn-theme-toggle');
         if (btn) {
-            btn.innerHTML = isLight ? '<i class="fas fa-moon"></i> Modo Oscuro' : '<i class="fas fa-sun"></i> Modo Claro';
+            btn.innerHTML = isLight ? '<i class="fas fa-moon"></i><span>Modo oscuro</span>' : '<i class="fas fa-sun"></i><span>Modo claro</span>';
             btn.title = isLight ? 'Cambiar a Modo Oscuro' : 'Cambiar a Modo Claro';
         }
         localStorage.setItem('atlas-theme-mode', isLight ? 'light' : 'dark');
@@ -1157,15 +1188,15 @@ window.app = {
             const title = count > 1 ? `Socio #${i} ${isMain ? '(Titular)' : ''}` : 'Datos del Socio';
             
             container.innerHTML += `
-                <div class="member-form-group" style="background: rgba(255,255,255,0.02); padding: 15px; border-radius: 8px; margin-bottom: 10px; border: 1px solid #333;">
-                    <h4 style="color: var(--primary); margin-bottom: 10px; font-size: 0.9rem; text-transform: uppercase;">${title}</h4>
-                    <div style="display:grid; grid-template-columns: 1fr 1fr; gap:10px;">
-                        <input type="text" id="reg-name-${i}" placeholder="Nombre Completo *" style="grid-column: span 2">
-                        <input type="text" id="reg-phone-${i}" placeholder="WhatsApp (52...) *">
-                        <input type="date" id="reg-dob-${i}" title="Fecha Nacimiento">
-                        <input type="email" id="reg-email-${i}" placeholder="Correo (Opcional)" style="grid-column: span 2">
+                <fieldset class="reg-member member-form-group">
+                    <legend>${title}</legend>
+                    <div class="reg-grid">
+                        <label class="field span-2"><span>Nombre completo *</span><input type="text" id="reg-name-${i}" placeholder="Nombre y apellidos" autocomplete="off"></label>
+                        <label class="field"><span>WhatsApp *</span><input type="text" id="reg-phone-${i}" placeholder="52…" inputmode="tel" autocomplete="off"></label>
+                        <label class="field"><span>Fecha de nacimiento</span><input type="date" id="reg-dob-${i}" title="Fecha Nacimiento"></label>
+                        <label class="field span-2"><span>Correo (opcional)</span><input type="email" id="reg-email-${i}" placeholder="correo@ejemplo.com" autocomplete="off"></label>
                     </div>
-                </div>
+                </fieldset>
             `;
         }
         this.updateRegisterPrice();
@@ -1326,21 +1357,8 @@ window.app = {
         tempCard.id = 'temp-card-render';
         tempCard.style.cssText = 'position:fixed; left:-9999px; top:-9999px; z-index:-1;';
         tempCard.innerHTML = `
-            <div class="member-card" style="width:400px; height:240px; background:linear-gradient(135deg, #1a1a1a 0%, #0d0d0d 50%, #1a1a1a 100%); border-radius:16px; padding:25px; color:#fff; font-family:Rajdhani,sans-serif; position:relative; overflow:hidden; border:1px solid #333; box-shadow:0 10px 40px rgba(0,0,0,0.5);">
-                <div style="position:absolute; top:0; left:0; right:0; height:3px; background:linear-gradient(90deg, transparent, #ff003c, transparent);"></div>
-                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px;">
-                    <img src="Logo/ATLAS.png" style="height:40px; filter:drop-shadow(0 0 8px rgba(255,0,60,0.5));" crossorigin="anonymous">
-                    <div style="width:35px; height:25px; background:linear-gradient(135deg, #ffcc00, #ff9900); border-radius:4px;"></div>
-                </div>
-                <div style="margin-bottom:15px;">
-                    <small style="color:#ff003c; letter-spacing:3px; font-size:0.7rem; text-transform:uppercase;">Miembro Oficial</small>
-                    <h2 style="margin:5px 0; font-size:1.4rem; font-weight:700; letter-spacing:1px; color:#fff;">${name}</h2>
-                    <span style="font-size:2rem; font-weight:800; color:#ff003c; letter-spacing:4px; text-shadow:0 0 15px rgba(255,0,60,0.4);">${code}</span>
-                </div>
-                <div style="display:flex; justify-content:space-between; align-items:center; border-top:1px solid #333; padding-top:10px; font-size:0.75rem; color:#888;">
-                    <div>VENCE: ${new Date(expiryDate).toLocaleDateString('es-MX')}</div>
-                    <div style="text-align:right; color:#aaa; letter-spacing:2px;">ATLAS GYM</div>
-                </div>
+            <div class="member-card member-card-design" style="width:440px;">
+                ${this.memberCardInner(name, code, expiryDate)}
             </div>
         `;
         document.body.appendChild(tempCard);
@@ -1359,6 +1377,25 @@ window.app = {
         }
     },
 
+    // Contenido de la tarjeta de socio (vista previa y descarga como imagen)
+    memberCardInner: function(name, code, expiryDate) {
+        return `
+            <img src="Logo/ATLAS.png" class="mc-watermark" alt="" crossorigin="anonymous">
+            <div class="mc-top">
+                <div class="mc-brand"><img src="Logo/ATLAS.png" class="mc-logo" alt="" crossorigin="anonymous"><b>ATLAS GYM</b></div>
+                <span class="mc-tag">MIEMBRO</span>
+            </div>
+            <div>
+                <span class="mc-kicker">Socio</span>
+                <h2 class="mc-name">${name}</h2>
+            </div>
+            <div class="mc-bottom">
+                <div><span class="mc-kicker">Código</span><b class="mc-code">${code}</b></div>
+                <div class="mc-right"><span class="mc-kicker">Vence</span><b class="mc-exp">${new Date(expiryDate).toLocaleDateString('es-MX')}</b></div>
+            </div>
+        `;
+    },
+
     openMemberDetail: function(id) {
         selectedMemberId = id;
         const m = members.find(x => String(x.id) === String(id));
@@ -1370,8 +1407,11 @@ window.app = {
         modal.style.display = 'flex';
         
         const days = Math.ceil((new Date(m.expiryDate) - new Date())/(1000*60*60*24));
-        const color = days < 0 ? 'var(--primary)' : (days<=5 ? 'var(--neon-orange)' : 'var(--neon-green)');
-        
+        let statusPill;
+        if (days < 0) statusPill = `<span class="pill pill-dot pill-danger">Membresía vencida</span>`;
+        else if (days <= 5) statusPill = `<span class="pill pill-dot pill-warn">Vence en ${days} día${days === 1 ? '' : 's'}</span>`;
+        else statusPill = `<span class="pill pill-dot pill-ok">Activa · ${days} días restantes</span>`;
+
         // Buscar miembros del grupo
         let groupHtml = '';
         if (m.groupId) {
@@ -1379,15 +1419,15 @@ window.app = {
             if (groupMembers.length > 0) {
                 const canEdit = (currentUser.role === 'admin' || currentUser.role === 'dev');
                 const detachBtn = canEdit ? `
-                    <button class="btn btn-outline" style="margin-top:10px; width:100%; font-size:0.8rem; padding:8px; border-color:var(--neon-orange); color:var(--neon-orange);" onclick="app.detachFromGroup()">
+                    <button class="btn btn-outline btn-sm btn-block" onclick="app.detachFromGroup()">
                         <i class="fas fa-user-minus"></i> Independizar a ${m.name.split(' ')[0]} del grupo
                     </button>
                 ` : '';
                 groupHtml = `
-                    <div style="margin-top: 20px; background: rgba(255, 255, 255, 0.05); padding: 10px; border-radius: 8px; border-left: 3px solid var(--neon-orange);">
-                        <h4 style="margin:0 0 10px 0; color: #ddd; font-size: 0.9rem;"><i class="fas fa-users"></i> GRUPO VINCULADO (${groupMembers.length + 1})</h4>
-                        <ul style="list-style: none; padding: 0; margin: 0; font-size: 0.85rem; color: #aaa;">
-                            ${groupMembers.map(gm => `<li><i class="fas fa-user-circle"></i> ${gm.name} <small>(${gm.code})</small></li>`).join('')}
+                    <div class="md-group">
+                        <h4><i class="fas fa-user-group"></i> Grupo vinculado (${groupMembers.length + 1})</h4>
+                        <ul>
+                            ${groupMembers.map(gm => `<li>${gm.name} <span class="t-code">${gm.code}</span></li>`).join('')}
                         </ul>
                         ${detachBtn}
                     </div>
@@ -1396,16 +1436,19 @@ window.app = {
         }
 
         document.getElementById('member-info-content').innerHTML = `
-            <div style="display:flex; justify-content:space-between; align-items:start;">
-                <div>
-                    <h1 style="margin:0; font-size:2.5rem;">${m.name}</h1>
-                    <p style="color:#888;">ID Sistema: ${m.id}</p>
-                </div>
-                <div style="text-align:right;">
-                    <span style="font-size:3rem; font-family:'Rajdhani'; font-weight:800; color:var(--primary); line-height:1;">${m.code}</span>
-                    <div style="background:${color}; color:#000; padding:2px 10px; border-radius:4px; font-weight:bold; font-size:0.8rem; margin-top:5px;">
-                        ${days < 0 ? 'MEMBRESÍA EXPIRADA' : 'DÍAS RESTANTES: ' + days}
+            <div class="md-head">
+                <div class="md-id">
+                    <span class="kicker">Ficha de socio · ${PLAN_NAMES[m.plan] || m.plan || 'Sin plan'}</span>
+                    <h2 class="md-name">${m.name}</h2>
+                    <div class="md-meta">
+                        ${statusPill}
+                        <span>Vence ${new Date(m.expiryDate).toLocaleDateString()}</span>
                     </div>
+                </div>
+                <div class="md-code">
+                    <span class="kicker">Código</span>
+                    <b>${m.code}</b>
+                    <div class="md-sysid">ID ${m.id}</div>
                 </div>
             </div>
             ${groupHtml}
@@ -1418,12 +1461,12 @@ window.app = {
             const _earned = BADGES.filter(b => b.test(_ach));
             const _chips = _earned.length
                 ? `<div class="loyalty-chips">${_earned.map(b => `<span class="lb-chip" style="color:${b.color}; border-color:${b.color}66;"><i class="ti ${b.icon}"></i> ${b.name}</span>`).join('')}</div>`
-                : `<div class="loyalty-chips"><span style="color:#555; font-size:0.8rem;"><i class="fas fa-lock" style="margin-right:5px;"></i>Sin insignias aún</span></div>`;
+                : `<div class="loyalty-chips"><span class="lb-none"><i class="fas fa-lock"></i> Sin insignias aún</span></div>`;
             _loyaltyEl.innerHTML = `
                 <div class="loyalty-badges">
-                    <div class="loyalty-badge"><i class="fas fa-medal" style="color:var(--neon-orange);"></i><div><b>${tenureText(m.registeredAt)}</b><small>Antigüedad</small></div></div>
-                    <div class="loyalty-badge"><i class="fas fa-fire" style="color:#ff6a00;"></i><div><b>${_ach.current} día${_ach.current === 1 ? '' : 's'}</b><small>Racha actual</small></div></div>
-                    <div class="loyalty-badge"><i class="fas fa-trophy" style="color:#ffd700;"></i><div><b>${_ach.best} día${_ach.best === 1 ? '' : 's'}</b><small>Mejor racha</small></div></div>
+                    <div class="loyalty-badge"><i class="fas fa-medal" style="color:var(--warn);"></i><div><b>${tenureText(m.registeredAt)}</b><small>Antigüedad</small></div></div>
+                    <div class="loyalty-badge"><i class="fas fa-fire-flame-curved" style="color:var(--flame);"></i><div><b>${_ach.current} día${_ach.current === 1 ? '' : 's'}</b><small>Racha actual</small></div></div>
+                    <div class="loyalty-badge"><i class="fas fa-trophy" style="color:var(--gold);"></i><div><b>${_ach.best} día${_ach.best === 1 ? '' : 's'}</b><small>Mejor racha</small></div></div>
                 </div>
                 ${_chips}`;
         }
@@ -1434,25 +1477,25 @@ window.app = {
 
         const allVisits = visits.filter(v => String(v.code) === String(m.code));
         const visitCount = allVisits.length;
-        document.getElementById('visit-counter-badge').innerText = `${visitCount} VISITAS TOTALES`;
+        document.getElementById('visit-counter-badge').innerText = `${visitCount} visita${visitCount === 1 ? '' : 's'} en total`;
 
         const listContainer = document.getElementById('member-visits-list');
         listContainer.innerHTML = '';
 
         if(visitCount === 0) {
-            listContainer.innerHTML = '<div style="padding:10px; text-align:center;">No se registran visitas aún.</div>';
+            listContainer.innerHTML = '<div class="visit-empty">No se registran visitas aún.</div>';
         } else {
-            allVisits.sort((a,b) => new Date(b.date) - new Date(a.date)).forEach((v, index) => {
+            listContainer.innerHTML = allVisits.sort((a,b) => new Date(b.date) - new Date(a.date)).map((v, index) => {
                 const dateObj = new Date(v.date);
                 const visitNumber = visitCount - index;
-                listContainer.innerHTML += `
-                    <div style="display:flex; justify-content:space-between; padding:8px; border-bottom:1px solid #111;">
-                        <span><b style="color:var(--primary)">#${visitNumber}</b> Visita</span>
-                        <span>${dateObj.toLocaleDateString()}</span>
-                        <span style="color:#fff;">${dateObj.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</span>
+                return `
+                    <div class="visit-row">
+                        <b>#${visitNumber}</b>
+                        <span>${dateObj.toLocaleDateString(undefined, { weekday: 'short', day: 'numeric', month: 'short', year: 'numeric' })}</span>
+                        <span>${dateObj.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</span>
                     </div>
                 `;
-            });
+            }).join('');
         }
 
         const inputs = modal.querySelectorAll('input');
@@ -1496,12 +1539,7 @@ window.app = {
 
     showMemberCard: function() {
         const m = members.find(x => String(x.id) === String(selectedMemberId));
-        document.getElementById('member-card-ui').innerHTML = `
-            <div class="card-header"><img src="Logo/ATLAS.png" class="card-logo"><div class="card-chip"></div></div>
-            <div class="card-body"><small style="color:var(--primary); letter-spacing:2px;">MIEMBRO OFICIAL</small>
-            <h2>${m.name}</h2><span class="card-code">${m.code}</span></div>
-            <div class="card-footer"><div>VENCE: ${new Date(m.expiryDate).toLocaleDateString()}</div><div style="text-align:right;">ATLAS GYM TITAN</div></div>
-        `;
+        document.getElementById('member-card-ui').innerHTML = this.memberCardInner(m.name, m.code, m.expiryDate);
         document.getElementById('modal-card').style.display = 'flex';
     },
 
@@ -1527,8 +1565,8 @@ window.app = {
 
         document.getElementById('renew-member-info').innerHTML = `
             ${groupInfo}
-            <h4 style="margin:0">${m.name} ${isGroupRenewal ? '(+ Grupo)' : ''}</h4>
-            <small style="color:#aaa">Vencimiento actual: ${new Date(m.expiryDate).toLocaleDateString()}</small>
+            <div class="rmi-name">${m.name} ${isGroupRenewal ? '<span class="pill pill-warn">+ grupo</span>' : ''}</div>
+            <span class="rmi-meta">Código <span class="t-code">${m.code}</span> · Vencimiento actual: ${new Date(m.expiryDate).toLocaleDateString()}</span>
         `;
 
         const modeToggle = document.getElementById('renew-mode-toggle');
@@ -1845,50 +1883,57 @@ window.app = {
         }
 
         if (filteredTrash.length === 0) {
-            tbody.innerHTML = `<tr><td colspan="5" style="text-align:center; padding:50px; color:#666;">La papelera está vacía.</td></tr>`;
+            tbody.innerHTML = `<tr><td colspan="5" class="table-empty"><i class="fas fa-trash-can"></i><strong>La papelera está vacía</strong>No hay registros eliminados en esta categoría.</td></tr>`;
             return;
         }
 
+        const canPurge = currentUser && (currentUser.role === 'admin' || currentUser.role === 'dev');
+        let rowsHtml = '';
         filteredTrash.forEach(item => {
             const deletedDate = item.deletedAt ? new Date(item.deletedAt).toLocaleDateString() : 'N/A';
-            
+
             if (this.trashViewMode === 'members') {
-                tbody.innerHTML += `
+                rowsHtml += `
                     <tr>
-                        <td>${item.name}</td>
-                        <td>${item.code}</td>
-                        <td style="color:#aaa;">${item.deletedBy || 'N/A'}</td>
-                        <td style="color:#aaa;">${deletedDate}</td>
-                        <td style="text-align:right;">
-                            <button class="btn btn-outline" style="border-color:var(--neon-green); color:var(--neon-green);" onclick="app.restoreMember('${item.id}')">
-                                <i class="fas fa-undo-alt"></i> Restaurar
-                            </button>
-                            <button class="btn admin-only" style="background:#d32f2f;" onclick="app.purgeMember('${item.id}')">
-                                <i class="fas fa-fire"></i> Purga
-                            </button>
+                        <td class="t-strong">${item.name}</td>
+                        <td class="t-code">${item.code}</td>
+                        <td class="t-muted">${item.deletedBy || 'N/A'}</td>
+                        <td class="t-muted t-nowrap">${deletedDate}</td>
+                        <td class="t-right t-nowrap">
+                            <span class="t-actions">
+                                <button class="btn btn-ok-outline btn-sm" onclick="app.restoreMember('${item.id}')">
+                                    <i class="fas fa-rotate-left"></i> Restaurar
+                                </button>
+                                ${canPurge ? `<button class="btn btn-danger btn-sm admin-only" onclick="app.purgeMember('${item.id}')">
+                                    <i class="fas fa-fire"></i> Purgar
+                                </button>` : ''}
+                            </span>
                         </td>
                     </tr>
                 `;
             } else {
-                const amountColor = (String(item.type).toLowerCase() === 'gasto' || String(item.type).toLowerCase() === 'egreso' || String(item.type).toLowerCase() === 'salida') ? 'var(--primary)' : 'var(--neon-green)';
-                tbody.innerHTML += `
+                const isExp = (String(item.type).toLowerCase() === 'gasto' || String(item.type).toLowerCase() === 'egreso' || String(item.type).toLowerCase() === 'salida');
+                rowsHtml += `
                     <tr>
-                        <td style="font-size:0.85rem;">${new Date(item.date).toLocaleString()}</td>
+                        <td class="t-muted t-nowrap">${new Date(item.date).toLocaleString()}</td>
                         <td>${item.desc}</td>
-                        <td style="color:${amountColor}; font-weight:bold;">$${Number(item.amount).toLocaleString()}</td>
-                        <td style="color:#aaa;">${item.deletedBy || 'N/A'}</td>
-                        <td style="text-align:right;">
-                            <button class="btn btn-outline" style="border-color:var(--neon-green); color:var(--neon-green);" onclick="app.restoreFinance('${item.id}')">
-                                <i class="fas fa-undo-alt"></i> Restaurar
-                            </button>
-                            <button class="btn admin-only" style="background:#d32f2f;" onclick="app.purgeFinance('${item.id}')">
-                                <i class="fas fa-fire"></i> Purga
-                            </button>
+                        <td class="t-money ${isExp ? 't-neg' : 't-pos'}">$${Number(item.amount).toLocaleString()}</td>
+                        <td class="t-muted">${item.deletedBy || 'N/A'}</td>
+                        <td class="t-right t-nowrap">
+                            <span class="t-actions">
+                                <button class="btn btn-ok-outline btn-sm" onclick="app.restoreFinance('${item.id}')">
+                                    <i class="fas fa-rotate-left"></i> Restaurar
+                                </button>
+                                ${canPurge ? `<button class="btn btn-danger btn-sm admin-only" onclick="app.purgeFinance('${item.id}')">
+                                    <i class="fas fa-fire"></i> Purgar
+                                </button>` : ''}
+                            </span>
                         </td>
                     </tr>
                 `;
             }
         });
+        tbody.innerHTML = rowsHtml;
     },
 
     restoreMember: async function(id) {
@@ -1967,25 +2012,24 @@ window.app = {
         const search = searchInput ? searchInput.value.toLowerCase() : "";
         const category = document.getElementById('filter-category').value;
         if(!grid) return;
-        grid.innerHTML = '';
         const filtered = products.filter(p => (category === 'all' || p.category === category) && p.name.toLowerCase().includes(search));
-        filtered.forEach(p => {
+        grid.innerHTML = filtered.map(p => {
             const isLow = p.stock <= 3;
             const isOut = p.stock <= 0;
-            grid.innerHTML += `
+            return `
                 <div class="prod-item ${isOut ? 'out-of-stock' : ''}" onclick="${isOut ? '' : `app.addToCart('${p.id}')`}">
-                    ${isOut ? '<div class="prod-badge-agotado">AGOTADO</div>' : ''}
+                    ${isOut ? '<div class="prod-badge-agotado">Agotado</div>' : ''}
                     <div class="prod-actions-overlay">
-                        <button onclick="event.stopPropagation(); app.addStock('${p.id}')" class="btn-mini-stock" title="Reponer"><i class="fas fa-plus"></i></button>
-                        ${(currentUser.role === 'admin' || currentUser.role === 'dev') ? `<button onclick="event.stopPropagation(); app.delProd('${p.id}')" class="btn-mini-del" title="Eliminar"><i class="fas fa-times"></i></button>` : ''}
+                        <button onclick="event.stopPropagation(); app.addStock('${p.id}')" class="btn-mini-stock" title="Reponer stock"><i class="fas fa-plus"></i></button>
+                        ${(currentUser.role === 'admin' || currentUser.role === 'dev') ? `<button onclick="event.stopPropagation(); app.delProd('${p.id}')" class="btn-mini-del" title="Eliminar"><i class="fas fa-xmark"></i></button>` : ''}
                     </div>
-                    <div class="prod-icon" style="color: ${isLow ? 'var(--neon-orange)' : 'var(--primary)'}"><i class="fas ${p.icon || 'fa-box'}"></i></div>
+                    <div class="prod-icon ${isLow ? 'low' : ''}"><i class="fas ${p.icon || 'fa-box'}"></i></div>
                     <span class="prod-category">${p.category || 'General'}</span>
                     <span class="prod-name">${p.name}</span>
                     <span class="prod-price">$${p.price}</span>
-                    <span class="prod-stock ${isLow ? 'low' : ''}">Stock: ${p.stock}</span>
+                    <span class="prod-stock ${isLow ? 'low' : ''}">${isOut ? 'Sin stock' : `${p.stock} en stock`}</span>
                 </div>`;
-        });
+        }).join('') || `<div class="empty-block" style="grid-column:1/-1;">No hay productos que coincidan.</div>`;
     },
 
     addToCart: function(id) {
@@ -2001,12 +2045,23 @@ window.app = {
         const totalEl = document.getElementById('cart-total');
         if(!container) return;
         container.innerHTML = ''; let total = 0;
-        if(cart.length === 0) { container.innerHTML = '<p style="text-align:center; color:#666; padding:20px;">Vacío</p>'; totalEl.innerText = '0'; return; }
+        if(cart.length === 0) { container.innerHTML = '<p class="cart-empty"><i class="fas fa-basket-shopping"></i>Aún no hay productos</p>'; totalEl.innerText = '0'; return; }
         const grouped = cart.reduce((acc, item) => { acc[item.id] = acc[item.id] || { ...item, qty: 0 }; acc[item.id].qty++; return acc; }, {});
-        Object.values(grouped).forEach(item => {
+        container.innerHTML = Object.values(grouped).map(item => {
             const subtotal = item.price * item.qty; total += subtotal;
-            container.innerHTML += `<div style="display:flex; justify-content:space-between; align-items:center; background:#222; padding:10px; border-radius:8px; margin-bottom:8px; border-left:3px solid var(--primary);"><div><div style="font-weight:bold;">${item.name}</div><div style="font-size:0.8rem; color:#888;">${item.qty} x $${item.price}</div></div><div style="text-align:right;"><div style="color:var(--neon-green); font-weight:bold;">$${subtotal}</div><button onclick="app.removeFromCart('${item.id}')" style="background:none; border:none; color:#ff4444; cursor:pointer; font-size:0.8rem;">Quitar</button></div></div>`;
-        });
+            return `
+                <div class="cart-line">
+                    <span class="cart-qty">${item.qty}×</span>
+                    <div class="cart-line-body">
+                        <div class="cart-line-name">${item.name}</div>
+                        <div class="cart-line-meta">$${item.price} c/u</div>
+                    </div>
+                    <div class="cart-line-end">
+                        <div class="cart-line-total">$${subtotal.toLocaleString()}</div>
+                        <button class="link-btn danger" onclick="app.removeFromCart('${item.id}')">Quitar 1</button>
+                    </div>
+                </div>`;
+        }).join('');
         totalEl.innerText = total.toLocaleString();
     },
 
@@ -2145,20 +2200,20 @@ window.app = {
                 else cashTotal += Number(f.amount); // Assume default is Cash if undefined for legacy
             }
             
-            const amountColor = f.isExpense ? 'var(--primary)' : 'var(--neon-green)';
-            const sign = f.isExpense ? '- ' : '+ ';
+            const amountClass = f.isExpense ? 't-neg' : 't-pos';
+            const sign = f.isExpense ? '− ' : '+ ';
             const badgeClass = f.isExpense ? 'gasto' : 'ingreso';
             const metodoDisplay = f.metodoPago || 'N/A';
-            
-            html += `<tr><td style="font-size:0.85rem; color:#888;">${f.dateObj.toLocaleDateString()} <br> <small>${f.dateObj.toLocaleTimeString()}</small></td><td><span class="badge-fin ${badgeClass}">${f.type}</span></td><td style="font-weight:600; color:#fff;">${f.categoria ? `<span style="display:inline-block; background:rgba(255,170,0,0.12); color:var(--neon-orange); font-size:0.68rem; padding:2px 8px; border-radius:10px; margin-right:6px; vertical-align:middle;">${f.categoria}</span>` : ''}${f.desc}</td><td style="color:#aaa;">${f.user}</td><td style="color:#aaa;">${metodoDisplay}</td><td style="font-family:'Rajdhani'; font-size:1.1rem; font-weight:bold; color:${amountColor}">${sign}$${Number(f.amount).toLocaleString()}</td><td style="text-align:right">${(currentUser.role === 'admin' || currentUser.role === 'dev') ? `<button onclick="app.delFin('${f.id}')" style="color:#666; background:none; border:none; cursor:pointer;"><i class="fas fa-trash"></i></button>` : ''}</td></tr>`;
+
+            html += `<tr><td class="t-nowrap">${f.dateObj.toLocaleDateString()}<small class="t-small">${f.dateObj.toLocaleTimeString()}</small></td><td><span class="badge-fin ${badgeClass}">${f.type}</span></td><td class="t-strong">${f.categoria ? `<span class="tag">${f.categoria}</span>` : ''}${f.desc}</td><td class="t-muted">${f.user}</td><td class="t-muted">${metodoDisplay}</td><td class="t-right t-money ${amountClass}">${sign}$${Number(f.amount).toLocaleString()}</td><td class="t-right">${(currentUser.role === 'admin' || currentUser.role === 'dev') ? `<button class="icon-action" onclick="app.delFin('${f.id}')" title="Mover a la papelera"><i class="fas fa-trash-can"></i></button>` : ''}</td></tr>`;
         });
-        list.innerHTML = html || '<tr><td colspan="7" style="text-align:center; padding:20px; color:#666;">Sin movimientos</td></tr>';
-        
-        document.getElementById('fin-total-income').innerHTML = `$${income.toLocaleString()}<br><span style="font-size:0.8rem; color:#888;">Efectivo: $${cashTotal.toLocaleString()} | Tarjeta: $${cardTotal.toLocaleString()}</span>`;
+        list.innerHTML = html || '<tr><td colspan="7" class="table-empty"><i class="fas fa-receipt"></i><strong>Sin movimientos</strong>No hay registros con estos filtros.</td></tr>';
+
+        document.getElementById('fin-total-income').innerHTML = `$${income.toLocaleString()}<span class="amount-sub">Efectivo $${cashTotal.toLocaleString()} · Tarjeta $${cardTotal.toLocaleString()}</span>`;
         document.getElementById('fin-total-expense').innerText = `$${expense.toLocaleString()}`;
         const balance = income - expense;
         const balEl = document.getElementById('fin-balance');
-        if(balEl) { balEl.innerText = `$${balance.toLocaleString()}`; balEl.style.color = balance >= 0 ? 'var(--neon-orange)' : 'var(--primary)'; }
+        if(balEl) { balEl.innerText = `$${balance.toLocaleString()}`; balEl.style.color = balance >= 0 ? 'var(--text)' : 'var(--danger)'; }
     },
 
     addFinanceLog: function(type, amount, desc, metodoPago = 'N/A', categoria = null) {
@@ -2206,8 +2261,8 @@ window.app = {
         const endVal = document.getElementById('filter-end').value;
         if (!startVal || !endVal) { showToast('error', 'Seleccione fechas'); return; }
 
-        const startDate = new Date(startVal); startDate.setHours(0,0,0,0);
-        const endDate = new Date(endVal); endDate.setHours(23,59,59,999);
+        const startDate = parseLocalDate(startVal); startDate.setHours(0,0,0,0);
+        const endDate = parseLocalDate(endVal); endDate.setHours(23,59,59,999);
 
         const filtered = finances.map(f => {
             const typeStr = String(f.type).toLowerCase();
@@ -2313,12 +2368,12 @@ window.app = {
 
         if (visit.status === 'success') {
             overlay.classList.add('alert-success');
-            icon.innerHTML = '<i class="fas fa-check-circle"></i>';
-            title.innerText = '¡BIENVENIDO!';
+            icon.innerHTML = '<i class="fas fa-check"></i>';
+            title.innerText = 'Acceso · Bienvenido';
         } else {
             overlay.classList.add('alert-error');
-            icon.innerHTML = '<i class="fas fa-exclamation-triangle"></i>';
-            title.innerText = 'ACCESO DENEGADO';
+            icon.innerHTML = '<i class="fas fa-xmark"></i>';
+            title.innerText = 'Acceso denegado';
             reason.innerText = visit.reason || 'Error Desconocido';
             reason.style.display = 'inline-block';
         }
@@ -2513,19 +2568,21 @@ window.app = {
         if (totalEl) totalEl.innerText = '$' + total.toLocaleString();
         if (countEl) countEl.innerText = pending.length;
         if (pending.length === 0) {
-            tbody.innerHTML = '<tr><td colspan="6" style="text-align:center; padding:40px; color:#666;">No hay fiados pendientes</td></tr>';
+            tbody.innerHTML = '<tr><td colspan="6" class="table-empty"><i class="fas fa-hand-holding-dollar"></i><strong>Todo al corriente</strong>No hay fiados pendientes.</td></tr>';
             return;
         }
         tbody.innerHTML = pending.map(d => `
             <tr>
-                <td style="color:#888; font-size:0.85rem;">${new Date(d.date).toLocaleDateString()}</td>
-                <td style="font-weight:600; color:#fff; cursor:pointer;" onclick="app.openMemberDetail('${d.memberId}')">${d.memberName} <small style="color:var(--primary);">${d.memberCode || ''}</small></td>
+                <td class="t-muted t-nowrap">${new Date(d.date).toLocaleDateString()}</td>
+                <td class="t-strong" style="cursor:pointer;" onclick="app.openMemberDetail('${d.memberId}')" title="Ver ficha">${d.memberName} <span class="t-code">${d.memberCode || ''}</span></td>
                 <td>${d.concept}</td>
-                <td style="color:var(--neon-orange); font-weight:bold; font-family:'Rajdhani';">$${Number(d.amount).toLocaleString()}</td>
-                <td style="color:#888;">${d.createdBy || ''}</td>
-                <td style="text-align:right; white-space:nowrap;">
-                    <button class="btn btn-outline" style="padding:5px 10px; border-color:var(--neon-green); color:var(--neon-green);" onclick="app.payDebt('${d.id}','Efectivo')"><i class="fas fa-money-bill-wave"></i> Efvo</button>
-                    <button class="btn btn-outline" style="padding:5px 10px; border-color:#4488ff; color:#4488ff;" onclick="app.payDebt('${d.id}','Tarjeta')"><i class="fas fa-credit-card"></i> Tarj</button>
+                <td class="t-right t-money t-warn">$${Number(d.amount).toLocaleString()}</td>
+                <td class="t-muted">${d.createdBy || ''}</td>
+                <td class="t-right t-nowrap">
+                    <span class="t-actions">
+                        <button class="btn btn-ok-outline btn-sm" onclick="app.payDebt('${d.id}','Efectivo')"><i class="fas fa-money-bill-wave"></i> Efectivo</button>
+                        <button class="btn btn-info-outline btn-sm" onclick="app.payDebt('${d.id}','Tarjeta')"><i class="fas fa-credit-card"></i> Tarjeta</button>
+                    </span>
                 </td>
             </tr>`).join('');
     },
@@ -2537,18 +2594,18 @@ window.app = {
         if (pending.length === 0) { el.innerHTML = ''; return; }
         const total = pending.reduce((s, d) => s + (Number(d.amount) || 0), 0);
         el.innerHTML = `
-            <div style="margin-top:20px; background:rgba(255,170,0,0.06); border:1px solid rgba(255,170,0,0.3); border-radius:8px; padding:14px;">
-                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
-                    <h4 style="margin:0; color:var(--neon-orange); text-transform:uppercase; font-size:0.9rem;"><i class="fas fa-receipt"></i> Saldo Pendiente (Fiado)</h4>
-                    <span style="font-family:'Rajdhani'; font-weight:800; font-size:1.3rem; color:var(--neon-orange);">$${total.toLocaleString()}</span>
+            <div class="md-debt">
+                <div class="md-debt-head">
+                    <h4><i class="fas fa-receipt"></i> Saldo pendiente (fiado)</h4>
+                    <strong>$${total.toLocaleString()}</strong>
                 </div>
                 ${pending.map(d => `
-                    <div style="display:flex; justify-content:space-between; align-items:center; padding:6px 0; border-bottom:1px solid #222; font-size:0.85rem;">
-                        <span style="color:#ccc;">${d.concept} <small style="color:#666;">${new Date(d.date).toLocaleDateString()}</small></span>
-                        <span style="display:flex; align-items:center; gap:8px;">
-                            <b style="color:#fff;">$${Number(d.amount).toLocaleString()}</b>
-                            <button class="btn btn-outline" style="padding:3px 9px; font-size:0.7rem; border-color:var(--neon-green); color:var(--neon-green);" onclick="app.payDebt('${d.id}','Efectivo')">Efvo</button>
-                            <button class="btn btn-outline" style="padding:3px 9px; font-size:0.7rem; border-color:#4488ff; color:#4488ff;" onclick="app.payDebt('${d.id}','Tarjeta')">Tarj</button>
+                    <div class="md-debt-row">
+                        <span>${d.concept} <span class="t-small">${new Date(d.date).toLocaleDateString()}</span></span>
+                        <span>
+                            <b>$${Number(d.amount).toLocaleString()}</b>
+                            <button class="btn btn-ok-outline btn-sm" onclick="app.payDebt('${d.id}','Efectivo')">Efectivo</button>
+                            <button class="btn btn-info-outline btn-sm" onclick="app.payDebt('${d.id}','Tarjeta')">Tarjeta</button>
                         </span>
                     </div>`).join('')}
             </div>`;
@@ -2592,26 +2649,26 @@ window.app = {
         if (summary) {
             const oldest = ranked[0];
             summary.innerHTML = oldest
-                ? `Socio más antiguo: <b style="color:var(--neon-orange);">${oldest.name}</b> (${tenureText(oldest.registeredAt)}) · ${ranked.length} socio(s)`
+                ? `Más antiguo: <b>${oldest.name}</b> (${tenureText(oldest.registeredAt)}) · ${ranked.length} socio(s)`
                 : 'Sin socios en este filtro';
         }
 
         if (ranked.length === 0) {
-            tbody.innerHTML = '<tr><td colspan="6" style="text-align:center; padding:30px; color:#666;">Sin resultados</td></tr>';
+            tbody.innerHTML = '<tr><td colspan="6" class="table-empty">Sin resultados</td></tr>';
             return;
         }
 
         tbody.innerHTML = ranked.map((m, i) => {
             const stk = computeStreak(memberAttendanceKeys(m.code));
-            const rankColor = i === 0 ? '#ffd700' : (i === 1 ? '#c0c0c0' : (i === 2 ? '#cd7f32' : '#666'));
+            const medal = i === 0 ? ' gold' : (i === 1 ? ' silver' : (i === 2 ? ' bronze' : ''));
             return `
-                <tr style="cursor:pointer;" onclick="app.closeModal('modal-loyalty'); app.openMemberDetail('${m.id}')">
-                    <td style="font-weight:800; color:${rankColor}; font-family:'Rajdhani'; font-size:1.1rem;">#${i + 1}</td>
-                    <td style="font-weight:600; color:#fff;">${m.name}</td>
-                    <td style="color:var(--primary); font-weight:bold;">${m.code}</td>
-                    <td style="color:var(--neon-orange);">${tenureText(m.registeredAt)}</td>
-                    <td><i class="fas fa-fire" style="color:#ff6a00;"></i> ${stk.current}</td>
-                    <td><i class="fas fa-trophy" style="color:#ffd700;"></i> ${stk.best}</td>
+                <tr class="row-link" onclick="app.closeModal('modal-loyalty'); app.openMemberDetail('${m.id}')">
+                    <td><span class="rk-n${medal}">${i + 1}</span></td>
+                    <td class="t-strong">${m.name}</td>
+                    <td class="t-code">${m.code}</td>
+                    <td class="t-muted t-nowrap">${tenureText(m.registeredAt)}</td>
+                    <td class="t-nowrap" style="color:var(--flame); font-weight:700;"><i class="fas fa-fire-flame-curved"></i> ${stk.current}</td>
+                    <td class="t-muted t-nowrap"><i class="fas fa-trophy" style="color:var(--gold);"></i> ${stk.best}</td>
                 </tr>`;
         }).join('');
     },
@@ -2631,15 +2688,15 @@ window.app = {
             .sort((a, b) => new Date(a.registeredAt) - new Date(b.registeredAt))
             .slice(0, 5);
         if (ranked.length === 0) {
-            ul.innerHTML = '<li style="color:#555; padding:6px 0;">Sin socios vigentes</li>';
+            ul.innerHTML = '<li class="rk-empty">Sin socios vigentes</li>';
             return;
         }
-        const medal = ['#ffd700', '#c0c0c0', '#cd7f32'];
+        const medal = ['gold', 'silver', 'bronze'];
         ul.innerHTML = ranked.map((m, i) => `
-            <li style="display:flex; align-items:center; gap:10px; padding:7px 0; border-bottom:1px solid #1a1a1a; cursor:pointer;" onclick="app.openMemberDetail('${m.id}')" title="Ver ficha">
-                <span style="font-family:'Rajdhani',sans-serif; font-weight:800; font-size:1.1rem; color:${medal[i] || '#666'}; width:26px; flex-shrink:0;">#${i + 1}</span>
-                <span style="flex:1; color:#fff; font-weight:600; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${m.name}</span>
-                <span style="color:var(--neon-orange); font-size:0.8rem; white-space:nowrap; flex-shrink:0;">${tenureText(m.registeredAt)}</span>
+            <li class="clickable" onclick="app.openMemberDetail('${m.id}')" title="Ver ficha">
+                <span class="rk-n ${medal[i] || ''}">${i + 1}</span>
+                <span class="rk-name">${m.name}</span>
+                <span class="rk-val">${tenureText(m.registeredAt)}</span>
             </li>`).join('');
     },
 
@@ -2652,16 +2709,16 @@ window.app = {
             .sort((x, y) => y.current - x.current || y.best - x.best || y.totalDays - x.totalDays)
             .slice(0, 5);
         if (top.length === 0) {
-            ul.innerHTML = '<li style="color:#555; padding:6px 0;">Sin rachas activas</li>';
+            ul.innerHTML = '<li class="rk-empty">Sin rachas activas</li>';
             return;
         }
-        const medal = ['#ffd700', '#c0c0c0', '#cd7f32'];
+        const medal = ['gold', 'silver', 'bronze'];
         ul.innerHTML = top.map((a, i) => `
-            <li style="display:flex; align-items:center; gap:10px; padding:7px 0; border-bottom:1px solid #1a1a1a;">
-                <span style="font-family:'Rajdhani',sans-serif; font-weight:800; font-size:1.1rem; color:${medal[i] || '#666'}; width:26px; flex-shrink:0;">#${i + 1}</span>
-                <span style="flex:1; color:#fff; font-weight:600; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${i === 0 ? '<i class="fas fa-crown" style="color:#ffd700; margin-right:5px; filter:drop-shadow(0 0 5px rgba(255,215,0,0.6));"></i>' : ''}${a.m.name}</span>
-                <span style="color:#ff6a00; font-weight:700; font-size:0.85rem; flex-shrink:0;" title="Racha actual"><i class="fas fa-fire"></i> ${a.current}</span>
-                <span style="color:#9aa; font-size:0.8rem; flex-shrink:0;" title="Mejor racha (récord)">réc ${a.best}</span>
+            <li>
+                <span class="rk-n ${medal[i] || ''}">${i + 1}</span>
+                <span class="rk-name">${i === 0 ? '<i class="fas fa-crown rk-crown"></i>' : ''}${a.m.name}</span>
+                <span class="rk-flame" title="Racha actual"><i class="fas fa-fire-flame-curved"></i> ${a.current}</span>
+                <span class="rk-val" title="Mejor racha (récord)">récord ${a.best}</span>
             </li>`).join('');
     },
 
@@ -2678,7 +2735,7 @@ window.app = {
                 return `
                     <div class="ach-badge ${on ? 'on' : 'off'}" onclick="app.showBadgeMembers('${b.key}')" title="Ver quién tiene esta insignia">
                         ${on ? '<i class="ti ti-check ach-rib"></i>' : '<i class="ti ti-lock ach-lock"></i>'}
-                        <div class="ach-ic" style="${on ? `color:${b.color}; box-shadow:0 0 18px ${b.color}66;` : ''}"><i class="ti ${b.icon}"></i></div>
+                        <div class="ach-ic" style="${on ? `color:${b.color}; background:${b.color}22;` : ''}"><i class="ti ${b.icon}"></i></div>
                         <div class="ach-nm">${b.name}</div>
                         <div class="ach-rq">${b.req}</div>
                         <div class="ach-ct">${on ? count + ' socio' + (count === 1 ? '' : 's') : 'Nadie aún'}</div>
@@ -2688,7 +2745,7 @@ window.app = {
 
         // Ranking por RACHA ACTIVA (permanente). Si pierdes la racha, bajas; otro sube.
         const titleEl = document.getElementById('logros-ranking-title');
-        if (titleEl) titleEl.innerHTML = `<i class="ti ti-trophy" style="color:#ffd700;"></i> Ranking de Rachas`;
+        if (titleEl) titleEl.innerHTML = `<i class="ti ti-trophy"></i> Ranking de rachas`;
 
         const fullRanking = list
             .filter(a => a.current >= 1)
@@ -2710,9 +2767,9 @@ window.app = {
         const rkEl = document.getElementById('logros-ranking');
         if (rkEl) {
             rkEl.innerHTML = ranking.length === 0
-                ? '<div style="color:#666; padding:24px; text-align:center; background:#101010; border:1px solid #1c1c1c; border-radius:12px;">Nadie tiene una racha activa ahora mismo</div>'
+                ? '<div class="empty-block">Nadie tiene una racha activa ahora mismo</div>'
                 : ranking.map((a, i) => {
-                    const col = i === 0 ? '#ffd700' : (i === 1 ? '#c0c0c0' : (i === 2 ? '#cd7f32' : '#666'));
+                    const col = i === 0 ? 'var(--gold)' : (i === 1 ? 'var(--silver)' : (i === 2 ? 'var(--bronze)' : 'var(--text-3)'));
                     const rankClass = i < 3 ? ' ach-rk-' + (i + 1) : '';
                     const crown = i === 0 ? '<i class="ti ti-crown ach-crown"></i>' : '';
                     const leader = i === 0 ? '<span class="ach-leader">LÍDER</span>' : '';
@@ -2721,7 +2778,7 @@ window.app = {
                             <span class="ach-pos" style="color:${col};">${i + 1}</span>
                             ${arrowFor(a.m.code, i + 1)}
                             <span class="ach-name">${crown}${a.m.name}${leader}</span>
-                            <span class="ach-flame" title="Racha actual"><i class="ti ti-flame"></i> ${a.current}</span>
+                            <span class="ach-flame" title="Racha actual"><i class="ti ti-flame"></i> ${a.current} día${a.current === 1 ? '' : 's'}</span>
                             <span class="ach-days" title="Mejor racha (récord)">récord ${a.best}</span>
                         </div>`;
                 }).join('');
@@ -2752,7 +2809,7 @@ window.app = {
         document.getElementById('badge-modal-sub').innerHTML = `${b.req} · ${winners.length} socio${winners.length === 1 ? '' : 's'}`;
         const box = document.getElementById('badge-members-list');
         if (winners.length === 0) {
-            box.innerHTML = '<div style="color:#666; padding:30px; text-align:center;">Nadie ha desbloqueado esta insignia todavía</div>';
+            box.innerHTML = '<div class="empty-block" style="border:0;">Nadie ha desbloqueado esta insignia todavía</div>';
         } else {
             box.innerHTML = winners.map((a, i) => `
                 <div class="badge-member-row" onclick="app.closeModal('modal-badge-members'); app.openMemberDetail('${a.m.id}')" title="Ver ficha">
@@ -2768,7 +2825,8 @@ window.app = {
     loadEmployees: function() {
         const tbody = document.getElementById('employee-table-body'); if(!tbody) return;
         tbody.innerHTML = '';
-        users.forEach(u => { tbody.innerHTML += `<tr><td style="color:#fff;">${u.name}</td><td style="color:#888;">${u.username} (${u.role})</td><td style="text-align:right;"><button onclick="app.delEmp('${u.id}')" style="color:var(--primary); background:none; border:none; cursor:pointer;"><i class="fas fa-trash"></i></button></td></tr>`; });
+        tbody.innerHTML = users.map(u => `<tr><td class="t-strong">${u.name}</td><td class="t-muted">${u.username} <span class="pill">${u.role}</span></td><td class="t-right"><button class="icon-action" onclick="app.delEmp('${u.id}')" title="Eliminar cuenta"><i class="fas fa-trash-can"></i></button></td></tr>`).join('')
+            || '<tr><td colspan="3" class="table-empty">Aún no hay cuentas de personal.</td></tr>';
     },
 
     registerEmployee: function() {
@@ -2797,7 +2855,7 @@ window.app = {
         let html = '';
 
         if (sortedHistory.length === 0) {
-            tbody.innerHTML = '<tr><td colspan="4" style="text-align:center; padding:50px; color:#666;">No hay acciones registradas.</td></tr>';
+            tbody.innerHTML = '<tr><td colspan="4" class="table-empty"><i class="fas fa-clock-rotate-left"></i><strong>Sin actividad</strong>No hay acciones registradas.</td></tr>';
             return;
         }
 
@@ -2805,10 +2863,10 @@ window.app = {
             const dateObj = new Date(h.date);
             html += `
                 <tr>
-                    <td style="font-size:0.85rem; color:#888;">${dateObj.toLocaleString()}</td>
-                    <td style="font-weight:600; color:#fff;">${h.type}</td>
+                    <td class="t-muted t-nowrap">${dateObj.toLocaleDateString()}<small class="t-small">${dateObj.toLocaleTimeString()}</small></td>
+                    <td class="t-strong">${h.type}</td>
                     <td>${h.description}</td>
-                    <td style="color:#aaa;">${h.user}</td>
+                    <td class="t-muted">${h.user}</td>
                 </tr>
             `;
         });
@@ -3100,7 +3158,7 @@ window.app = {
             }
 
             this.currentReportData = { title, content, type, summary: data ? data.summary || {} : {}, rowCount: data ? data.rows.length : 0 };
-            preview.innerHTML = `<h3 style="margin-top:20px; font-family:'Rajdhani'">${title}</h3>${content}`;
+            preview.innerHTML = `<h3 class="report-preview-title">${title}</h3>${content}`;
         },
         
         generateMemberData: function(memberType) {
@@ -3138,9 +3196,9 @@ window.app = {
         },
 
         generateFinanceData: function(start, end) {
-            const startDate = new Date(start);
+            const startDate = parseLocalDate(start);
             startDate.setHours(0, 0, 0, 0);
-            const endDate = new Date(end);
+            const endDate = parseLocalDate(end);
             endDate.setHours(23, 59, 59, 999);
 
             const filteredFinances = finances.filter(f => {
@@ -3195,9 +3253,9 @@ window.app = {
         
         generateActivityData: function(start, end) {
             const headers = ["Socio", "Código", "Fecha / Hora", "Estado"];
-            const startDate = new Date(start);
+            const startDate = parseLocalDate(start);
             startDate.setHours(0, 0, 0, 0);
-            const endDate = new Date(end);
+            const endDate = parseLocalDate(end);
             endDate.setHours(23, 59, 59, 999);
             
             const filteredVisits = visits.filter(v => {
@@ -3211,7 +3269,7 @@ window.app = {
         },
 
         renderTable: function(headers, rows) {
-            if (rows.length === 0) return '<p style="text-align:center; color:#666; padding:20px;">No hay datos para mostrar.</p>';
+            if (rows.length === 0) return '<p class="report-empty">No hay datos para mostrar.</p>';
             let table = '<table class="report-table-compact"><thead><tr>';
             headers.forEach(h => table += `<th>${h}</th>`);
             table += '</tr></thead><tbody>';

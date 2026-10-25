@@ -2,60 +2,348 @@
 <html lang="es">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>ATLAS KIOSK</title>
-    <link rel="stylesheet" href="style.css">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>Atlas Gym · Kiosco</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@62..125,100..900&family=Cormorant+Garamond:ital,wght@1,600;1,700&family=Creepster&family=IBM+Plex+Mono:wght@400;500;600&display=swap">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="style.css?v=33">
+    <meta name="theme-color" content="#0F0F10">
 </head>
 <body class="kiosk-body">
-    
-    <div style="position:absolute; width:100%; height:100%; background:url('https://www.transparenttextures.com/patterns/stardust.png'); opacity:0.1; animation:pulse 5s infinite;"></div>
+    <script>
+        // Tema de temporada: Día de Muertos se activa solo del 15 de octubre al 2 de noviembre.
+        // Para probar o cambiar a mano:
+        //   kiosk.html?tema=muertos    -> Día de Muertos
+        //   kiosk.html?tema=halloween  -> Halloween (guardado, se usa solo si se pide)
+        //   kiosk.html?tema=normal     -> sin tema
+        (function () {
+            var tema = new URLSearchParams(location.search).get('tema');
+            var hoy = new Date(), mes = hoy.getMonth(), dia = hoy.getDate();
+            var temporada = (mes === 9 && dia >= 15) || (mes === 10 && dia <= 2);
+            var activo = (tema === 'muertos' || tema === 'halloween') ? tema
+                : (tema !== 'normal' && temporada ? 'muertos' : null);
+            if (activo) document.body.classList.add('theme-' + activo);
+        })();
+    </script>
 
-    <!-- Confetti Canvas for Birthday Celebration -->
+    <!-- Decoración de Halloween (solo visible con el tema activo) -->
+    <div class="hw-decor" aria-hidden="true">
+        <svg width="0" height="0" style="position:absolute">
+            <defs>
+                <symbol id="hw-bat-shape" viewBox="0 0 100 44">
+                    <path d="M50 14C48 10 46 8 44 5L44 12C40 10 34 8 26 10C18 12 10 10 2 6C6 14 8 20 6 26C12 22 18 22 22 28C26 22 32 22 36 28C40 26 44 28 46 32L50 38L54 32C56 28 60 26 64 28C68 22 74 22 78 28C82 22 88 22 94 26C92 20 94 14 98 6C90 10 82 12 74 10C66 8 60 10 56 12L56 5C54 8 52 10 50 14Z"/>
+                </symbol>
+                <symbol id="hw-pumpkin-shape" viewBox="0 0 120 104">
+                    <path d="M60 20C58 12 61 6 69 2" stroke="#4F7A2C" stroke-width="7" fill="none" stroke-linecap="round"/>
+                    <ellipse cx="37" cy="62" rx="31" ry="38" fill="#C9530F"/>
+                    <ellipse cx="83" cy="62" rx="31" ry="38" fill="#C9530F"/>
+                    <ellipse cx="60" cy="62" rx="29" ry="42" fill="#F07A1E"/>
+                    <path d="M60 22C52 40 52 84 60 103M60 22C68 40 68 84 60 103" stroke="#D9621A" stroke-width="2" fill="none" opacity=".7"/>
+                    <g class="hw-face" fill="#FFD66B">
+                        <path d="M33 50L49 50L41 37Z"/>
+                        <path d="M71 50L87 50L79 37Z"/>
+                        <path d="M55 61L65 61L60 53Z"/>
+                        <path d="M30 70Q60 98 90 70Q86 72 81 72L78 78L72 73L66 80L60 74L54 80L48 73L42 78L39 72Q34 72 30 70Z"/>
+                    </g>
+                </symbol>
+            </defs>
+        </svg>
+
+        <div class="hw-stars"></div>
+        <div class="hw-moon"></div>
+
+        <svg class="hw-web" viewBox="0 0 200 210"><path d="M200 0L-10.0 0.0 M200 0L0.3 64.9 M200 0L30.1 123.4 M200 0L76.6 169.9 M200 0L135.1 199.7 M200 0L200.0 210.0 M166.0 0.0Q171.1 4.6 167.7 10.5Q173.9 13.3 172.5 20.0Q179.3 20.7 180.0 27.5Q186.7 26.1 189.5 32.3Q195.4 28.9 200.0 34.0 M130.0 0.0Q140.5 9.4 133.4 21.6Q146.4 27.3 143.4 41.1Q157.4 42.6 158.9 56.6Q172.7 53.6 178.4 66.6Q190.6 59.5 200.0 70.0 M92.0 0.0Q108.3 14.5 97.3 33.4Q117.2 42.2 112.6 63.5Q134.3 65.7 136.5 87.4Q157.8 82.8 166.6 102.7Q185.5 91.7 200.0 108.0 M52.0 0.0Q74.3 19.9 59.2 45.7Q86.6 57.8 80.3 87.0Q110.0 90.0 113.0 119.7Q142.2 113.4 154.3 140.8Q180.1 125.7 200.0 148.0 M10.0 0.0Q38.6 25.6 19.3 58.7Q54.4 74.2 46.3 111.7Q84.5 115.5 88.3 153.7Q125.8 145.6 141.3 180.7Q174.4 161.4 200.0 190.0"/></svg>
+
+        <div class="hw-spider">
+            <svg viewBox="0 0 40 44">
+                <path d="M20 0V12" stroke="rgba(235,225,245,.45)" stroke-width="1"/>
+                <g stroke="#6A5878" stroke-width="2.4" fill="none" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M16 20L6 12L2 18M16 23L4 22L1 30M16 26L6 32L4 40M17 29L10 38L10 44"/>
+                    <path d="M24 20L34 12L38 18M24 23L36 22L39 30M24 26L34 32L36 40M23 29L30 38L30 44"/>
+                </g>
+                <ellipse cx="20" cy="28" rx="8" ry="10" fill="#6A5878"/>
+                <circle cx="20" cy="16" r="5.5" fill="#6A5878"/>
+                <circle cx="18" cy="15.5" r="1.4" fill="#F2761E"/>
+                <circle cx="22" cy="15.5" r="1.4" fill="#F2761E"/>
+            </svg>
+        </div>
+
+        <div class="hw-bat-fly b1"><div class="hw-bat-bob"><svg class="hw-bat" viewBox="0 0 100 44"><use href="#hw-bat-shape"/></svg></div></div>
+        <div class="hw-bat-fly b2"><div class="hw-bat-bob"><svg class="hw-bat" viewBox="0 0 100 44"><use href="#hw-bat-shape"/></svg></div></div>
+        <div class="hw-bat-fly b3"><div class="hw-bat-bob"><svg class="hw-bat" viewBox="0 0 100 44"><use href="#hw-bat-shape"/></svg></div></div>
+        <div class="hw-bat-fly b4"><div class="hw-bat-bob"><svg class="hw-bat" viewBox="0 0 100 44"><use href="#hw-bat-shape"/></svg></div></div>
+
+        <svg class="hw-ghost" viewBox="0 0 60 70">
+            <path d="M30 2C14 2 4 14 4 30L4 66L12 60L20 66L28 60L36 66L44 60L52 66L56 62L56 30C56 14 46 2 30 2Z" fill="#EEE7F3"/>
+            <ellipse cx="22" cy="28" rx="4" ry="6" fill="#1A1220"/>
+            <ellipse cx="38" cy="28" rx="4" ry="6" fill="#1A1220"/>
+            <ellipse cx="30" cy="42" rx="4" ry="5" fill="#1A1220"/>
+        </svg>
+
+        <svg class="hw-pumpkin hw-pumpkin-l" viewBox="0 0 120 104"><use href="#hw-pumpkin-shape"/></svg>
+        <svg class="hw-pumpkin hw-pumpkin-r" viewBox="0 0 120 104"><use href="#hw-pumpkin-shape"/></svg>
+
+        <div class="hw-fog"></div>
+    </div>
+
+    <!-- Decoración de Día de Muertos (solo visible con el tema activo) -->
+    <div class="dm-decor" aria-hidden="true">
+        <svg width="0" height="0" style="position:absolute">
+            <defs>
+                <linearGradient id="dm-gold" x1="0" y1="0" x2="1" y2="1">
+                    <stop offset="0" stop-color="#F3DA92"/>
+                    <stop offset=".5" stop-color="#CFA650"/>
+                    <stop offset="1" stop-color="#9A7630"/>
+                </linearGradient>
+                <radialGradient id="dm-bone" cx=".45" cy=".35" r=".8">
+                    <stop offset="0" stop-color="#FBF6EC"/>
+                    <stop offset="1" stop-color="#D9CDB9"/>
+                </radialGradient>
+                <radialGradient id="dm-glow-grad">
+                    <stop offset="0" stop-color="#FFC94A" stop-opacity=".75"/>
+                    <stop offset="1" stop-color="#FF8A00" stop-opacity="0"/>
+                </radialGradient>
+
+                <!-- Bandera de papel picado con recortes -->
+                <symbol id="dm-flag-shape" viewBox="0 0 60 76">
+                    <path fill="currentColor" fill-rule="evenodd" d="M0 0H60V68L57.5 74L55.0 68L52.5 74L50.0 68L47.5 74L45.0 68L42.5 74L40.0 68L37.5 74L35.0 68L32.5 74L30.0 68L27.5 74L25.0 68L22.5 74L20.0 68L17.5 74L15.0 68L12.5 74L10.0 68L7.5 74L5.0 68L2.5 74L0.0 68Z M4 7L8 12L12 7Z M15 7L19 12L23 7Z M26 7L30 12L34 7Z M37 7L41 12L45 7Z M48 7L52 12L56 7Z M24.0 36.0a6 6 0 1 0 12 0a6 6 0 1 0 -12 0Z M39.9 36.0a3.6 3.6 0 1 0 7.2 0a3.6 3.6 0 1 0 -7.2 0Z M33.2 47.7a3.6 3.6 0 1 0 7.2 0a3.6 3.6 0 1 0 -7.2 0Z M19.7 47.7a3.6 3.6 0 1 0 7.2 0a3.6 3.6 0 1 0 -7.2 0Z M12.9 36.0a3.6 3.6 0 1 0 7.2 0a3.6 3.6 0 1 0 -7.2 0Z M19.6 24.3a3.6 3.6 0 1 0 7.2 0a3.6 3.6 0 1 0 -7.2 0Z M33.2 24.3a3.6 3.6 0 1 0 7.2 0a3.6 3.6 0 1 0 -7.2 0Z M9 17L13 21L9 25L5 21Z M51 17L55 21L51 25L47 21Z M9 48L13 52L9 56L5 52Z M51 48L55 52L51 56L47 52Z M10.0 61.0a2 2 0 1 0 4 0a2 2 0 1 0 -4 0Z M22.0 61.0a2 2 0 1 0 4 0a2 2 0 1 0 -4 0Z M34.0 61.0a2 2 0 1 0 4 0a2 2 0 1 0 -4 0Z M46.0 61.0a2 2 0 1 0 4 0a2 2 0 1 0 -4 0Z"/>
+                </symbol>
+
+                <!-- Mariposa monarca (vista desde arriba) -->
+                <symbol id="dm-monarch-shape" viewBox="0 0 60 46">
+                    <g stroke="#1A0F08" stroke-width="1.6" stroke-linejoin="round">
+                        <path d="M30 20C22 4 7 1 3 9C0 16 8 23 30 23Z" fill="#F4842C"/>
+                        <path d="M30 23C15 23 6 31 10 39C14 46 26 38 30 25Z" fill="#E86F1C"/>
+                        <path d="M30 20C38 4 53 1 57 9C60 16 52 23 30 23Z" fill="#F4842C"/>
+                        <path d="M30 23C45 23 54 31 50 39C46 46 34 38 30 25Z" fill="#E86F1C"/>
+                    </g>
+                    <g stroke="#1A0F08" stroke-width="1.2" fill="none" opacity=".85">
+                        <path d="M29 21C21 13 13 9 6 10M29 22C19 18 11 17 4 15M29 24C21 27 15 31 12 37"/>
+                        <path d="M31 21C39 13 47 9 54 10M31 22C41 18 49 17 56 15M31 24C39 27 45 31 48 37"/>
+                    </g>
+                    <g fill="#FFF6E6">
+                        <circle cx="5" cy="11" r="1.1"/><circle cx="4" cy="15" r="1"/><circle cx="7" cy="19" r="1"/>
+                        <circle cx="55" cy="11" r="1.1"/><circle cx="56" cy="15" r="1"/><circle cx="53" cy="19" r="1"/>
+                        <circle cx="12" cy="40" r="1"/><circle cx="48" cy="40" r="1"/>
+                    </g>
+                    <ellipse cx="30" cy="24" rx="1.9" ry="10" fill="#1A0F08"/>
+                    <path d="M29.5 15C28 10 26 8 24 7M30.5 15C32 10 34 8 36 7" stroke="#1A0F08" stroke-width="1" fill="none"/>
+                </symbol>
+
+                <!-- Flor de cempasúchil -->
+                <symbol id="dm-flower-shape" viewBox="0 0 60 60">
+                    <circle cx="30" cy="30" r="24" fill="#E8590C" stroke="#E8590C" stroke-width="8" stroke-dasharray="3.2 2.6" stroke-linecap="round"/>
+                    <circle cx="30" cy="30" r="18" fill="#F77F00" stroke="#F77F00" stroke-width="6" stroke-dasharray="2.6 2.2" stroke-linecap="round"/>
+                    <circle cx="30" cy="30" r="11" fill="#FF9F1C" stroke="#FFB627" stroke-width="5" stroke-dasharray="2.2 2" stroke-linecap="round"/>
+                    <circle cx="30" cy="30" r="4" fill="#C2410C"/>
+                </symbol>
+                <symbol id="dm-leaf-shape" viewBox="0 0 40 16">
+                    <path d="M1 8C10 0 30 0 39 8C30 16 10 16 1 8Z" fill="#3C6E32"/>
+                    <path d="M3 8H36" stroke="#2C5225" stroke-width="1.2"/>
+                </symbol>
+            </defs>
+        </svg>
+
+        <!-- Rosetón dorado (el trazo lo dibuja el script de abajo) -->
+        <svg class="dm-roseton" viewBox="-200 -200 400 400"><path id="dm-roseton-path"/></svg>
+
+        <!-- Papel picado, pétalos y polvo dorado: se llenan desde el script de abajo -->
+        <div class="dm-papel dm-papel-l"></div>
+        <div class="dm-papel dm-papel-r"></div>
+        <div class="dm-sparks"></div>
+        <div class="dm-petals"></div>
+
+        <div class="dm-fly m1"><div class="dm-wander"><div class="dm-orient"><svg class="dm-butterfly" viewBox="0 0 60 46"><use href="#dm-monarch-shape"/></svg></div></div></div>
+        <div class="dm-fly m2"><div class="dm-wander"><div class="dm-orient"><svg class="dm-butterfly" viewBox="0 0 60 46"><use href="#dm-monarch-shape"/></svg></div></div></div>
+
+        <!-- El Catrín: respira, mueve la cabeza y se quita el sombrero (también al dar la bienvenida) -->
+        <svg class="dm-catrin" viewBox="0 0 240 360">
+            <g class="dm-torso">
+                <path d="M12 360C14 300 46 266 94 253L146 253C194 266 226 300 228 360Z" fill="#141015"/>
+                <path d="M98 253L120 336L142 253Z" fill="#EFE8DC"/>
+                <path d="M94 253L120 336L101 348L64 281Z" fill="#1E181F" stroke="url(#dm-gold)" stroke-width="1.6" stroke-linejoin="round"/>
+                <path d="M146 253L120 336L139 348L176 281Z" fill="#1E181F" stroke="url(#dm-gold)" stroke-width="1.6" stroke-linejoin="round"/>
+                <circle cx="120" cy="347" r="3.2" fill="url(#dm-gold)"/>
+                <use href="#dm-flower-shape" x="66" y="285" width="26" height="26"/>
+                <path d="M108 226H132V256H108Z" fill="#E6DCCB"/>
+                <path d="M108 236H132M108 246H132" stroke="#B9AD9A" stroke-width="2"/>
+                <path d="M120 263L95 249V277Z M120 263L145 249V277Z" fill="#7A1230"/>
+                <path d="M120 263L95 249V277Z M120 263L145 249V277Z" fill="none" stroke="#5C0D24" stroke-width="1.2" stroke-linejoin="round"/>
+                <circle cx="120" cy="263" r="6" fill="#5C0D24"/>
+            </g>
+            <g class="dm-head">
+                <path d="M120 92C78 92 54 122 54 160C54 184 64 198 76 206L78 222C80 234 96 241 120 241C144 241 160 234 162 222L164 206C176 198 186 184 186 160C186 122 162 92 120 92Z" fill="url(#dm-bone)"/>
+                <circle cx="94" cy="160" r="24" fill="none" stroke="url(#dm-gold)" stroke-width="2.2" stroke-dasharray="2.4 3.6" stroke-linecap="round"/>
+                <circle cx="146" cy="160" r="24" fill="none" stroke="url(#dm-gold)" stroke-width="2.2" stroke-dasharray="2.4 3.6" stroke-linecap="round"/>
+                <ellipse cx="94" cy="160" rx="17" ry="18" fill="#120D12"/>
+                <ellipse cx="146" cy="160" rx="17" ry="18" fill="#120D12"/>
+                <circle class="dm-eye" cx="99" cy="155" r="3.4" fill="#F3DA92"/>
+                <circle class="dm-eye" cx="151" cy="155" r="3.4" fill="#F3DA92"/>
+                <g fill="#E07A1F">
+                    <circle cx="94" cy="133" r="2.6"/><circle cx="146" cy="133" r="2.6"/>
+                </g>
+                <path d="M120 196C115 191 111 186 115 182C117 180 120 182 120 185C120 182 123 180 125 182C129 186 125 191 120 196Z" fill="#120D12"/>
+                <path d="M118 205C108 197 95 198 88 205C84 209 79 207 80 202" stroke="#120D12" stroke-width="5" fill="none" stroke-linecap="round"/>
+                <path d="M122 205C132 197 145 198 152 205C156 209 161 207 160 202" stroke="#120D12" stroke-width="5" fill="none" stroke-linecap="round"/>
+                <path d="M96 222H144" stroke="#2A2128" stroke-width="2"/>
+                <path d="M102 216V228M108 216V229M114 216V230M120 216V230M126 216V230M132 216V229M138 216V228" stroke="#2A2128" stroke-width="1.6" stroke-linecap="round"/>
+                <use href="#dm-flower-shape" x="110" y="111" width="20" height="20"/>
+                <g fill="url(#dm-gold)">
+                    <circle cx="101" cy="124" r="1.9"/><circle cx="139" cy="124" r="1.9"/>
+                    <circle cx="93" cy="116" r="1.5"/><circle cx="147" cy="116" r="1.5"/>
+                    <circle cx="110" cy="236" r="1.7"/><circle cx="120" cy="238" r="1.7"/><circle cx="130" cy="236" r="1.7"/>
+                </g>
+                <path d="M68 186C72 179 81 181 79 188C77 192 72 190 74 186" stroke="url(#dm-gold)" stroke-width="1.8" fill="none" stroke-linecap="round"/>
+                <path d="M172 186C168 179 159 181 161 188C163 192 168 190 166 186" stroke="url(#dm-gold)" stroke-width="1.8" fill="none" stroke-linecap="round"/>
+                <g transform="rotate(-7 120 100)">
+                    <g class="dm-hat">
+                        <path d="M82 100L86 30C86 22 154 22 154 30L158 100Z" fill="#161117"/>
+                        <path d="M86 30C86 22 154 22 154 30C154 37 86 37 86 30Z" fill="#221A23"/>
+                        <path d="M84 75H156L157 92H83Z" fill="#7A1230"/>
+                        <path d="M84 75H156M83 92H157" stroke="url(#dm-gold)" stroke-width="1.5"/>
+                        <use href="#dm-flower-shape" x="90" y="69" width="29" height="29"/>
+                        <path d="M98 36L96 70" stroke="rgba(255,255,255,.07)" stroke-width="7" stroke-linecap="round"/>
+                        <path d="M44 100C44 91 196 91 196 100C196 111 44 111 44 100Z" fill="#100C11" stroke="url(#dm-gold)" stroke-width="1.3"/>
+                    </g>
+                </g>
+            </g>
+        </svg>
+
+        <!-- Velas y cempasúchil -->
+        <div class="dm-ofrenda">
+            <svg class="dm-leaf" style="left:4%; bottom:22%; width:30%; --r:-24deg" viewBox="0 0 40 16"><use href="#dm-leaf-shape"/></svg>
+            <svg class="dm-leaf" style="left:64%; bottom:24%; width:28%; --r:22deg" viewBox="0 0 40 16"><use href="#dm-leaf-shape"/></svg>
+            <svg class="dm-candle" style="left:20%; width:13%; transform:translateY(16%)" viewBox="0 0 30 100">
+                <circle class="dm-glow" cx="15" cy="20" r="15" fill="url(#dm-glow-grad)" style="animation-delay:-.6s"/>
+                <path class="dm-flame" style="animation-delay:-.4s" d="M15 6C19 13 21 18 19 23C18 26 16 28 15 28C14 28 12 26 11 23C9 18 11 13 15 6Z" fill="#FFB627"/>
+                <path class="dm-flame" style="animation-delay:-.4s" d="M15 15C17 19 17.5 22 16.5 24.5C16 25.6 15.5 26 15 26C14.5 26 14 25.6 13.5 24.5C12.5 22 13 19 15 15Z" fill="#FFF3C4"/>
+                <path d="M15 28V33" stroke="#3A2A1A" stroke-width="1.5"/>
+                <path d="M6 33H24V100H6Z" fill="#E9D3A8"/>
+                <path d="M6 33H24V39C22 39 21 45 19 45C17 45 17 38 14 38C11 38 11 42 9 42C7 42 7 37 6 37Z" fill="#F7E7C4"/>
+            </svg>
+            <svg class="dm-candle" style="left:40%; width:17%;" viewBox="0 0 30 100">
+                <circle class="dm-glow" cx="15" cy="20" r="15" fill="url(#dm-glow-grad)"/>
+                <path class="dm-flame" d="M15 6C19 13 21 18 19 23C18 26 16 28 15 28C14 28 12 26 11 23C9 18 11 13 15 6Z" fill="#FFB627"/>
+                <path class="dm-flame" d="M15 15C17 19 17.5 22 16.5 24.5C16 25.6 15.5 26 15 26C14.5 26 14 25.6 13.5 24.5C12.5 22 13 19 15 15Z" fill="#FFF3C4"/>
+                <path d="M15 28V33" stroke="#3A2A1A" stroke-width="1.5"/>
+                <path d="M6 33H24V100H6Z" fill="#F3E6C8"/>
+                <path d="M6 33H24V40C22 40 22 47 20 47C18 47 18 39 15 39C12 39 12 44 10 44C8 44 8 38 6 38Z" fill="#FFF8E7"/>
+            </svg>
+            <svg class="dm-candle" style="left:62%; width:12%; transform:translateY(34%)" viewBox="0 0 30 100">
+                <circle class="dm-glow" cx="15" cy="20" r="15" fill="url(#dm-glow-grad)" style="animation-delay:-1.1s"/>
+                <path class="dm-flame" style="animation-delay:-1.2s" d="M15 6C19 13 21 18 19 23C18 26 16 28 15 28C14 28 12 26 11 23C9 18 11 13 15 6Z" fill="#FFB627"/>
+                <path class="dm-flame" style="animation-delay:-1.2s" d="M15 15C17 19 17.5 22 16.5 24.5C16 25.6 15.5 26 15 26C14.5 26 14 25.6 13.5 24.5C12.5 22 13 19 15 15Z" fill="#FFF3C4"/>
+                <path d="M15 28V33" stroke="#3A2A1A" stroke-width="1.5"/>
+                <path d="M6 33H24V100H6Z" fill="#E9D3A8"/>
+                <path d="M6 33H24V39C22 39 21 45 19 45C17 45 17 38 14 38C11 38 11 42 9 42C7 42 7 37 6 37Z" fill="#F7E7C4"/>
+            </svg>
+            <svg class="dm-flower" style="left:-2%; bottom:-12%; width:32%; --dl:-1s" viewBox="0 0 60 60"><use href="#dm-flower-shape"/></svg>
+            <svg class="dm-flower" style="left:24%; bottom:-16%; width:28%; --dl:-2.4s" viewBox="0 0 60 60"><use href="#dm-flower-shape"/></svg>
+            <svg class="dm-flower" style="left:48%; bottom:-10%; width:30%; --dl:-.4s" viewBox="0 0 60 60"><use href="#dm-flower-shape"/></svg>
+            <svg class="dm-flower" style="left:74%; bottom:-14%; width:28%; --dl:-3s" viewBox="0 0 60 60"><use href="#dm-flower-shape"/></svg>
+        </div>
+    </div>
+    <script>
+        // Arma el papel picado, los pétalos, el polvo dorado y el rosetón solo con el tema de Día de Muertos
+        (function () {
+            if (!document.body.classList.contains('theme-muertos')) return;
+            function rnd(a, b) { return a + Math.random() * (b - a); }
+
+            var colores = ['#D4A64A', '#E07A1F', '#B8873A', '#7A1230', '#E9C46A'];
+            ['.dm-papel-l', '.dm-papel-r'].forEach(function (sel, lado) {
+                var html = '';
+                for (var i = 0; i < 7; i++) {
+                    html += '<div class="dm-flag" style="--c:' + colores[(i + lado * 2) % colores.length] +
+                        ';--delay:-' + rnd(0, 4).toFixed(2) + 's"><svg viewBox="0 0 60 76"><use href="#dm-flag-shape"/></svg></div>';
+                }
+                document.querySelector(sel).innerHTML = html;
+            });
+
+            var petalos = '';
+            for (var p = 0; p < 8; p++) {
+                petalos += '<div class="dm-petal" style="--x:' + rnd(0, 100).toFixed(1) + '%;--d:' + rnd(13, 20).toFixed(1) +
+                    's;--delay:-' + rnd(0, 20).toFixed(1) + 's;--w:' + rnd(7, 12).toFixed(0) + 'px;--f:' + rnd(2.2, 3.6).toFixed(1) + 's"><i></i></div>';
+            }
+            document.querySelector('.dm-petals').innerHTML = petalos;
+
+            var chispas = '';
+            for (var s = 0; s < 18; s++) {
+                chispas += '<i class="dm-spark" style="--x:' + rnd(0, 100).toFixed(1) + '%;--d:' + rnd(14, 26).toFixed(1) +
+                    's;--delay:-' + rnd(0, 26).toFixed(1) + 's;--s:' + rnd(2, 5).toFixed(1) + 'px;--dx:' + rnd(-6, 6).toFixed(1) + 'vw"></i>';
+            }
+            document.querySelector('.dm-sparks').innerHTML = chispas;
+
+            // Rosetón: círculos, pétalos, festón y rayos finos
+            var rad = Math.PI / 180, d = [], k;
+            function P(r, a) { return (r * Math.cos(a)).toFixed(1) + ' ' + (r * Math.sin(a)).toFixed(1); }
+            [58, 96, 150, 188].forEach(function (r) {
+                d.push('M' + (-r) + ' 0a' + r + ' ' + r + ' 0 1 0 ' + (2 * r) + ' 0a' + r + ' ' + r + ' 0 1 0 ' + (-2 * r) + ' 0');
+            });
+            for (k = 0; k < 16; k++) {
+                var a = 22.5 * k * rad;
+                d.push('M' + P(58, a) + 'Q' + P(84, a - 9 * rad) + ' ' + P(96, a) + 'Q' + P(84, a + 9 * rad) + ' ' + P(58, a));
+            }
+            var feston = 'M' + P(150, 0);
+            for (k = 0; k < 24; k++) feston += 'Q' + P(112, (15 * k + 7.5) * rad) + ' ' + P(150, 15 * (k + 1) * rad);
+            d.push(feston);
+            for (k = 0; k < 48; k++) d.push('M' + P(k % 2 ? 156 : 152, 7.5 * k * rad) + 'L' + P(182, 7.5 * k * rad));
+            document.getElementById('dm-roseton-path').setAttribute('d', d.join(' '));
+        })();
+    </script>
+
+    <!-- Confeti para el mes de cumpleaños -->
     <canvas id="confetti-canvas" style="position:fixed; top:0; left:0; width:100%; height:100%; pointer-events:none; z-index:9999;"></canvas>
 
     <!-- Racha (flamita) en la esquina, no estorba el mensaje central -->
     <div id="k-streak" class="kiosk-streak-corner" aria-hidden="true"></div>
 
-    <!-- Indicador de conexión (verde = conectado, rojo = sin conexión) -->
-    <div id="k-conn" title="Conexión" style="position:fixed; top:18px; left:18px; width:12px; height:12px; border-radius:50%; background:#666; box-shadow:0 0 10px #666; z-index:60;"></div>
+    <!-- Indicador de conexión -->
+    <div id="k-conn" class="k-conn" title="Conexión"><span class="k-conn-dot"></span><span class="k-conn-txt">Conectando…</span></div>
 
-    <!-- Birthday Overlay Message -->
+    <!-- Mes de cumpleaños -->
     <div id="birthday-overlay" class="birthday-overlay">
         <div class="birthday-content">
-            <i class="fas fa-birthday-cake birthday-icon"></i>
+            <i class="fas fa-cake-candles birthday-icon"></i>
             <h1 class="birthday-title"></h1>
             <p class="birthday-sub">Atlas Gym te celebra</p>
         </div>
     </div>
 
     <div class="kiosk-content">
-        
-        <div class="kiosk-logo-wrapper">
-            <div class="energy-ring ring-1"></div>
-            <div class="energy-ring ring-2"></div>
-            <div class="energy-ring ring-3"></div>
-            <img src="Logo/ATLAS.png" class="kiosk-logo">
-        </div>
 
-        <h1 class="kiosk-title">ACCESO SOCIOS</h1>
-        
-        <input type="text" id="k-input" class="kiosk-input" maxlength="5" placeholder="_____" inputmode="numeric">
-        <p class="kiosk-instruction">Digita tu código y presiona <b style="color:#fff">ENTER</b></p>
+        <div class="kiosk-entry">
+            <div class="kiosk-logo-wrapper">
+                <img src="Logo/ATLAS.png" class="kiosk-logo" alt="Atlas Gym">
+            </div>
 
-        <!-- Teclado Numérico Virtual (Solo visible en táctil) -->
-        <div id="virtual-keypad" class="virtual-keypad">
-            <button class="key-btn" onclick="pressKey('1')">1</button>
-            <button class="key-btn" onclick="pressKey('2')">2</button>
-            <button class="key-btn" onclick="pressKey('3')">3</button>
-            <button class="key-btn" onclick="pressKey('4')">4</button>
-            <button class="key-btn" onclick="pressKey('5')">5</button>
-            <button class="key-btn" onclick="pressKey('6')">6</button>
-            <button class="key-btn" onclick="pressKey('7')">7</button>
-            <button class="key-btn" onclick="pressKey('8')">8</button>
-            <button class="key-btn" onclick="pressKey('9')">9</button>
-            <button class="key-btn action-btn" onclick="pressKey('DEL')"><i class="fas fa-backspace"></i></button>
-            <button class="key-btn" onclick="pressKey('0')">0</button>
-            <button class="key-btn action-btn enter-btn" onclick="pressKey('ENTER')"><i class="fas fa-arrow-right"></i></button>
+            <div>
+                <p class="kiosk-kicker"><span class="hw-hide dm-hide">Atlas Gym</span><span class="hw-show">¿Dulce o entreno?</span><span class="dm-show">Entrena hasta los huesos</span></p>
+                <h1 class="kiosk-title">Acceso <em>socios</em></h1>
+            </div>
+
+            <input type="text" id="k-input" class="kiosk-input" maxlength="5" placeholder="·····" inputmode="numeric" autocomplete="off">
+            <p class="kiosk-instruction">
+                <span class="k-keys">Escribe tu código de socio y presiona <kbd>Enter</kbd></span>
+                <span class="k-touch">Escribe tu código de socio y toca <kbd><i class="fas fa-arrow-right"></i></kbd></span>
+            </p>
+
+            <!-- Teclado numérico (solo en pantallas táctiles) -->
+            <div id="virtual-keypad" class="virtual-keypad">
+                <button class="key-btn" onclick="pressKey('1')">1</button>
+                <button class="key-btn" onclick="pressKey('2')">2</button>
+                <button class="key-btn" onclick="pressKey('3')">3</button>
+                <button class="key-btn" onclick="pressKey('4')">4</button>
+                <button class="key-btn" onclick="pressKey('5')">5</button>
+                <button class="key-btn" onclick="pressKey('6')">6</button>
+                <button class="key-btn" onclick="pressKey('7')">7</button>
+                <button class="key-btn" onclick="pressKey('8')">8</button>
+                <button class="key-btn" onclick="pressKey('9')">9</button>
+                <button class="key-btn action-btn" onclick="pressKey('DEL')" aria-label="Borrar"><i class="fas fa-delete-left"></i></button>
+                <button class="key-btn" onclick="pressKey('0')">0</button>
+                <button class="key-btn action-btn enter-btn" onclick="pressKey('ENTER')" aria-label="Entrar"><i class="fas fa-arrow-right"></i></button>
+            </div>
         </div>
 
         <div id="k-msg" class="kiosk-message"></div>
@@ -96,9 +384,11 @@
             isOnline = snap.val() === true;
             const dot = document.getElementById('k-conn');
             if (dot) {
-                dot.style.background = isOnline ? '#00ff41' : '#ff003c';
-                dot.style.boxShadow = '0 0 10px ' + (isOnline ? '#00ff41' : '#ff003c');
+                dot.classList.toggle('on', isOnline);
+                dot.classList.toggle('off', !isOnline);
                 dot.title = isOnline ? 'Conectado' : 'Sin conexión';
+                const txt = dot.querySelector('.k-conn-txt');
+                if (txt) txt.textContent = isOnline ? 'En línea' : 'Sin conexión';
             }
         });
 
@@ -194,7 +484,7 @@
         resizeConfettiCanvas();
 
         function createConfettiParticle() {
-            const colors = ['#ff003c', '#ffaa00', '#00ff41', '#ff69b4', '#00bfff', '#ffd700', '#ff4500', '#7b68ee', '#00fa9a'];
+            const colors = ['#E5261F', '#FFC94A', '#FFFFFF', '#34B871', '#5B93F5', '#F06A2A', '#C79BFF'];
             return {
                 x: Math.random() * confettiCanvas.width,
                 y: Math.random() * confettiCanvas.height * -1 - 10,
@@ -292,7 +582,7 @@
             if (code.length < 1) return;
 
             inp.disabled = true;
-            msg.innerHTML = '<span style="color:#fff; font-size:2rem;">PROCESANDO...</span>';
+            msg.innerHTML = '<span class="k-processing">Verificando…</span>';
 
             try {
                 // Lectura desde la CACHÉ local (no se descarga la base en cada código)
@@ -350,11 +640,31 @@
             setTimeout(() => {
                 inp.value = '';
                 inp.disabled = false;
-                inp.focus();
-                resetState();
+                resetState();          // primero se vuelve a mostrar la captura…
                 hideBirthdayOverlay();
+                inp.focus();           // …y luego se enfoca el campo
             }, 4000);
         }
+
+        // Frases de temporada que salen al dar la bienvenida
+        const THEME_PHRASES = {
+            halloween: [
+                'Entrena hasta que dé miedo.',
+                'Hoy sudan hasta los fantasmas.',
+                'Sin trucos: puro entreno.',
+                'Que tiemblen las pesas.',
+                'Monstruo en construcción.',
+                '¿Dulce o entreno? Hoy, entreno.'
+            ],
+            muertos: [
+                'El Catrín te saluda: a entrenar.',
+                'Con elegancia, hasta los huesos.',
+                'Ni la Catrina te alcanza.',
+                'Fuerte de aquí al Mictlán.',
+                'Músculo que no se muere.',
+                'Tu mejor ofrenda: una buena rutina.'
+            ]
+        };
 
         function setSuccessState(name, days, expiryDate, dob, streak, rank) {
             const firstName = name.split(' ')[0];
@@ -366,8 +676,8 @@
             const pos = rank && rank.position;
             const isLeader = pos === 1;
             let posTxt = '';
-            if (pos === 1) posTxt = '<i class="fas fa-crown" style="color:#ffd700;"></i> LÍDER #1';
-            else if (pos === 2 || pos === 3) posTxt = `<i class="fas fa-medal" style="color:#ffaa00;"></i> Top #${pos}`;
+            if (pos === 1) posTxt = '<i class="fas fa-crown" style="color:#FFC94A;"></i> Líder #1';
+            else if (pos === 2 || pos === 3) posTxt = `<i class="fas fa-medal" style="color:#FFC94A;"></i> Top #${pos}`;
             else if (pos) posTxt = `Top #${pos}`;
             const recTxt = isRecord ? '¡RÉCORD!' : '';
             const extra = [recTxt, posTxt].filter(Boolean).join(' · ');
@@ -375,7 +685,7 @@
             if (streakEl) {
                 if (sNum > 0) {
                     streakEl.classList.toggle('leader', !!isLeader);
-                    streakEl.innerHTML = `<i class="fas fa-fire flame"></i><span class="streak-num">${sNum}</span><span class="streak-txt">día${sNum === 1 ? '' : 's'} seguido${sNum === 1 ? '' : 's'}${extra ? '<br>' + extra : ''}</span>`;
+                    streakEl.innerHTML = `<i class="fas fa-fire-flame-curved flame"></i><span class="streak-num">${sNum}</span><span class="streak-txt">día${sNum === 1 ? '' : 's'} seguido${sNum === 1 ? '' : 's'}${extra ? '<br>' + extra : ''}</span>`;
                     streakEl.classList.add('show');
                 } else {
                     streakEl.classList.remove('show', 'leader');
@@ -383,43 +693,35 @@
                 }
             }
 
-            body.style.transition = "background-color 0.5s ease";
-            body.style.backgroundImage = 'none';
+            const expiryMessage = `Tu membresía vence el <b>${new Date(expiryDate).toLocaleDateString()}</b>`;
+            const daysMessage = days <= 5
+                ? `<i class="fas fa-triangle-exclamation"></i> Quedan ${days} día${days === 1 ? '' : 's'}`
+                : `<i class="fas fa-circle-check"></i> Acceso autorizado`;
 
-            if (birthdayMonth) {
-                // Birthday month celebration!
-                body.style.backgroundColor = '#1a0033';
-                body.style.backgroundImage = 'linear-gradient(135deg, #1a0033 0%, #330066 50%, #1a0033 100%)';
-                msg.innerHTML = `<span style="font-size:3.5rem; text-shadow:0 0 30px rgba(255,215,0,0.8); color:#ffd700; font-weight:800;">¡Bienvenido ${firstName}!</span>`;
-                
-                const expiryMessage = `Tu membresía vence el: <b>${new Date(expiryDate).toLocaleDateString()}</b>`;
-                const daysMessage = days <= 5 ? `⚠️ Quedan ${days} días` : `✅ Acceso Autorizado`;
-                
-                sub.innerHTML = `${daysMessage}<br><span style="font-size:1.2rem; color: #e0e0e0;">${expiryMessage}</span>`;
-                showBirthdayOverlay(firstName);
-            } else {
-                // Normal success
-                body.style.backgroundColor = '#00cc33';
-                msg.innerHTML = `<span style="font-size:3.5rem; text-shadow:0 0 30px rgba(0,0,0,0.5); color:#fff; font-weight:800;">¡Bienvenido ${firstName}!</span>`;
-                
-                const expiryMessage = `Tu membresía vence el: <b>${new Date(expiryDate).toLocaleDateString()}</b>`;
-                const daysMessage = days <= 5 ? `⚠️ Quedan ${days} días` : `✅ Acceso Autorizado`;
-                
-                sub.innerHTML = `${daysMessage}<br><span style="font-size:1.2rem; color: #e0e0e0;">${expiryMessage}</span>`;
-            }
+            // Frase de temporada (solo si hay un tema activo)
+            const themeKey = body.classList.contains('theme-muertos') ? 'muertos'
+                : (body.classList.contains('theme-halloween') ? 'halloween' : null);
+            const phrases = themeKey ? THEME_PHRASES[themeKey] : null;
+            const hwPhrase = phrases
+                ? `<span class="k-theme-phrase">${phrases[Math.floor(Math.random() * phrases.length)]}</span>`
+                : '';
+
+            body.classList.remove('k-ok', 'k-err', 'k-bday');
+            body.classList.add(birthdayMonth ? 'k-bday' : 'k-ok');
+            msg.innerHTML = `<span class="k-icon"><i class="fas fa-check"></i></span><span class="k-big">¡Bienvenido, ${firstName}!</span>`;
+            sub.innerHTML = `${daysMessage}<span class="k-sub2">${expiryMessage}</span>${hwPhrase}`;
+            if (birthdayMonth) showBirthdayOverlay(firstName);
         }
 
         function setErrorState(title, subtitle) {
-            body.style.transition = "background-color 0.3s ease";
-            body.style.backgroundColor = '#d32f2f';
-            body.style.backgroundImage = 'none';
-            msg.innerHTML = `<span style="font-size:3.5rem; color:#fff; font-weight:800;"><i class="fas fa-times-circle"></i> ${title}</span>`;
+            body.classList.remove('k-ok', 'k-bday');
+            body.classList.add('k-err');
+            msg.innerHTML = `<span class="k-icon"><i class="fas fa-xmark"></i></span><span class="k-big">${title}</span>`;
             sub.innerHTML = subtitle;
         }
 
         function resetState() {
-            body.style.backgroundColor = '#000';
-            body.style.backgroundImage = "radial-gradient(circle, #1a0000 0%, #000000 80%)";
+            body.classList.remove('k-ok', 'k-err', 'k-bday');
             msg.innerHTML = '';
             sub.innerHTML = '';
             const se = document.getElementById('k-streak');

@@ -2,7 +2,7 @@
 // Estrategia: NETWORK-FIRST para el codigo de la app (html/js/css) para que
 // las actualizaciones SIEMPRE lleguen. Cache solo como respaldo offline.
 // NUNCA intercepta Firebase / CDNs (otro origen): van directo a la red.
-const CACHE_NAME = 'atlas-gym-v5';
+const CACHE_NAME = 'atlas-gym-v6';
 const ASSETS = [
   './',
   './index.html',

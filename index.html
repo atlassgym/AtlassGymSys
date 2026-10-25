@@ -2,476 +2,385 @@
 <html lang="es">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ATLAS GYM | SISTEMA</title>
-    <link rel="stylesheet" href="style.css?v=14">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <title>Atlas Gym · Sistema</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@62..125,100..900&family=IBM+Plex+Mono:wght@400;500;600&display=swap">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@2.47.0/tabler-icons.min.css">
+    <link rel="stylesheet" href="style.css?v=33">
     <link rel="manifest" href="manifest.json">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <meta name="theme-color" content="#ff003c">
+    <meta name="theme-color" content="#0F0F10">
 </head>
 <body>
 
     <div id="toast-container"></div>
 
-    <!-- Big Alert Overlay for Reception -->
+    <!-- Aviso de acceso (cuando un socio entra por el kiosco) -->
     <div id="big-alert" class="big-alert-overlay">
         <div class="big-alert-content">
-            <div id="ba-icon" class="alert-icon"><i class="fas fa-check-circle"></i></div>
-            <h1 id="ba-title" class="alert-title">¡BIENVENIDO!</h1>
-            <div id="ba-name" class="alert-name">Juan Perez</div>
+            <div id="ba-icon" class="alert-icon"><i class="fas fa-check"></i></div>
+            <h1 id="ba-title" class="alert-title">¡Bienvenido!</h1>
+            <div id="ba-name" class="alert-name">—</div>
             <div id="ba-reason" class="alert-reason" style="display:none;"></div>
         </div>
     </div>
 
+    <!-- ============ INICIO DE SESIÓN ============ -->
     <div id="login-screen">
-        <img src="Logo/ATLAS.png" style="width:160px; margin-bottom:30px; filter:drop-shadow(0 0 15px #ff003c);">
-        <div class="login-box">
-            <h2 style="color:var(--primary); font-family:'Rajdhani'; margin-bottom:10px; font-size:2rem;">SISTEMA DE ACCESO</h2>
-            <p style="color:#666; margin-bottom:30px;">Identifíquese para continuar</p>
-            <input type="text" id="login-user" placeholder="Usuario / ID" autocomplete="off">
-            <input type="password" id="login-pass" placeholder="Contraseña" onkeydown="if(event.key === 'Enter') app.login()">
-            <button class="btn" style="width:100%; margin-top:10px;" onclick="app.login()">INICIAR SESIÓN</button>
+        <aside class="login-brand">
+            <img src="Logo/ATLAS.png" alt="Atlas Gym" class="login-logo">
+            <p class="login-tagline">Forja tu<br>mejor <em>versión.</em></p>
+            <p class="login-credit"><span>Atlas Gym Software v2.2</span><span>Desarrollado por <b>7Frac_</b></span></p>
+        </aside>
+        <div class="login-form-wrap">
+            <form class="login-box" onsubmit="event.preventDefault(); app.login();">
+                <span class="kicker">Sistema de acceso</span>
+                <h1>Iniciar sesión</h1>
+                <p>Entra con tu usuario del sistema.</p>
+                <label class="field">
+                    <span>Usuario</span>
+                    <input type="text" id="login-user" placeholder="Usuario o ID" autocomplete="off" autocapitalize="off" spellcheck="false">
+                </label>
+                <label class="field">
+                    <span>Contraseña</span>
+                    <input type="password" id="login-pass" placeholder="••••••••">
+                </label>
+                <button type="submit" class="btn btn-lg btn-block">Entrar <i class="fas fa-arrow-right"></i></button>
+            </form>
         </div>
-        <p style="color:#444; margin-top:20px; font-size:0.8rem;">ATLAS GYM SOFTWARE v2.2</p>
-        <p style="color:#888; margin-top:15px; font-size:1.1rem; font-weight:bold;">Desarrollado por 7Frac_</p>
     </div>
 
-    <div style="display:flex; height:100vh; width:100%;" id="app-container" hidden>
-        
-        <aside class="sidebar">
-            <div class="brand">
-                <img src="Logo/ATLAS.png" alt="Logo"> <span>ATLAS</span>
+    <!-- ============ APLICACIÓN ============ -->
+    <div id="app-container" class="app" hidden>
+
+        <header class="topbar">
+            <div class="topbar-brand">
+                <img src="Logo/ATLAS.png" alt="" class="topbar-logo">
+                <div class="wordmark"><b>ATLAS</b><span>GYM</span></div>
             </div>
-            <nav style="flex:1;">
-                <button class="nav-btn active" onclick="app.nav('dashboard')"><i class="fas fa-chart-pie"></i>  Tablero</button>
-                <button class="nav-btn" onclick="app.nav('members')"><i class="fas fa-users"></i> Socios</button>
-                <button class="nav-btn" onclick="app.nav('logros')"><i class="fas fa-fire"></i> Logros</button>
-                <button class="nav-btn" onclick="app.nav('store')"><i class="fas fa-shopping-bag"></i> Tienda</button>
-                <button class="nav-btn" onclick="app.nav('finances')"><i class="fas fa-cash-register"></i> Finanzas</button>
-                <button class="nav-btn" onclick="app.nav('debts')"><i class="fas fa-hand-holding-usd"></i> Fiados</button>
-                <button class="nav-btn" onclick="app.nav('trash')"><i class="fas fa-trash-alt"></i> Papelera</button>
-                
-                <div id="admin-menu" style="display:none; border-top:1px solid #333; margin-top:20px; padding-top:20px;">
-                    <small style="color:#555; margin-left:20px; text-transform:uppercase; letter-spacing:1px; font-size:0.7rem;">Administración</small>
-                    <button class="nav-btn" onclick="app.nav('admin')"><i class="fas fa-cogs"></i> Sistema</button>
-                    <button class="nav-btn" onclick="app.nav('stats')"><i class="fas fa-chart-line"></i> Estadísticas</button>
-                    <button class="nav-btn" onclick="app.nav('reports')"><i class="fas fa-print"></i> Reportes</button>
-                    <button class="nav-btn" onclick="app.nav('history')"><i class="fas fa-history"></i> Historial</button>
-                </div>
-                <div id="dev-menu" style="display:none; border-top:1px solid #333; margin-top:20px; padding-top:20px;">
-                    <small style="color:#555; margin-left:20px; text-transform:uppercase; letter-spacing:1px; font-size:0.7rem;">Developer</small>
-                    <button class="nav-btn" onclick="app.nav('dev')"><i class="fas fa-code"></i> Dev Tools</button>
-                </div>
-            </nav>
-            <div style="border-top:1px solid #222; padding-top:20px;">
-                <div style="display:flex; align-items:center; gap:10px; margin-bottom:15px; padding-left:10px;">
-                    <div style="width:30px; height:30px; background:#222; border-radius:50%; display:flex; align-items:center; justify-content:center; color:var(--primary); font-weight:bold;">U</div>
-                    <div>
-                        <div style="font-size:0.9rem; font-weight:bold; color:#fff;" id="user-display-name">Usuario</div>
-                        <div style="font-size:0.7rem; color:#666;" id="user-display-role">Staff</div>
+            <div class="topbar-date" id="topbar-date"></div>
+            <div class="topbar-actions">
+                <button id="btn-theme-toggle" class="icon-btn" onclick="app.toggleThemeMode()" title="Cambiar a Modo Claro"><i class="fas fa-sun"></i><span>Modo claro</span></button>
+                <div class="user-chip" title="Sesión actual">
+                    <div class="avatar" id="user-avatar">U</div>
+                    <div class="user-meta">
+                        <div id="user-display-name">Usuario</div>
+                        <div id="user-display-role">Staff</div>
                     </div>
                 </div>
-                <div style="display:flex; gap:8px; align-items:center; margin-bottom:8px;">
-                    <button id="btn-theme-toggle" onclick="app.toggleThemeMode()" title="Modo Claro" style="flex:1; background:rgba(255,255,255,0.05); border:1px solid #333; color:#aaa; border-radius:8px; padding:8px 12px; cursor:pointer; display:flex; align-items:center; justify-content:center; gap:8px; font-size:0.8rem; transition:all 0.2s;"><i class="fas fa-sun"></i> Modo Claro</button>
-                </div>
-                <button class="nav-btn" onclick="location.reload()" style="color:#d32f2f; margin:0;"><i class="fas fa-sign-out-alt"></i> Cerrar Sesión</button>
+                <button class="icon-btn" onclick="location.reload()" title="Cerrar sesión" aria-label="Cerrar sesión"><i class="fas fa-arrow-right-from-bracket"></i></button>
             </div>
-        </aside>
+        </header>
 
         <main class="main-content">
             <div id="system-sys-banner" class="sys-banner" style="display:none;">
+                <i class="fas fa-bullhorn"></i>
                 <span id="sys-banner-msg"></span>
-                <button onclick="document.getElementById('system-sys-banner').style.display='none'"><i class="fas fa-times"></i></button>
+                <button onclick="document.getElementById('system-sys-banner').style.display='none'" aria-label="Cerrar aviso"><i class="fas fa-xmark"></i></button>
             </div>
 
-            <button id="hamburger-menu" class="hamburger-menu-btn">
-                <i class="fas fa-bars"></i>
-            </button>
-            
+            <!-- ===== TABLERO ===== -->
             <section id="view-dashboard" class="view-section active">
-                <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:16px; margin-bottom:10px;">
-                    <h1 style="margin:0;"><i class="fas fa-chart-pie" style="color:var(--primary); margin-right:10px; font-size:2.5rem; filter:drop-shadow(0 0 10px rgba(255,0,60,0.4));"></i> Panel de Control</h1>
-                    <a href="kiosk.html" target="_blank" class="dash-kiosk-btn">
-                        <div class="dki"><i class="fas fa-door-open"></i></div>
-                        <div class="dkt"><span class="dkt1">Acceso Kiosco</span><span class="dkt2">Abrir pantalla de ingreso de socios</span></div>
-                        <i class="fas fa-external-link-alt dka"></i>
-                    </a>
+                <header class="page-head">
+                    <div>
+                        <span class="page-kicker" id="dash-date">Hoy</span>
+                        <h1>Tablero</h1>
+                    </div>
+                    <div class="page-actions">
+                        <a href="kiosk.html" target="_blank" class="btn btn-outline"><i class="fas fa-door-open"></i> Abrir kiosco <i class="fas fa-arrow-up-right-from-square" style="font-size:11px; opacity:.6;"></i></a>
+                    </div>
+                </header>
+
+                <div class="scoreboard">
+                    <div class="score tone-neutral" role="button" tabindex="0" onclick="app.filterMembers('visits_today')">
+                        <span class="score-label">Visitas hoy</span>
+                        <span class="score-value" id="stat-visits">0</span>
+                        <span class="score-foot"><span>Ver quién vino</span> <i class="fas fa-arrow-right"></i></span>
+                    </div>
+                    <div class="score tone-ok" role="button" tabindex="0" onclick="app.filterMembers('active_only')">
+                        <span class="score-label">Socios activos</span>
+                        <span class="score-value" id="stat-active">0</span>
+                        <span class="score-foot"><span>Ver activos</span> <i class="fas fa-arrow-right"></i></span>
+                    </div>
+                    <div class="score tone-warn" role="button" tabindex="0" onclick="app.filterMembers('expiring')">
+                        <span class="score-label">Por vencer</span>
+                        <span class="score-value" id="stat-expiring">0</span>
+                        <span class="score-foot"><span>Próximos 5 días</span> <i class="fas fa-arrow-right"></i></span>
+                    </div>
+                    <div class="score tone-danger" role="button" tabindex="0" onclick="app.filterMembers('inactive')">
+                        <span class="score-label">Inactivos</span>
+                        <span class="score-value" id="stat-inactive">0</span>
+                        <span class="score-foot"><span>Membresía vencida</span> <i class="fas fa-arrow-right"></i></span>
+                        <button id="btn-toggle-inactive" class="score-toggle" onclick="event.stopPropagation(); app.toggleInactiveCount();" title="Ocultar número"><i class="fas fa-eye-slash"></i></button>
+                    </div>
                 </div>
-                <div class="stats-grid">
-    <div class="card" onclick="app.filterMembers('visits_today')" style="border-bottom:3px solid #444 !important;">
-        <div style="display:flex; align-items:center; gap:15px;">
-            <div style="width:50px; height:50px; border-radius:12px; background:rgba(255,255,255,0.05); display:flex; align-items:center; justify-content:center;">
-                <i class="fas fa-walking" style="font-size:1.4rem; color:#aaa;"></i>
-            </div>
-            <div>
-                <h3 id="stat-visits" style="font-size:2.8rem; line-height:1;">0</h3>
-                <p style="margin-top:5px;">Visitas Hoy</p>
-            </div>
-        </div>
-    </div>
-
-    <div class="card" onclick="app.filterMembers('active_only')">
-        <div style="display:flex; align-items:center; gap:15px;">
-            <div style="width:50px; height:50px; border-radius:12px; background:rgba(0,255,65,0.06); display:flex; align-items:center; justify-content:center;">
-                <i class="fas fa-bolt" style="font-size:1.4rem; color:var(--neon-green); filter:drop-shadow(0 0 5px rgba(0,255,65,0.4));"></i>
-            </div>
-            <div>
-                <h3 id="stat-active" style="font-size:2.8rem; line-height:1;">0</h3>
-                <p style="margin-top:5px;">Socios Activos</p>
-            </div>
-        </div>
-    </div>
-
-    <div class="card" onclick="app.filterMembers('expiring')">
-        <div style="display:flex; align-items:center; gap:15px;">
-            <div style="width:50px; height:50px; border-radius:12px; background:rgba(255,170,0,0.06); display:flex; align-items:center; justify-content:center;">
-                <i class="fas fa-exclamation-triangle" style="font-size:1.4rem; color:var(--neon-orange); filter:drop-shadow(0 0 5px rgba(255,170,0,0.4));"></i>
-            </div>
-            <div>
-                <h3 id="stat-expiring" style="font-size:2.8rem; line-height:1;">0</h3>
-                <p style="margin-top:5px;">Por Vencer</p>
-            </div>
-        </div>
-    </div>
-
-    <div class="card" onclick="app.filterMembers('inactive')" style="position:relative;">
-        <div style="display:flex; align-items:center; gap:15px;">
-            <div style="width:50px; height:50px; border-radius:12px; background:rgba(255,0,60,0.06); display:flex; align-items:center; justify-content:center;">
-                <i class="fas fa-user-slash" style="font-size:1.4rem; color:var(--primary); filter:drop-shadow(0 0 5px rgba(255,0,60,0.4));"></i>
-            </div>
-            <div style="flex:1;">
-                <h3 id="stat-inactive" style="font-size:2.8rem; line-height:1;">0</h3>
-                <p style="margin-top:5px;">Inactivos</p>
-            </div>
-            <button id="btn-toggle-inactive" onclick="event.stopPropagation(); app.toggleInactiveCount();" title="Ocultar número" style="background:rgba(255,0,60,0.1); border:1px solid rgba(255,0,60,0.3); color:var(--primary); border-radius:8px; width:34px; height:34px; cursor:pointer; display:flex; align-items:center; justify-content:center; font-size:0.9rem; flex-shrink:0; transition:all 0.2s;"><i class="fas fa-eye-slash"></i></button>
-        </div>
-    </div>
-</div>
 
                 <div class="dash-trio">
-                    <div class="table-container" style="padding:28px; background:linear-gradient(145deg, #111 0%, #0a0a0a 100%); border:1px solid #222; border-radius:14px; position:relative; overflow:hidden;">
-                        <div style="position:absolute; top:0; left:0; right:0; height:2px; background:linear-gradient(90deg, transparent, var(--primary), transparent); opacity:0.5;"></div>
-                        <h4 style="color:#fff; margin-bottom:18px; display:flex; align-items:center; gap:12px; font-family:'Rajdhani',sans-serif; font-size:1.1rem; letter-spacing:1px; text-transform:uppercase;">
-                            <div style="width:35px; height:35px; border-radius:10px; background:rgba(255,0,60,0.08); display:flex; align-items:center; justify-content:center;">
-                                <i class="fas fa-birthday-cake" style="color:var(--primary); font-size:1.1rem; filter:drop-shadow(0 0 8px rgba(255,0,60,0.5));"></i>
-                            </div>
-                            Cumpleanos del Mes
-                        </h4>
-                        <ul id="bday-list" style="list-style:none; color:#aaa; font-size:0.9rem; line-height:2;"></ul>
-                    </div>
-                    <div class="table-container" style="padding:28px; background:linear-gradient(145deg, #111 0%, #0a0a0a 100%); border:1px solid #222; border-radius:14px; position:relative; overflow:hidden;">
-                        <div style="position:absolute; top:0; left:0; right:0; height:2px; background:linear-gradient(90deg, transparent, var(--neon-orange), transparent); opacity:0.5;"></div>
-                        <h4 style="color:#fff; margin-bottom:18px; display:flex; align-items:center; gap:12px; font-family:'Rajdhani',sans-serif; font-size:1.1rem; letter-spacing:1px; text-transform:uppercase;">
-                            <div style="width:35px; height:35px; border-radius:10px; background:rgba(255,170,0,0.08); display:flex; align-items:center; justify-content:center;">
-                                <i class="fas fa-medal" style="color:var(--neon-orange); font-size:1.1rem; filter:drop-shadow(0 0 8px rgba(255,170,0,0.5));"></i>
-                            </div>
-                            Top Antiguedad
-                        </h4>
-                        <ul id="dash-loyalty-list" style="list-style:none; color:#aaa; font-size:0.9rem; line-height:1.8; margin:0; padding:0;"></ul>
-                    </div>
-                    <div class="table-container dash-constancia-panel" style="padding:28px; background:linear-gradient(145deg, #111 0%, #0a0a0a 100%); border:1px solid #222; border-radius:14px; position:relative; overflow:hidden; cursor:pointer;" onclick="app.nav('logros')" title="Ver logros y ranking completo">
-                        <div style="position:absolute; top:0; left:0; right:0; height:2px; background:linear-gradient(90deg, transparent, #ffd700, transparent); opacity:0.5;"></div>
-                        <h4 style="color:#fff; margin-bottom:18px; display:flex; align-items:center; gap:12px; font-family:'Rajdhani',sans-serif; font-size:1.1rem; letter-spacing:1px; text-transform:uppercase;">
-                            <div style="width:35px; height:35px; border-radius:10px; background:rgba(255,215,0,0.08); display:flex; align-items:center; justify-content:center;">
-                                <i class="fas fa-trophy" style="color:#ffd700; font-size:1.1rem; filter:drop-shadow(0 0 8px rgba(255,215,0,0.5));"></i>
-                            </div>
-                            Top Rachas
-                            <span style="margin-left:auto; color:#666; font-size:0.75rem; letter-spacing:0.5px; display:flex; align-items:center; gap:5px;">VER LOGROS <i class="fas fa-arrow-right"></i></span>
-                        </h4>
-                        <ul id="dash-constancia-list" style="list-style:none; color:#aaa; font-size:0.9rem; line-height:1.8; margin:0; padding:0;"></ul>
-                    </div>
+                    <section class="panel">
+                        <header class="panel-head">
+                            <h2><i class="fas fa-cake-candles"></i> Cumpleaños del mes</h2>
+                        </header>
+                        <ul id="bday-list" class="rank-list"></ul>
+                    </section>
+                    <section class="panel">
+                        <header class="panel-head">
+                            <h2><i class="fas fa-medal"></i> Más antiguos</h2>
+                            <span class="panel-note">Socios vigentes</span>
+                        </header>
+                        <ul id="dash-loyalty-list" class="rank-list"></ul>
+                    </section>
+                    <section class="panel panel-link dash-constancia-panel" onclick="app.nav('logros')" title="Ver logros y ranking completo">
+                        <header class="panel-head">
+                            <h2><i class="fas fa-fire-flame-curved"></i> Rachas activas</h2>
+                            <span class="panel-note">Ver logros <i class="fas fa-arrow-right"></i></span>
+                        </header>
+                        <ul id="dash-constancia-list" class="rank-list"></ul>
+                    </section>
                 </div>
 
-                <!-- Advanced Metrics Panel (Admin/Dev Only) -->
-                <div id="dashboard-advanced-metrics" class="metrics-advanced-panel" style="display:none;">
-                    <h2><i class="fas fa-chart-line"></i> Metricas Avanzadas</h2>
+                <!-- Métricas del mes (solo admin/dev) -->
+                <section id="dashboard-advanced-metrics" class="metrics-advanced-panel" style="display:none;">
+                    <header class="section-head">
+                        <h2>Este mes</h2>
+                        <span>Solo administración</span>
+                    </header>
                     <div class="metrics-grid-advanced">
                         <div class="metric-card-pro">
-                            <div class="metric-icon" style="background:rgba(0,255,65,0.08); color:var(--neon-green);"><i class="fas fa-dollar-sign"></i></div>
-                            <div class="metric-label">Ingresos del Mes</div>
+                            <div class="metric-label">Ingresos del mes</div>
                             <div class="metric-value" id="metric-revenue">$0</div>
-                            <div class="metric-sub" id="metric-revenue-change" style="color:var(--neon-green);">vs mes anterior</div>
+                            <div class="metric-sub"><b id="metric-revenue-change">—</b> vs mes anterior</div>
                         </div>
                         <div class="metric-card-pro">
-                            <div class="metric-icon" style="background:rgba(255,170,0,0.08); color:var(--neon-orange);"><i class="fas fa-user-plus"></i></div>
-                            <div class="metric-label">Nuevos Socios</div>
+                            <div class="metric-label">Nuevos socios</div>
                             <div class="metric-value" id="metric-new-members">0</div>
-                            <div class="metric-sub" id="metric-new-members-change">vs mes anterior</div>
+                            <div class="metric-sub"><b id="metric-new-members-change">—</b> vs mes anterior</div>
                         </div>
                         <div class="metric-card-pro">
-                            <div class="metric-icon" style="background:rgba(255,0,60,0.08); color:var(--primary);"><i class="fas fa-heartbeat"></i></div>
-                            <div class="metric-label">Tasa de Retencion</div>
+                            <div class="metric-label">Tasa de retención</div>
                             <div class="metric-value" id="metric-retention">0%</div>
-                            <div class="metric-sub" style="color:#888;">Activos / Total</div>
+                            <div class="metric-sub">Activos / total</div>
                         </div>
                         <div class="metric-card-pro">
-                            <div class="metric-icon" style="background:rgba(68,136,255,0.08); color:#4488ff;"><i class="fas fa-shopping-bag"></i></div>
-                            <div class="metric-label">Ventas Tienda (Mes)</div>
+                            <div class="metric-label">Ventas de tienda</div>
                             <div class="metric-value" id="metric-store-revenue">$0</div>
-                            <div class="metric-sub" style="color:#888;">Productos vendidos</div>
+                            <div class="metric-sub">Productos vendidos</div>
                         </div>
                         <div class="metric-card-pro">
-                            <div class="metric-icon" style="background:rgba(170,68,255,0.08); color:#aa44ff;"><i class="fas fa-trophy"></i></div>
-                            <div class="metric-label">Plan Mas Popular</div>
-                            <div class="metric-value" id="metric-top-plan" style="font-size:1.4rem;">-</div>
-                            <div class="metric-sub" style="color:#888;">Mayor demanda</div>
+                            <div class="metric-label">Plan más popular</div>
+                            <div class="metric-value is-text" id="metric-top-plan">—</div>
+                            <div class="metric-sub">Mayor demanda</div>
                         </div>
                         <div class="metric-card-pro">
-                            <div class="metric-icon" style="background:rgba(0,255,65,0.08); color:var(--neon-green);"><i class="fas fa-calculator"></i></div>
-                            <div class="metric-label">Ingreso Prom. / Socio</div>
+                            <div class="metric-label">Ingreso prom. por socio</div>
                             <div class="metric-value" id="metric-avg-revenue">$0</div>
-                            <div class="metric-sub" style="color:#888;">Este mes</div>
+                            <div class="metric-sub">Este mes</div>
                         </div>
                         <div class="metric-card-pro">
-                            <div class="metric-icon" style="background:rgba(0,200,100,0.08); color:#00c864;"><i class="fas fa-money-bill-wave"></i></div>
-                            <div class="metric-label">Efectivo (Mes)</div>
+                            <div class="metric-label">Efectivo</div>
                             <div class="metric-value" id="metric-cash-month">$0</div>
-                            <div class="metric-sub" style="color:#888;">Pagos en efectivo</div>
+                            <div class="metric-sub">Pagos en efectivo</div>
                         </div>
                         <div class="metric-card-pro">
-                            <div class="metric-icon" style="background:rgba(68,136,255,0.08); color:#4488ff;"><i class="fas fa-credit-card"></i></div>
-                            <div class="metric-label">Tarjeta (Mes)</div>
+                            <div class="metric-label">Tarjeta</div>
                             <div class="metric-value" id="metric-card-month">$0</div>
-                            <div class="metric-sub" style="color:#888;">Pagos con tarjeta</div>
+                            <div class="metric-sub">Pagos con tarjeta</div>
                         </div>
                     </div>
-                </div>
+                </section>
             </section>
 
-            <section id="view-logros" class="view-section">
-                <h1><i class="ti ti-flame" style="color:#ff6a00; margin-right:10px; filter:drop-shadow(0 0 10px rgba(255,106,0,0.5));"></i> Logros de Racha</h1>
-                <p style="color:#888; margin-top:-30px; margin-bottom:30px;">Insignias que los socios desbloquean por su constancia, y el ranking de rachas activas.</p>
-
-                <div class="ach-section-head"><i class="ti ti-medal" style="color:#ff6a00;"></i> Insignias</div>
-                <div id="logros-badges" class="ach-grid"></div>
-
-                <div id="logros-ranking-title" class="ach-section-head" style="margin-top:36px;"><i class="fas fa-trophy" style="color:#ffd700;"></i> Ranking de Constancia</div>
-                <div id="logros-ranking"></div>
-            </section>
-
-            <section id="view-debts" class="view-section">
-                <h1><i class="fas fa-hand-holding-usd" style="color:var(--neon-orange); margin-right:10px; filter:drop-shadow(0 0 8px rgba(255,170,0,0.4));"></i> Cuentas por Cobrar (Fiados)</h1>
-                <p style="color:#888; margin-top:-30px; margin-bottom:24px;">Socios que se llevaron productos o membresías a cuenta. Cobra el total cuando paguen.</p>
-
-                <div style="display:flex; gap:20px; flex-wrap:wrap; margin-bottom:24px;">
-                    <div class="table-container" style="padding:18px 24px; background:linear-gradient(145deg,#111,#0a0a0a); border:1px solid #222; border-radius:12px; min-width:200px;">
-                        <div style="color:#888; font-size:0.8rem; text-transform:uppercase; letter-spacing:1px;">Total por cobrar</div>
-                        <div id="debts-total" style="font-family:'Rajdhani'; font-weight:800; font-size:2rem; color:var(--neon-orange);">$0</div>
-                    </div>
-                    <div class="table-container" style="padding:18px 24px; background:linear-gradient(145deg,#111,#0a0a0a); border:1px solid #222; border-radius:12px; min-width:160px;">
-                        <div style="color:#888; font-size:0.8rem; text-transform:uppercase; letter-spacing:1px;">Fiados pendientes</div>
-                        <div id="debts-count" style="font-family:'Rajdhani'; font-weight:800; font-size:2rem; color:#fff;">0</div>
-                    </div>
-                </div>
-
-                <div class="table-container">
-                    <table>
-                        <thead>
-                            <tr><th>Fecha</th><th>Socio</th><th>Concepto</th><th>Monto</th><th>Registró</th><th style="text-align:right;">Cobrar</th></tr>
-                        </thead>
-                        <tbody id="debts-table-body"></tbody>
-                    </table>
-                </div>
-            </section>
-
+            <!-- ===== SOCIOS ===== -->
             <section id="view-members" class="view-section">
-                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px;">
-                    <h1 data-testid="members-heading"><i class="fas fa-users" style="color:var(--primary); margin-right:10px; filter:drop-shadow(0 0 8px rgba(255,0,60,0.3));"></i> Directorio de Socios</h1>
-                    <div style="display:flex; gap:10px; align-items:center;">
-                        <button id="btn-delete-all-inactive" class="btn" onclick="app.deleteAllInactive()" style="display:none; background:#c62828; border-color:#c62828;" title="Eliminar todos los inactivos"><i class="fas fa-trash-alt"></i> ELIMINAR INACTIVOS</button>
-                        <button class="btn btn-outline" onclick="app.openLoyaltyRanking()" title="Ranking de antigüedad y rachas"><i class="fas fa-medal"></i> ANTIGÜEDAD</button>
-                        <button class="btn" onclick="app.openRegisterModal()"><i class="fas fa-plus"></i> NUEVO SOCIO</button>
+                <header class="page-head">
+                    <div>
+                        <h1 data-testid="members-heading">Socios</h1>
+                        <p class="page-sub">Busca por nombre o código. Toca un socio para ver su ficha, renovar o cobrar.</p>
                     </div>
+                    <div class="page-actions">
+                        <button id="btn-delete-all-inactive" class="btn btn-danger" onclick="app.deleteAllInactive()" style="display:none;" title="Eliminar todos los inactivos"><i class="fas fa-trash-can"></i> Eliminar inactivos</button>
+                        <button class="btn btn-outline" onclick="app.openLoyaltyRanking()" title="Ranking de antigüedad y rachas"><i class="fas fa-medal"></i> Antigüedad</button>
+                        <button class="btn" onclick="app.openRegisterModal()"><i class="fas fa-plus"></i> Nuevo socio</button>
+                    </div>
+                </header>
+
+                <div class="toolbar">
+                    <label class="search">
+                        <i class="fas fa-magnifying-glass"></i>
+                        <input type="text" id="search-member" placeholder="Buscar por nombre o código…" onkeyup="app.renderMembers()" autocomplete="off">
+                    </label>
                 </div>
-                
-                <div style="position:relative; margin-bottom:20px;">
-                    <i class="fas fa-search" style="position:absolute; left:15px; top:15px; color:#666;"></i>
-                    <input type="text" id="search-member" placeholder="Buscar por nombre o código..." onkeyup="app.renderMembers()" style="padding-left:45px;">
+                <div class="toolbar">
+                    <div class="chips">
+                        <button class="chip active" data-member-filter="all" onclick="app.renderMembers('all')">Todos</button>
+                        <button class="chip" data-member-filter="active_only" onclick="app.renderMembers('active_only')">Activos</button>
+                        <button class="chip" data-member-filter="expiring" onclick="app.renderMembers('expiring')">Por vencer</button>
+                        <button class="chip" data-member-filter="inactive" onclick="app.renderMembers('inactive')">Vencidos</button>
+                        <button class="chip" data-member-filter="visits_today" onclick="app.renderMembers('visits_today')">Vinieron hoy</button>
+                    </div>
+                    <span class="result-count" id="members-count"></span>
                 </div>
-                
+
                 <div class="table-container">
                     <table>
                         <thead>
-                            <tr><th>Código</th><th>Nombre</th><th>Registro</th><th>Vencimiento</th><th>Estado</th><th>Acciones</th></tr>
+                            <tr><th>Código</th><th>Nombre</th><th>Registro</th><th>Vencimiento</th><th>Estado</th><th class="t-right">Ficha</th></tr>
                         </thead>
                         <tbody id="members-table-body"></tbody>
                     </table>
                 </div>
             </section>
 
-            <div id="view-store" class="view-section">
-    <div class="section-header">
-        <h1><i class="fas fa-store"></i> Tienda Atlas</h1>
-        <div class="header-actions">
-            <button class="btn admin-only" onclick="app.openProductModal()">
-                <i class="fas fa-plus"></i> Nuevo Producto
-            </button>
-        </div>
-    </div>
-
-    <div class="filters-bar" style="background: var(--dark-soft); padding: 15px; border-radius: 8px; margin-bottom: 20px; display: flex; gap: 15px; align-items: center;">
-        <div style="flex: 2; position: relative;">
-            <i class="fas fa-search" style="position: absolute; left: 12px; top: 12px; color: #666;"></i>
-            <input type="text" id="search-prod" placeholder="Buscar producto..." onkeyup="app.renderStore()" style="padding-left: 35px; margin-bottom: 0;">
-        </div>
-        <select id="filter-category" onchange="app.renderStore()" style="flex: 1; margin-bottom: 0;">
-            <option value="all">Todas las Categorías</option>
-            <option value="Suplementos">Suplementos</option>
-            <option value="Bebidas">Bebidas</option>
-            <option value="Snacks">Snacks</option>
-            <option value="Accesorios">Accesorios</option>
-            <option value="Ropa">Ropa</option>
-        </select>
-    </div>
-
-    <div class="store-container" style="display: grid; grid-template-columns: 1fr 350px; gap: 20px;">
-        <div id="store-grid" class="store-grid">
-            </div>
-
-        <div class="cart-panel" style="background: var(--dark-soft); border-radius: 12px; padding: 20px; border: 1px solid #333; position: sticky; top: 20px; height: fit-content;">
-            <h3 style="margin-top:0; border-bottom: 1px solid #333; padding-bottom: 10px;">
-                <i class="fas fa-shopping-cart" style="color:var(--primary)"></i> Carrito de Ventas
-            </h3>
-            <div id="cart-items" style="min-height: 150px; max-height: 400px; overflow-y: auto; margin-bottom: 20px;">
-                </div>
-            <div class="cart-summary" style="border-top: 2px solid #222; padding-top: 15px;">
-                <div style="margin-bottom:15px;">
-                    <label style="color:#aaa; display:block; margin-bottom:8px; font-size:0.8rem; text-transform:uppercase; letter-spacing:1px;">Método de Pago</label>
-                    <div class="payment-method-group">
-                        <input type="radio" name="store-payment-method" value="Efectivo" id="pay-efectivo" checked>
-                        <label for="pay-efectivo" class="pay-label"><i class="fas fa-money-bill-wave"></i> Efectivo</label>
-                        <input type="radio" name="store-payment-method" value="Tarjeta" id="pay-tarjeta">
-                        <label for="pay-tarjeta" class="pay-label"><i class="fas fa-credit-card"></i> Tarjeta</label>
-                        <input type="radio" name="store-payment-method" value="Fiado" id="pay-fiado">
-                        <label for="pay-fiado" class="pay-label"><i class="fas fa-hand-holding-usd"></i> Fiado</label>
+            <!-- ===== LOGROS ===== -->
+            <section id="view-logros" class="view-section">
+                <header class="page-head">
+                    <div>
+                        <h1>Logros</h1>
+                        <p class="page-sub">Insignias que los socios desbloquean por su constancia y el ranking de rachas activas. Los fines de semana no rompen la racha.</p>
                     </div>
-                </div>
+                </header>
 
-                <div style="display:flex; justify-content:space-between; font-size: 1.2rem; margin-bottom: 20px;">
-                    <span>TOTAL:</span>
-                    <span style="color:var(--neon-green); font-weight:bold;">$<span id="cart-total">0</span></span>
-                </div>
-                <button class="btn" onclick="app.checkout()" style="width: 100%; padding: 15px; font-size: 1.1rem;">
-                    <i class="fas fa-cash-register"></i> COMPLETAR VENTA
-                </button>
-                <button class="btn btn-outline" onclick="app.clearCart()" style="width: 100%; margin-top: 10px; border-color: #444; color: #888;">
-                    Vaciar Carrito
-                </button>
-            </div>
-        </div>
-    </div>
-</div>
+                <div class="ach-section-head"><i class="ti ti-medal"></i> Insignias</div>
+                <div id="logros-badges" class="ach-grid"></div>
 
-<div id="modal-product" class="modal">
-    <div class="modal-content" style="max-width: 450px;">
-        <h2 id="prod-modal-title">Gestión de Producto</h2>
-        <div class="form-group">
-            <label>Nombre del Producto</label>
-            <input type="text" id="prod-name">
-        </div>
-        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px;">
-            <div class="form-group">
-                <label>Precio de Venta</label>
-                <input type="number" id="prod-price">
-            </div>
-            <div class="form-group">
-                <label>Stock Inicial</label>
-                <input type="number" id="prod-stock">
-            </div>
-        </div>
-        <div class="form-group">
-            <label>Categoría</label>
-            <select id="prod-category">
-                <option value="Suplementos">Suplementos</option>
-                <option value="Bebidas">Bebidas</option>
-                <option value="Snacks">Snacks</option>
-                <option value="Accesorios">Accesorios</option>
-                <option value="Ropa">Ropa</option>
-            </select>
-        </div>
-        <div class="form-group">
-            <label>Icono (FontAwesome)</label>
-            <select id="prod-icon">
-                <option value="fa-prescription-bottle">Bote/Polvo</option>
-                <option value="fa-bottle-water">Bebida</option>
-                <option value="fa-cookie-bite">Snack/Barrita</option>
-                <option value="fa-shirt">Ropa</option>
-                <option value="fa-dumbbell">Accesorio</option>
-            </select>
-        </div>
-        <div style="display:flex; gap:10px; margin-top:20px;">
-            <button class="btn" onclick="app.saveProduct()" style="flex:2;">Guardar Producto</button>
-            <button class="btn btn-outline" onclick="app.closeModal('modal-product')" style="flex:1;">Cancelar</button>
-        </div>
-    </div>
-</div>
+                <div id="logros-ranking-title" class="ach-section-head"><i class="ti ti-trophy"></i> Ranking de rachas</div>
+                <div id="logros-ranking"></div>
+            </section>
 
-        <section id="view-finances" class="view-section">
-                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px;">
-                    <h1><i class="fas fa-chart-line" style="color:var(--neon-green); margin-right:10px; filter:drop-shadow(0 0 8px rgba(0,255,65,0.4));"></i> Finanzas Profesionales</h1>
-                    <div style="display:flex; gap:10px;">
-                        <button class="btn btn-outline admin-only" onclick="app.openExpenseModal()" style="border-color:var(--primary); color:var(--primary);">
-                            <i class="fas fa-minus-circle"></i> REGISTRAR GASTO
-                        </button>
-                        <button class="btn" onclick="app.printReport()">
-                            <i class="fas fa-print"></i> IMPRIMIR REPORTE
-                        </button>
+            <!-- ===== TIENDA ===== -->
+            <section id="view-store" class="view-section">
+                <header class="page-head">
+                    <div>
+                        <h1>Tienda</h1>
+                        <p class="page-sub">Toca un producto para agregarlo a la venta.</p>
                     </div>
+                    <div class="page-actions">
+                        <button class="btn admin-only" onclick="app.openProductModal()"><i class="fas fa-plus"></i> Nuevo producto</button>
+                    </div>
+                </header>
+
+                <div class="store-layout store-container">
+                    <div class="store-main">
+                        <div class="toolbar">
+                            <label class="search">
+                                <i class="fas fa-magnifying-glass"></i>
+                                <input type="text" id="search-prod" placeholder="Buscar producto…" onkeyup="app.renderStore()" autocomplete="off">
+                            </label>
+                            <select id="filter-category" onchange="app.renderStore()">
+                                <option value="all">Todas las categorías</option>
+                                <option value="Suplementos">Suplementos</option>
+                                <option value="Bebidas">Bebidas</option>
+                                <option value="Snacks">Snacks</option>
+                                <option value="Accesorios">Accesorios</option>
+                                <option value="Ropa">Ropa</option>
+                            </select>
+                        </div>
+                        <div id="store-grid" class="store-grid"></div>
+                    </div>
+
+                    <aside class="cart-panel">
+                        <header class="cart-head">
+                            <h2><i class="fas fa-receipt"></i> Venta actual</h2>
+                            <button class="link-btn danger" onclick="app.clearCart()">Vaciar</button>
+                        </header>
+                        <div id="cart-items" class="cart-items">
+                            <p class="cart-empty"><i class="fas fa-basket-shopping"></i>Aún no hay productos</p>
+                        </div>
+                        <div class="cart-summary">
+                            <span class="field-label">Método de pago</span>
+                            <div class="payment-method-group">
+                                <input type="radio" name="store-payment-method" value="Efectivo" id="pay-efectivo" checked>
+                                <label for="pay-efectivo" class="pay-label"><i class="fas fa-money-bill-wave"></i> Efectivo</label>
+                                <input type="radio" name="store-payment-method" value="Tarjeta" id="pay-tarjeta">
+                                <label for="pay-tarjeta" class="pay-label"><i class="fas fa-credit-card"></i> Tarjeta</label>
+                                <input type="radio" name="store-payment-method" value="Fiado" id="pay-fiado">
+                                <label for="pay-fiado" class="pay-label"><i class="fas fa-hand-holding-dollar"></i> Fiado</label>
+                            </div>
+                            <div class="cart-total">
+                                <span class="kicker">Total</span>
+                                <strong>$<span id="cart-total">0</span></strong>
+                            </div>
+                            <button class="btn btn-lg btn-block" onclick="app.checkout()"><i class="fas fa-cash-register"></i> Cobrar venta</button>
+                        </div>
+                    </aside>
                 </div>
+            </section>
+
+            <!-- ===== FINANZAS ===== -->
+            <section id="view-finances" class="view-section">
+                <header class="page-head">
+                    <div>
+                        <h1>Finanzas</h1>
+                        <p class="page-sub">Ingresos y gastos del periodo seleccionado.</p>
+                    </div>
+                    <div class="page-actions">
+                        <button class="btn btn-outline admin-only" onclick="app.openExpenseModal()"><i class="fas fa-minus"></i> Registrar gasto</button>
+                        <button class="btn" onclick="app.printReport()"><i class="fas fa-print"></i> Imprimir reporte</button>
+                    </div>
+                </header>
 
                 <div class="finance-summary">
                     <div class="fin-card income">
-                        <h4>Total Ingresos</h4>
+                        <h4>Ingresos</h4>
                         <div class="amount" id="fin-total-income">$0</div>
                     </div>
                     <div class="fin-card expense">
-                        <h4>Total Gastos</h4>
+                        <h4>Gastos</h4>
                         <div class="amount" id="fin-total-expense">$0</div>
                     </div>
                     <div class="fin-card balance">
-                        <h4>Balance Neto</h4>
+                        <h4>Balance neto</h4>
                         <div class="amount" id="fin-balance">$0</div>
                     </div>
                 </div>
 
                 <div class="filters-bar">
-    <div class="date-group">
-        <label>Desde:</label>
-        <input type="date" id="filter-start" onchange="app.loadFinances()">
-    </div>
-    <div class="date-group">
-        <label>Hasta:</label>
-        <input type="date" id="filter-end" onchange="app.loadFinances()">
-    </div>
-    <select id="filter-type" onchange="app.loadFinances()" style="width:150px; margin-bottom:0;">
-        <option value="all">Todos los Mov.</option>
-        <option value="ingreso">Solo Ingresos</option>
-        <option value="gasto">Solo Gastos</option>
-    </select>
-    <select id="filter-method" onchange="app.loadFinances()" style="width:150px; margin-bottom:0;">
-        <option value="all">Todos los Métodos</option>
-        <option value="Efectivo">Efectivo</option>
-        <option value="Tarjeta">Tarjeta</option>
-    </select>
-    <select id="filter-user" onchange="app.loadFinances()" style="width:180px; margin-bottom:0;">
-        <option value="all">Todos los Usuarios</option>
-    </select>
-    
-    <button class="btn" onclick="app.printReport()"><i class="fas fa-print"></i> Imprimir</button>
-</div>
-                
+                    <div class="date-group">
+                        <label for="filter-start">Desde</label>
+                        <input type="date" id="filter-start" onchange="app.loadFinances()">
+                    </div>
+                    <div class="date-group">
+                        <label for="filter-end">Hasta</label>
+                        <input type="date" id="filter-end" onchange="app.loadFinances()">
+                    </div>
+                    <div class="date-group">
+                        <label for="filter-type">Tipo</label>
+                        <select id="filter-type" onchange="app.loadFinances()">
+                            <option value="all">Todos los movimientos</option>
+                            <option value="ingreso">Solo ingresos</option>
+                            <option value="gasto">Solo gastos</option>
+                        </select>
+                    </div>
+                    <div class="date-group">
+                        <label for="filter-method">Método</label>
+                        <select id="filter-method" onchange="app.loadFinances()">
+                            <option value="all">Todos los métodos</option>
+                            <option value="Efectivo">Efectivo</option>
+                            <option value="Tarjeta">Tarjeta</option>
+                        </select>
+                    </div>
+                    <div class="date-group">
+                        <label for="filter-user">Usuario</label>
+                        <select id="filter-user" onchange="app.loadFinances()">
+                            <option value="all">Todos los usuarios</option>
+                        </select>
+                    </div>
+                </div>
+
                 <div class="table-container">
-                    <table style="width:100%">
+                    <table>
                         <thead>
                             <tr>
-                                <th>Fecha / Hora</th>
+                                <th>Fecha / hora</th>
                                 <th>Tipo</th>
                                 <th>Concepto</th>
                                 <th>Usuario</th>
                                 <th>Método</th>
-                                <th>Monto</th>
-                                <th style="text-align:right">Acción</th>
+                                <th class="t-right">Monto</th>
+                                <th class="t-right"></th>
                             </tr>
                         </thead>
                         <tbody id="finances-list"></tbody>
@@ -479,121 +388,48 @@
                 </div>
             </section>
 
-    <div id="modal-expense" class="modal">
-        <div class="modal-content">
-            <span class="close-btn" onclick="app.closeModal('modal-expense')"><i class="fas fa-times"></i></span>
-            <h2 style="color:var(--primary);">Registrar Gasto</h2>
-            <p style="color:#666; margin-bottom:20px;">Registra salidas de dinero (Luz, Agua, Pagos, etc.)</p>
-            
-            <label style="color:#aaa; font-size:0.8rem;">Categoría</label>
-            <select id="exp-category" style="margin-bottom:12px;">
-                <option value="Renta">Renta</option>
-                <option value="Nómina">Nómina / Sueldos</option>
-                <option value="Luz">Luz</option>
-                <option value="Agua">Agua</option>
-                <option value="Internet">Internet / Teléfono</option>
-                <option value="Mantenimiento">Mantenimiento</option>
-                <option value="Limpieza">Limpieza</option>
-                <option value="Equipo">Equipo / Máquinas</option>
-                <option value="Insumos">Insumos / Tienda</option>
-                <option value="Marketing">Marketing</option>
-                <option value="Impuestos">Impuestos</option>
-                <option value="Otro" selected>Otro</option>
-            </select>
-            <input type="text" id="exp-desc" placeholder="Descripción del Gasto (ej. Pago de Luz)">
-            <input type="number" id="exp-amount" placeholder="Monto ($)">
-
-            <button class="btn" style="width:100%; background:var(--primary);" onclick="app.saveExpense()">REGISTRAR SALIDA</button>
-        </div>
-    </div>
-
-            <section id="view-admin" class="view-section">
-                <h1><i class="fas fa-cogs" style="color:var(--neon-orange); margin-right:10px; filter:drop-shadow(0 0 8px rgba(255,170,0,0.4));"></i> Configuracion</h1>
-                <div style="display:grid; grid-template-columns: 1fr 1fr; gap:30px;">
-                    
-                    <div style="background:var(--panel); padding:30px; border-radius:12px; border:var(--border);">
-                        <h3 style="margin-bottom:20px;">Configuración de Precios</h3>
-                        <div style="max-height: 400px; overflow-y: auto; padding-right: 10px;">
-                            <h4 style="color:#aaa; border-bottom:1px solid #333; margin-bottom:15px;">Temporales</h4>
-                            <div class="form-grid">
-                                <div><label>Visita</label><input type="number" id="conf-visit"></div>
-                                <div><label>Semanal</label><input type="number" id="conf-weekly"></div>
-                                <div><label>Quincenal</label><input type="number" id="conf-biweekly"></div>
-                            </div>
-
-                            <h4 style="color:#aaa; border-bottom:1px solid #333; margin:15px 0;">Individuales</h4>
-                            <div class="form-grid">
-                                <div><label>Mensual</label><input type="number" id="conf-monthly"></div>
-                                <div><label>Estudiante</label><input type="number" id="conf-student"></div>
-                            </div>
-
-                            <h4 style="color:#aaa; border-bottom:1px solid #333; margin:15px 0;">Adelantados</h4>
-                            <div class="form-grid">
-                                <div><label>Trimestral</label><input type="number" id="conf-quarterly"></div>
-                                <div><label>Semestral</label><input type="number" id="conf-semiannual"></div>
-                                <div><label>Anual</label><input type="number" id="conf-annual"></div>
-                            </div>
-
-                            <h4 style="color:#aaa; border-bottom:1px solid #333; margin:15px 0;">Grupales</h4>
-                            <div class="form-grid">
-                                <div><label>Pareja</label><input type="number" id="conf-couple"></div>
-                                <div><label>Fam. (3 Pers)</label><input type="number" id="conf-family3"></div>
-                                <div><label>Fam. (4 Pers)</label><input type="number" id="conf-family4"></div>
-                            </div>
-                        </div>
-                        <button class="btn" style="width:100%; margin-top:20px;" onclick="app.saveConfig()">GUARDAR CAMBIOS</button>
-                        <p id="prices-meta" style="color:#ffaa00; font-size:0.75rem; margin-top:12px; text-align:center;">Sin cambios registrados aún.</p>
-                        <button class="btn btn-outline" style="width:100%; margin-top:12px; border-color:#4488ff; color:#4488ff;" onclick="app.forceUpdate()" title="Borra la caché y el service worker y recarga con el código más reciente">
-                            <i class="fas fa-sync-alt"></i> FORZAR ACTUALIZACIÓN (LIMPIAR CACHÉ)
-                        </button>
+            <!-- ===== FIADOS ===== -->
+            <section id="view-debts" class="view-section">
+                <header class="page-head">
+                    <div>
+                        <h1>Fiados</h1>
+                        <p class="page-sub">Socios que se llevaron productos o membresías a cuenta. Cobra cuando paguen.</p>
                     </div>
-                    
-                    <div style="background:var(--panel); padding:30px; border-radius:12px; border:var(--border);">
-                        <h3 style="margin-bottom:20px;">Gestión de Empleados</h3>
-                        <div class="form-grid" style="display:grid; grid-template-columns: 1fr; gap:10px;">
-                            <input type="text" id="emp-name" placeholder="Nombre Real">
-                            <input type="text" id="emp-user" placeholder="Usuario Login">
-                            <input type="password" id="emp-pass" placeholder="Contraseña">
-                            <select id="emp-role">
-                                <option value="staff">Staff</option>
-                                <option value="admin">Admin</option>
-                            </select>
-                            <button class="btn" onclick="app.registerEmployee()">REGISTRAR CUENTA</button>
-                        </div>
+                </header>
 
-                        <div style="margin-top:30px; border-top:1px solid #333; padding-top:10px;">
-                            <h4 style="margin-bottom:10px; color:#fff;">Lista de Colaboradores</h4>
-                            <div class="table-container" style="max-height: 250px; overflow-y:auto;">
-                                <table style="width:100%;">
-                                    <thead>
-                                        <tr>
-                                            <th>Nombre</th>
-                                            <th>Rol</th>
-                                            <th style="text-align:right;">Eliminar</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody id="employee-table-body"></tbody>
-                                </table>
-                            </div>
-                        </div>
-
+                <div class="stat-strip">
+                    <div class="stat-cell">
+                        <span class="kicker">Total por cobrar</span>
+                        <div id="debts-total" class="stat-num t-warn">$0</div>
                     </div>
+                    <div class="stat-cell">
+                        <span class="kicker">Fiados pendientes</span>
+                        <div id="debts-count" class="stat-num">0</div>
+                    </div>
+                </div>
+
+                <div class="table-container">
+                    <table>
+                        <thead>
+                            <tr><th>Fecha</th><th>Socio</th><th>Concepto</th><th class="t-right">Monto</th><th>Registró</th><th class="t-right">Cobrar con</th></tr>
+                        </thead>
+                        <tbody id="debts-table-body"></tbody>
+                    </table>
                 </div>
             </section>
 
+            <!-- ===== PAPELERA ===== -->
             <section id="view-trash" class="view-section">
-                <h1><i class="fas fa-trash-alt" style="color:var(--primary); margin-right:10px; filter:drop-shadow(0 0 8px rgba(255,0,60,0.4));"></i> Papelera de Reciclaje</h1>
-                <p style="color:#888; margin-top:-30px; margin-bottom:30px;">
-                    Registros eliminados del sistema. Pueden ser restaurados o eliminados permanentemente.
-                </p>
-                
-                <div style="display:flex; gap:15px; margin-bottom:20px;">
-                    <button id="btn-trash-members" class="btn active" onclick="app.setTrashView('members')">
-                        <i class="fas fa-users"></i> Socios
-                    </button>
-                    <button id="btn-trash-finances" class="btn btn-outline" onclick="app.setTrashView('finances')">
-                        <i class="fas fa-cash-register"></i> Finanzas
-                    </button>
+                <header class="page-head">
+                    <div>
+                        <h1>Papelera</h1>
+                        <p class="page-sub">Registros eliminados. Puedes restaurarlos o borrarlos para siempre.</p>
+                    </div>
+                </header>
+
+                <div class="seg-buttons">
+                    <button id="btn-trash-members" class="btn active" onclick="app.setTrashView('members')"><i class="fas fa-user-group"></i> Socios</button>
+                    <button id="btn-trash-finances" class="btn btn-outline" onclick="app.setTrashView('finances')"><i class="fas fa-wallet"></i> Finanzas</button>
                 </div>
 
                 <div class="table-container">
@@ -603,90 +439,108 @@
                                 <th>Nombre</th>
                                 <th>Código</th>
                                 <th>Eliminado por</th>
-                                <th>Fecha Elim.</th>
-                                <th style="text-align:right;">Acciones</th>
+                                <th>Fecha elim.</th>
+                                <th class="t-right">Acciones</th>
                             </tr>
                         </thead>
-                        <tbody id="trash-table-body">
-                            <!-- Los datos se cargarán aquí desde JS -->
-                        </tbody>
+                        <tbody id="trash-table-body"></tbody>
                     </table>
                 </div>
             </section>
 
-            <section id="view-dev" class="view-section">
-                <h1><i class="fas fa-terminal" style="color:var(--neon-green); margin-right:10px; filter:drop-shadow(0 0 8px rgba(0,255,65,0.5));"></i> Zona de Desarrollador</h1>
-                <div class="dev-tools">
-                    <div class="dev-card" style="border-left: 5px solid #ff003c;">
-                        <h3><i class="fas fa-bullhorn"></i> Centro de Notificaciones Globales</h3>
-                        <p>Enviar mensaje a todas las pantallas activas.</p>
-                        <textarea id="dev-broadcast-msg" placeholder="Escribe el mensaje..." style="width:100%; height:80px; background:#222; border:1px solid #444; color:#fff; padding:10px; border-radius:4px; resize:none; margin-bottom:10px;"></textarea>
-                        <button class="btn" onclick="app.dev.broadcast()">Lanzar Comunicado</button>
+            <!-- ===== SISTEMA (ADMIN) ===== -->
+            <section id="view-admin" class="view-section">
+                <header class="page-head">
+                    <div>
+                        <h1>Sistema</h1>
+                        <p class="page-sub">Precios de los planes y cuentas del personal.</p>
                     </div>
+                </header>
 
-                    <div class="dev-card">
-                        <h3><i class="fas fa-paint-brush"></i>Customizacion</h3>
-                        <p>Personalizar el diseño y la interfaz de la aplicación.</p>
-                        <div class="form-group">
-                            <label>Color primario</label>
-                            <input type="color" id="dev-color-primary" onchange="app.dev.updateColor('--primary', this.value)">
+                <div class="admin-grid">
+                    <section class="panel">
+                        <header class="panel-head"><h2><i class="fas fa-tags"></i> Precios de planes</h2></header>
+
+                        <fieldset class="price-group">
+                            <legend>Temporales</legend>
+                            <div class="form-grid cols-3">
+                                <label class="field price-input"><span>Visita</span><input type="number" id="conf-visit" min="0"></label>
+                                <label class="field price-input"><span>Semanal</span><input type="number" id="conf-weekly" min="0"></label>
+                                <label class="field price-input"><span>Quincenal</span><input type="number" id="conf-biweekly" min="0"></label>
+                            </div>
+                        </fieldset>
+                        <fieldset class="price-group">
+                            <legend>Individuales</legend>
+                            <div class="form-grid cols-3">
+                                <label class="field price-input"><span>Mensual</span><input type="number" id="conf-monthly" min="0"></label>
+                                <label class="field price-input"><span>Estudiante</span><input type="number" id="conf-student" min="0"></label>
+                            </div>
+                        </fieldset>
+                        <fieldset class="price-group">
+                            <legend>Adelantados</legend>
+                            <div class="form-grid cols-3">
+                                <label class="field price-input"><span>Trimestral</span><input type="number" id="conf-quarterly" min="0"></label>
+                                <label class="field price-input"><span>Semestral</span><input type="number" id="conf-semiannual" min="0"></label>
+                                <label class="field price-input"><span>Anual</span><input type="number" id="conf-annual" min="0"></label>
+                            </div>
+                        </fieldset>
+                        <fieldset class="price-group">
+                            <legend>Grupales</legend>
+                            <div class="form-grid cols-3">
+                                <label class="field price-input"><span>Pareja</span><input type="number" id="conf-couple" min="0"></label>
+                                <label class="field price-input"><span>Familia (3)</span><input type="number" id="conf-family3" min="0"></label>
+                                <label class="field price-input"><span>Familia (4)</span><input type="number" id="conf-family4" min="0"></label>
+                            </div>
+                        </fieldset>
+
+                        <button class="btn btn-block" onclick="app.saveConfig()"><i class="fas fa-floppy-disk"></i> Guardar precios</button>
+                        <p id="prices-meta" class="meta-note">Sin cambios registrados aún.</p>
+                        <button class="btn btn-ghost btn-block" onclick="app.forceUpdate()" title="Borra la caché y el service worker y recarga con el código más reciente"><i class="fas fa-rotate"></i> Forzar actualización (limpiar caché)</button>
+                    </section>
+
+                    <section class="panel">
+                        <header class="panel-head"><h2><i class="fas fa-id-badge"></i> Personal</h2></header>
+                        <div class="stack">
+                            <label class="field"><span>Nombre real</span><input type="text" id="emp-name" placeholder="Ej. Laura Méndez"></label>
+                            <div class="form-grid">
+                                <label class="field"><span>Usuario</span><input type="text" id="emp-user" placeholder="Usuario para entrar" autocomplete="off"></label>
+                                <label class="field"><span>Contraseña</span><input type="password" id="emp-pass" placeholder="Contraseña" autocomplete="new-password"></label>
+                            </div>
+                            <label class="field"><span>Rol</span>
+                                <select id="emp-role">
+                                    <option value="staff">Staff</option>
+                                    <option value="admin">Admin</option>
+                                </select>
+                            </label>
+                            <button class="btn" onclick="app.registerEmployee()"><i class="fas fa-user-plus"></i> Registrar cuenta</button>
                         </div>
-                    </div>
-                    <div class="dev-card">
-                        <h3><i class="fas fa-sign-out-alt"></i> Forzar cierre de usuario</h3>
-                        <p>Cerrar la sesión de forma remota de un usuario específico del personal o administrador.</p>
-                        <div class="form-group">
-                            <label>Elegir usuario</label>
-                            <select id="dev-user-list"></select>
+
+                        <h3 class="sub-head">Colaboradores</h3>
+                        <div class="table-container compact">
+                            <table>
+                                <thead>
+                                    <tr>
+                                        <th>Nombre</th>
+                                        <th>Usuario</th>
+                                        <th class="t-right"></th>
+                                    </tr>
+                                </thead>
+                                <tbody id="employee-table-body"></tbody>
+                            </table>
                         </div>
-                        <button class="btn" onclick="app.dev.forceLogout()">Forzar cierre</button>
-                    </div>
-                    <div class="dev-card">
-                        <h3><i class="fas fa-eye-slash"></i> Esconder secciones del sistema</h3>
-                        <p>Controla qué secciones son visibles para un usuario específico.</p>
-                        <div class="form-group">
-                            <label>Elegir usuario</label>
-                            <select id="dev-hide-user-list" onchange="app.dev.loadUserSections()"></select>
-                        </div>
-                        <div id="dev-sections-checklist" class="form-group" style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
-                            <!-- Checkboxes will be dynamically inserted here -->
-                        </div>
-                        <button class="btn" onclick="app.dev.saveHiddenSections()">Guardar Visibilidad</button>
-                    </div>
-                    <div class="dev-card">
-                        <h3><i class="fas fa-exclamation-triangle"></i> Zona de Peligro</h3>
-                        <p>Estas accion no se pueden deshacer. Proceda con precaución</p>
-                        <button class="btn btn-danger" onclick="app.dev.fullReset()">Aplicacion completamente Reseteada :C</button>
-                    </div>
+                    </section>
                 </div>
             </section>
 
-            <section id="view-history" class="view-section">
-                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px;">
-                    <h1><i class="fas fa-history" style="color:var(--neon-orange); margin-right:10px; filter:drop-shadow(0 0 8px rgba(255,170,0,0.4));"></i> Historial de Acciones</h1>
-                    <button class="btn btn-danger admin-only" onclick="app.clearHistory()">
-                        <i class="fas fa-eraser"></i> Limpiar Historial
-                    </button>
-                </div>
-                <div class="table-container">
-                    <table>
-                        <thead>
-                            <tr>
-                                <th>Fecha / Hora</th>
-                                <th>Tipo de Acción</th>
-                                <th>Descripción</th>
-                                <th>Usuario</th>
-                            </tr>
-                        </thead>
-                        <tbody id="history-table-body"></tbody>
-                    </table>
-                </div>
-            </section>
-
+            <!-- ===== ESTADÍSTICAS ===== -->
             <section id="view-stats" class="view-section">
-                <h1><i class="fas fa-chart-bar" style="color:var(--primary); margin-right:10px; filter:drop-shadow(0 0 8px rgba(255,0,60,0.4));"></i> Estadisticas Profesionales</h1>
+                <header class="page-head">
+                    <div>
+                        <h1>Estadísticas</h1>
+                        <p class="page-sub">Visitas, ingresos y socios del periodo elegido.</p>
+                    </div>
+                </header>
 
-                <!-- CONTROLES / FILTROS -->
                 <div class="stats-controls">
                     <div class="stats-period-btns">
                         <button class="stats-period-btn" data-period="thisMonth" onclick="app.setStatsPeriod('thisMonth', event)">Este mes</button>
@@ -699,397 +553,563 @@
                     </div>
                     <div class="stats-range-tools">
                         <input type="date" id="stats-start" class="stats-date" title="Desde">
-                        <span style="color:#666;">—</span>
+                        <span class="sep">—</span>
                         <input type="date" id="stats-end" class="stats-date" title="Hasta">
                         <button class="stats-mini-btn" onclick="app.setStatsPeriod('custom', event)"><i class="fas fa-filter"></i> Aplicar</button>
                         <button class="stats-mini-btn" onclick="app.exportStatsCSV()"><i class="fas fa-file-csv"></i> CSV</button>
-                        <button class="stats-mini-btn" onclick="window.print()"><i class="fas fa-print"></i></button>
+                        <button class="stats-mini-btn" onclick="window.print()" title="Imprimir"><i class="fas fa-print"></i></button>
                     </div>
                 </div>
-                <div style="color:#666; font-size:0.8rem; margin:0 0 20px;">Periodo mostrado: <span id="stats-range-label" style="color:var(--primary); font-weight:600;">—</span></div>
+                <p class="stats-range">Periodo mostrado: <span id="stats-range-label">—</span></p>
 
-                <!-- KPIs DEL PERIODO -->
                 <div class="stats-kpi-grid" id="stats-kpis"></div>
 
-                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 30px;">
-                    <div class="table-container" style="padding: 20px; background: #111;">
-                        <h3 style="font-family: 'Rajdhani'; margin-bottom: 20px; color: var(--primary);">Afluencia Horaria</h3>
-                        <canvas id="chart-visits"></canvas>
-                    </div>
-                    <div class="table-container" style="padding: 20px; background: #111;">
-                        <h3 style="font-family: 'Rajdhani'; margin-bottom: 20px; color: var(--neon-green);">Rendimiento Mensual</h3>
-                        <canvas id="chart-finances"></canvas>
-                    </div>
+                <div class="charts-grid">
+                    <div class="chart-card"><h3>Afluencia por hora</h3><canvas id="chart-visits"></canvas></div>
+                    <div class="chart-card"><h3>Rendimiento mensual</h3><canvas id="chart-finances"></canvas></div>
+                    <div class="chart-card"><h3>Distribución por plan</h3><canvas id="chart-plans"></canvas></div>
+                    <div class="chart-card"><h3>Visitas por día de la semana</h3><canvas id="chart-day-of-week"></canvas></div>
+                    <div class="chart-card"><h3>Nuevos socios por mes</h3><canvas id="chart-reg-trend"></canvas></div>
+                    <div class="chart-card"><h3>Tendencia de ingresos</h3><canvas id="chart-rev-trend"></canvas></div>
+                    <div class="chart-card"><h3>Ingresos por método de pago</h3><canvas id="chart-payment"></canvas></div>
+                    <div class="chart-card"><h3>Ingresos por tipo</h3><canvas id="chart-income-type"></canvas></div>
+                    <div class="chart-card"><h3>Gastos por categoría</h3><canvas id="chart-expense-cat"></canvas></div>
+                    <div class="chart-card"><h3>Ingresos vs gastos del periodo</h3><canvas id="chart-inc-exp"></canvas></div>
                 </div>
-                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 30px; margin-top: 30px;">
-                    <div class="table-container" style="padding: 20px; background: #111;">
-                        <h3 style="font-family: 'Rajdhani'; margin-bottom: 20px; color: var(--neon-orange);">Distribucion por Plan</h3>
-                        <canvas id="chart-plans"></canvas>
+            </section>
+
+            <!-- ===== REPORTES ===== -->
+            <section id="view-reports" class="view-section">
+                <header class="page-head">
+                    <div>
+                        <h1>Reportes</h1>
+                        <p class="page-sub">Elige una categoría para generar e imprimir un reporte.</p>
                     </div>
-                    <div class="table-container" style="padding: 20px; background: #111;">
-                        <h3 style="font-family: 'Rajdhani'; margin-bottom: 20px; color: var(--primary);">Visitas por Dia de la Semana</h3>
-                        <canvas id="chart-day-of-week"></canvas>
+                </header>
+
+                <div class="report-grid">
+                    <div class="report-card" onclick="app.reports.show('members')">
+                        <i class="fas fa-user-group"></i>
+                        <h3>Socios</h3>
+                        <p>Listas de socios por estado: activos, inactivos o por vencer.</p>
+                        <span class="report-go">Generar <i class="fas fa-arrow-right"></i></span>
                     </div>
-                </div>
-                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 30px; margin-top: 30px;">
-                    <div class="table-container" style="padding: 20px; background: #111;">
-                        <h3 style="font-family: 'Rajdhani'; margin-bottom: 20px; color: var(--neon-orange);">Tendencia de Nuevos Socios</h3>
-                        <canvas id="chart-reg-trend"></canvas>
+                    <div class="report-card" onclick="app.reports.show('finances')">
+                        <i class="fas fa-wallet"></i>
+                        <h3>Financieros</h3>
+                        <p>Ingresos, gastos y balance neto entre dos fechas.</p>
+                        <span class="report-go">Generar <i class="fas fa-arrow-right"></i></span>
                     </div>
-                    <div class="table-container" style="padding: 20px; background: #111;">
-                        <h3 style="font-family: 'Rajdhani'; margin-bottom: 20px; color: var(--neon-green);">Tendencia de Ingresos</h3>
-                        <canvas id="chart-rev-trend"></canvas>
+                    <div class="report-card" onclick="app.reports.show('store')">
+                        <i class="fas fa-bag-shopping"></i>
+                        <h3>Tienda</h3>
+                        <p>Inventario actual y productos con poco stock.</p>
+                        <span class="report-go">Generar <i class="fas fa-arrow-right"></i></span>
                     </div>
-                </div>
-                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 30px; margin-top: 30px;">
-                    <div class="table-container" style="padding: 20px; background: #111;">
-                        <h3 style="font-family: 'Rajdhani'; margin-bottom: 20px; color: var(--neon-green);">Ingresos por Método de Pago</h3>
-                        <canvas id="chart-payment"></canvas>
-                    </div>
-                    <div class="table-container" style="padding: 20px; background: #111;">
-                        <h3 style="font-family: 'Rajdhani'; margin-bottom: 20px; color: var(--primary);">Ingresos por Tipo</h3>
-                        <canvas id="chart-income-type"></canvas>
-                    </div>
-                </div>
-                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 30px; margin-top: 30px;">
-                    <div class="table-container" style="padding: 20px; background: #111;">
-                        <h3 style="font-family: 'Rajdhani'; margin-bottom: 20px; color: var(--neon-orange);">Gastos por Categoría</h3>
-                        <canvas id="chart-expense-cat"></canvas>
-                    </div>
-                    <div class="table-container" style="padding: 20px; background: #111;">
-                        <h3 style="font-family: 'Rajdhani'; margin-bottom: 20px; color: var(--neon-green);">Ingresos vs Gastos (periodo)</h3>
-                        <canvas id="chart-inc-exp"></canvas>
+                    <div class="report-card" onclick="app.reports.show('activity')">
+                        <i class="fas fa-clock-rotate-left"></i>
+                        <h3>Actividad</h3>
+                        <p>Historial de accesos de socios en un rango de fechas.</p>
+                        <span class="report-go">Generar <i class="fas fa-arrow-right"></i></span>
                     </div>
                 </div>
             </section>
 
-            <section id="view-reports" class="view-section">
-                <h1>Centro de Reportes</h1>
-                <p style="color:#888; margin-top:-30px; margin-bottom:30px;">
-                    Seleccione una categoría para generar un reporte detallado.
-                </p>
-
-                <div class="report-grid">
-                    <div class="report-card" onclick="app.reports.show('members')">
-                        <i class="fas fa-users"></i>
-                        <h3>Socios</h3>
-                        <p>Generar listas de socios por estado (activos, inactivos, por vencer).</p>
+            <!-- ===== HISTORIAL ===== -->
+            <section id="view-history" class="view-section">
+                <header class="page-head">
+                    <div>
+                        <h1>Historial</h1>
+                        <p class="page-sub">Todo lo que se ha hecho en el sistema, del más reciente al más antiguo.</p>
                     </div>
-                    <div class="report-card" onclick="app.reports.show('finances')">
-                        <i class="fas fa-cash-register"></i>
-                        <h3>Financieros</h3>
-                        <p>Crear reportes de ingresos, gastos y balance neto por fechas.</p>
+                    <div class="page-actions">
+                        <button class="btn btn-outline admin-only" onclick="app.clearHistory()"><i class="fas fa-eraser"></i> Limpiar historial</button>
                     </div>
-                    <div class="report-card" onclick="app.reports.show('store')">
-                        <i class="fas fa-store"></i>
-                        <h3>Tienda</h3>
-                        <p>Ver reportes de ventas, resumen de productos y niveles de inventario.</p>
-                    </div>
-                    <div class="report-card" onclick="app.reports.show('activity')">
-                        <i class="fas fa-history"></i>
-                        <h3>Actividad</h3>
-                        <p>Consultar historial de accesos de socios y registros del sistema.</p>
-                    </div>
+                </header>
+                <div class="table-container">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Fecha / hora</th>
+                                <th>Acción</th>
+                                <th>Descripción</th>
+                                <th>Usuario</th>
+                            </tr>
+                        </thead>
+                        <tbody id="history-table-body"></tbody>
+                    </table>
                 </div>
+            </section>
 
-                <div id="report-generator-modal" class="modal">
-                    <div class="modal-content" style="max-width: 800px;">
-                        <div id="report-generator-content">
-                            <!-- El contenido del generador de reportes se inyectará aquí -->
+            <!-- ===== DEV TOOLS ===== -->
+            <section id="view-dev" class="view-section">
+                <header class="page-head">
+                    <div>
+                        <h1>Herramientas</h1>
+                        <p class="page-sub">Zona de desarrollador.</p>
+                    </div>
+                </header>
+                <div class="dev-tools">
+                    <div class="dev-card">
+                        <h3><i class="fas fa-bullhorn"></i> Comunicado global</h3>
+                        <p>Muestra un mensaje en todas las pantallas abiertas. Envíalo vacío para quitarlo.</p>
+                        <textarea id="dev-broadcast-msg" placeholder="Escribe el mensaje…"></textarea>
+                        <button class="btn" onclick="app.dev.broadcast()">Enviar comunicado</button>
+                    </div>
+                    <div class="dev-card">
+                        <h3><i class="fas fa-palette"></i> Color de la marca</h3>
+                        <p>Cambia el color principal de la interfaz en todos los equipos.</p>
+                        <div class="form-group">
+                            <label for="dev-color-primary">Color primario</label>
+                            <input type="color" id="dev-color-primary" value="#E5261F" onchange="app.dev.updateColor('--primary', this.value)">
                         </div>
-                        <div style="text-align: right; margin-top: 20px;">
-                            <button class="btn" onclick="app.reports.printCurrent()">IMPRIMIR</button>
-                            <button class="btn btn-outline" onclick="app.closeModal('report-generator-modal')">Cerrar</button>
+                    </div>
+                    <div class="dev-card">
+                        <h3><i class="fas fa-arrow-right-from-bracket"></i> Forzar cierre de sesión</h3>
+                        <p>Cierra a distancia la sesión de un usuario del personal o administrador.</p>
+                        <div class="form-group">
+                            <label for="dev-user-list">Usuario</label>
+                            <select id="dev-user-list"></select>
                         </div>
+                        <button class="btn" onclick="app.dev.forceLogout()">Forzar cierre</button>
+                    </div>
+                    <div class="dev-card">
+                        <h3><i class="fas fa-eye-slash"></i> Ocultar secciones</h3>
+                        <p>Controla qué secciones puede ver cada usuario.</p>
+                        <div class="form-group">
+                            <label for="dev-hide-user-list">Usuario</label>
+                            <select id="dev-hide-user-list" onchange="app.dev.loadUserSections()"></select>
+                        </div>
+                        <div id="dev-sections-checklist"></div>
+                        <button class="btn" onclick="app.dev.saveHiddenSections()">Guardar visibilidad</button>
+                    </div>
+                    <div class="dev-card danger-zone">
+                        <h3><i class="fas fa-triangle-exclamation"></i> Zona de peligro</h3>
+                        <p>Estas acciones no se pueden deshacer. Procede con precaución.</p>
+                        <button class="btn btn-danger" onclick="app.dev.fullReset()">Resetear toda la aplicación</button>
                     </div>
                 </div>
             </section>
         </main>
+
+        <!-- ===== NAVEGACIÓN (dock inferior) ===== -->
+        <div class="dock-backdrop" onclick="document.querySelector('.sidebar').classList.remove('show')"></div>
+        <nav class="sidebar dock" aria-label="Secciones">
+            <div class="dock-sheet-head">
+                <h2>Menú</h2>
+                <button class="modal-x" onclick="document.querySelector('.sidebar').classList.remove('show')" aria-label="Cerrar menú"><i class="fas fa-xmark"></i></button>
+            </div>
+            <div class="dock-group dock-main">
+                <button class="nav-btn active" data-dock="main" onclick="app.nav('dashboard')"><i class="fas fa-house"></i><span>Tablero</span></button>
+                <button class="nav-btn" data-dock="main" onclick="app.nav('members')"><i class="fas fa-user-group"></i><span>Socios</span></button>
+                <button class="nav-btn" onclick="app.nav('logros')"><i class="fas fa-fire-flame-curved"></i><span>Logros</span></button>
+                <button class="nav-btn" data-dock="main" onclick="app.nav('store')"><i class="fas fa-bag-shopping"></i><span>Tienda</span></button>
+                <button class="nav-btn" data-dock="main" onclick="app.nav('finances')"><i class="fas fa-wallet"></i><span>Finanzas</span></button>
+                <button class="nav-btn" onclick="app.nav('debts')"><i class="fas fa-hand-holding-dollar"></i><span>Fiados</span></button>
+                <button class="nav-btn" onclick="app.nav('trash')"><i class="fas fa-trash-can"></i><span>Papelera</span></button>
+            </div>
+            <div id="admin-menu" class="dock-group" style="display:none;">
+                <button class="nav-btn" onclick="app.nav('admin')"><i class="fas fa-sliders"></i><span>Sistema</span></button>
+                <button class="nav-btn" onclick="app.nav('stats')"><i class="fas fa-chart-line"></i><span>Estadísticas</span></button>
+                <button class="nav-btn" onclick="app.nav('reports')"><i class="fas fa-file-lines"></i><span>Reportes</span></button>
+                <button class="nav-btn" onclick="app.nav('history')"><i class="fas fa-clock-rotate-left"></i><span>Historial</span></button>
+            </div>
+            <div id="dev-menu" class="dock-group" style="display:none;">
+                <button class="nav-btn" onclick="app.nav('dev')"><i class="fas fa-code"></i><span>Dev</span></button>
+            </div>
+            <button id="hamburger-menu" class="dock-more" aria-label="Más secciones"><i class="fas fa-grip"></i><span>Más</span></button>
+        </nav>
     </div>
 
+    <!-- ============ MODALES ============ -->
+
+    <!-- Nuevo socio -->
     <div id="modal-register" class="modal">
-        <div class="modal-content" style="width: 600px; max-height: 90vh; display: flex; flex-direction: column;">
-            <div style="flex-shrink: 0;">
-                <span class="close-btn" onclick="app.closeModal('modal-register')"><i class="fas fa-times"></i></span>
-                <h2 style="color:var(--primary); margin-bottom:20px;">Nuevo Registro</h2>
-                
-                <div style="display: flex; gap: 15px; margin-bottom: 15px;">
-                    <div style="flex: 2;">
-                        <label>Plan a contratar:</label>
-                        <select id="reg-plan" onchange="app.handlePlanChange()">
-                            <optgroup label="Temporales">
-                                <option value="visit">Visita</option>
-                                <option value="weekly">Semanal</option>
-                                <option value="biweekly">Quincenal</option>
-                            </optgroup>
-                            <optgroup label="Individuales">
-                                <option value="monthly" selected>Mensual</option>
-                                <option value="student">Estudiante</option>
-                            </optgroup>
-                            <optgroup label="Adelantados">
-                                <option value="quarterly">Trimestral</option>
-                                <option value="semiannual">Semestral</option>
-                                <option value="annual">Anual</option>
-                            </optgroup>
-                            <optgroup label="Grupales">
-                                <option value="couple">Pareja</option>
-                <option value="family3">Fam. (3 Pers)</option>
-                <option value="family4">Fam. (4 Pers)</option>
-                            </optgroup>
-                        </select>
-                    </div>
-                    <div id="family-size-container" style="flex: 1; display: none;">
-                        <label>Personas:</label>
-                        <select id="reg-family-size" onchange="app.renderRegisterForms()">
-                            <option value="3">3</option>
-                            <option value="4">4</option>
-                        </select>
-                    </div>
+        <div class="modal-content w-lg modal-flex">
+            <header class="modal-head">
+                <div>
+                    <span class="modal-kicker">Alta de socio</span>
+                    <h2>Nuevo registro</h2>
                 </div>
+                <button class="modal-x" onclick="app.closeModal('modal-register')" aria-label="Cerrar"><i class="fas fa-xmark"></i></button>
+            </header>
+
+            <div class="reg-plan-row">
+                <label class="field grow">
+                    <span>Plan a contratar</span>
+                    <select id="reg-plan" onchange="app.handlePlanChange()">
+                        <optgroup label="Temporales">
+                            <option value="visit">Visita</option>
+                            <option value="weekly">Semanal</option>
+                            <option value="biweekly">Quincenal</option>
+                        </optgroup>
+                        <optgroup label="Individuales">
+                            <option value="monthly" selected>Mensual</option>
+                            <option value="student">Estudiante</option>
+                        </optgroup>
+                        <optgroup label="Adelantados">
+                            <option value="quarterly">Trimestral</option>
+                            <option value="semiannual">Semestral</option>
+                            <option value="annual">Anual</option>
+                        </optgroup>
+                        <optgroup label="Grupales">
+                            <option value="couple">Pareja</option>
+                            <option value="family3">Fam. (3 Pers)</option>
+                            <option value="family4">Fam. (4 Pers)</option>
+                        </optgroup>
+                    </select>
+                </label>
+                <label class="field" id="family-size-container" style="display:none;">
+                    <span>Personas</span>
+                    <select id="reg-family-size" onchange="app.renderRegisterForms()">
+                        <option value="3">3</option>
+                        <option value="4">4</option>
+                    </select>
+                </label>
             </div>
 
-            <!-- Scrollable Container for Member Forms -->
-            <div id="reg-members-container" style="overflow-y: auto; padding-right: 5px; margin-bottom: 15px; flex-grow: 1;">
-                <!-- Forms generated by JS -->
-            </div>
+            <div id="reg-members-container" class="modal-scroll"></div>
 
-            <div style="flex-shrink: 0; border-top: 1px solid #333; padding-top: 15px;">
-                <div style="margin-bottom:15px;">
-                    <label style="color:#aaa; display:block; margin-bottom:5px;">Método de Pago:</label>
-                    <div style="display:flex; gap:15px;">
-                        <label style="display:flex; align-items:center; gap:5px; cursor:pointer; color:#fff;">
-                            <input type="radio" name="reg-payment-method" value="Efectivo" checked> Efectivo
-                        </label>
-                        <label style="display:flex; align-items:center; gap:5px; cursor:pointer; color:#fff;">
-                            <input type="radio" name="reg-payment-method" value="Tarjeta"> Tarjeta
-                        </label>
-                        <label style="display:flex; align-items:center; gap:5px; cursor:pointer; color:#fff;">
-                            <input type="radio" name="reg-payment-method" value="Fiado"> Fiado
-                        </label>
+            <footer class="modal-foot">
+                <div class="field">
+                    <span>Método de pago</span>
+                    <div class="seg-radio">
+                        <label class="seg-opt"><input type="radio" name="reg-payment-method" value="Efectivo" checked><span><i class="fas fa-money-bill-wave"></i> Efectivo</span></label>
+                        <label class="seg-opt"><input type="radio" name="reg-payment-method" value="Tarjeta"><span><i class="fas fa-credit-card"></i> Tarjeta</span></label>
+                        <label class="seg-opt"><input type="radio" name="reg-payment-method" value="Fiado"><span><i class="fas fa-hand-holding-dollar"></i> Fiado</span></label>
                     </div>
                 </div>
-
-                <div style="display:flex; justify-content:space-between; font-size:1.2rem; margin-bottom:15px;">
-                    <span>TOTAL A PAGAR:</span>
-                    <span id="reg-price-display" style="color:var(--neon-green); font-weight:bold;">$0</span>
+                <div class="total-row">
+                    <span class="kicker">Total a pagar</span>
+                    <strong id="reg-price-display">$0</strong>
                 </div>
-                <button class="btn btn-success" style="width:100%" onclick="app.confirmRegister()">REGISTRAR Y COBRAR</button>
-            </div>
+                <button class="btn btn-lg btn-block" onclick="app.confirmRegister()"><i class="fas fa-check"></i> Registrar y cobrar</button>
+            </footer>
         </div>
     </div>
 
+    <!-- Ficha del socio -->
     <div id="modal-member-detail" class="modal">
-    <div class="modal-content" style="width: 600px; border-top: 5px solid var(--primary);">
-        <div id="member-info-content"></div>
-        <div id="member-loyalty-content"></div>
-        <div id="member-debts-content"></div>
+        <div class="modal-content w-lg member-modal">
+            <button class="modal-x floating" onclick="app.closeModal('modal-member-detail')" aria-label="Cerrar"><i class="fas fa-xmark"></i></button>
+            <div id="member-info-content"></div>
+            <div id="member-loyalty-content"></div>
+            <div id="member-debts-content"></div>
 
-        <div class="form-grid" style="margin-top:20px; border-top:1px solid #222; padding-top:20px;">
-            <div>
-                <label style="color:#666; font-size:0.8rem;">Nombre Completo</label>
-                <input type="text" id="edit-name">
+            <div class="form-grid md-edit">
+                <label class="field"><span>Nombre completo</span><input type="text" id="edit-name"></label>
+                <label class="field"><span>Teléfono</span><input type="text" id="edit-phone" inputmode="tel"></label>
             </div>
-            <div>
-                <label style="color:#666; font-size:0.8rem;">Teléfono</label>
-                <input type="text" id="edit-phone">
+
+            <div class="md-actions">
+                <button class="btn btn-outline admin-only" onclick="app.saveMemberEdit()"><i class="fas fa-floppy-disk"></i> Guardar datos</button>
+                <button class="btn btn-outline" onclick="app.showMemberCard()"><i class="fas fa-id-card"></i> Ver tarjeta</button>
+                <button class="btn" onclick="app.openRenewModal()"><i class="fas fa-rotate"></i> Renovar</button>
+            </div>
+
+            <section class="md-visits">
+                <header>
+                    <h3>Historial de accesos</h3>
+                    <span id="visit-counter-badge" class="pill">0 visitas</span>
+                </header>
+                <div id="member-visits-list" class="visit-list"></div>
+            </section>
+
+            <footer class="modal-actions split">
+                <button class="btn btn-danger-ghost admin-only" onclick="app.deleteMember()"><i class="fas fa-trash-can"></i> Eliminar socio</button>
+                <button class="btn btn-outline" onclick="app.closeModal('modal-member-detail')">Cerrar</button>
+            </footer>
+        </div>
+    </div>
+
+    <!-- Tarjeta de socio -->
+    <div id="modal-card" class="modal">
+        <div class="modal-content card-modal">
+            <div id="member-card-ui" class="member-card-design"></div>
+            <div class="modal-actions">
+                <button class="btn" onclick="app.downloadMemberCard()"><i class="fas fa-download"></i> Descargar</button>
+                <button class="btn btn-outline" onclick="app.closeModal('modal-card')">Volver</button>
             </div>
         </div>
+    </div>
 
-        <div style="display:flex; gap:10px; margin-top:20px;">
-            <button class="btn admin-only" onclick="app.saveMemberEdit()" style="flex:1">Actualizar Datos</button>
-            <button class="btn btn-outline" onclick="app.showMemberCard()" style="flex:1"><i class="fas fa-id-card"></i> Ver Tarjeta</button>
-            <button class="btn" style="background:#ffaa00; flex:1; color:#000;" onclick="app.openRenewModal()"><i class="fas fa-sync"></i> Renovar</button>
-        </div>
-
-        <div style="margin-top:30px; background: #0a0a0a; padding: 15px; border-radius: 8px; border: 1px solid #222;">
-            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px;">
-                <h4 style="color:var(--primary); text-transform:uppercase; font-size:0.9rem; margin:0;">Historial de Accesos</h4>
-                <span id="visit-counter-badge" style="background:var(--primary); color:white; padding:2px 10px; border-radius:10px; font-size:0.8rem; font-weight:bold;">0 VISITAS</span>
-            </div>
-            <div id="member-visits-list" style="max-height:150px; overflow-y:auto; font-size:0.85rem; color:#aaa;">
+    <!-- Renovación -->
+    <div id="modal-renew-pro" class="modal">
+        <div class="modal-content w-md renew-modal">
+            <header class="modal-head">
+                <div>
+                    <span class="modal-kicker">Cobro</span>
+                    <h2 class="renew-title">Renovación de plan</h2>
                 </div>
-        </div>
+                <button class="modal-x" onclick="app.closeModal('modal-renew-pro')" aria-label="Cerrar"><i class="fas fa-xmark"></i></button>
+            </header>
+            <div id="renew-member-info" class="renew-member-info"></div>
 
-        <div style="margin-top:20px; display:flex; gap:10px; border-top: 1px solid #222; padding-top: 20px;">
-            <button class="btn admin-only" style="background:#333; flex:1" onclick="app.deleteMember()">
-                <i class="fas fa-trash-alt"></i> Eliminar Socio
-            </button>
-            <button class="btn btn-outline" style="flex:1" onclick="app.closeModal('modal-member-detail')">Cerrar</button>
-        </div>
-    </div>
-</div>
-
-<div id="modal-card" class="modal">
-    <div class="modal-content" style="background:transparent; border:none; box-shadow:none; width:450px;">
-        <div id="member-card-ui" class="member-card-design">
+            <div id="renew-mode-toggle" class="renew-mode-toggle" style="display:none;">
+                <span class="renew-section-label">Tipo de renovación</span>
+                <div class="renew-mode-options">
+                    <label class="renew-mode-option">
+                        <input type="radio" name="renew-mode" value="group" checked onchange="app.onRenewModeChange()">
+                        <span class="rm-text"><strong>Grupal</strong><small>Renovar a todos</small></span>
+                    </label>
+                    <label class="renew-mode-option">
+                        <input type="radio" name="renew-mode" value="individual" onchange="app.onRenewModeChange()">
+                        <span class="rm-text"><strong>Individual</strong><small>Solo una persona</small></span>
+                    </label>
+                </div>
             </div>
-        <div style="display:flex; gap:10px; margin-top:20px;">
-            <button class="btn" style="flex:1" onclick="app.downloadMemberCard()"><i class="fas fa-download"></i> Descargar</button>
-            <button class="btn btn-outline" style="flex:1" onclick="app.closeModal('modal-card')">Volver</button>
-        </div>
-    </div>
-</div>
 
-<div id="modal-badge-members" class="modal">
-    <div class="modal-content" style="width: 620px; max-width:95vw; max-height:90vh; display:flex; flex-direction:column; border-top:5px solid var(--neon-orange); font-family:'Rajdhani',sans-serif;">
-        <h2 id="badge-modal-title" style="margin-bottom:4px; display:flex; align-items:center; gap:10px;"></h2>
-        <p id="badge-modal-sub" style="color:#888; font-size:0.9rem; margin-bottom:16px; letter-spacing:0.3px;"></p>
-        <div id="badge-members-list" style="overflow-y:auto; flex:1;"></div>
-        <button class="btn btn-outline" style="margin-top:16px;" onclick="app.closeModal('modal-badge-members')">Cerrar</button>
-    </div>
-</div>
-
-<div id="modal-loyalty" class="modal">
-    <div class="modal-content" style="width: 760px; max-width:95vw; max-height:90vh; display:flex; flex-direction:column; border-top:5px solid var(--neon-orange);">
-        <h2 style="font-family:'Rajdhani'; margin-bottom:6px;"><i class="fas fa-medal" style="color:var(--neon-orange);"></i> Antigüedad y Lealtad</h2>
-        <p style="color:#888; font-size:0.85rem; margin-bottom:14px;">Socios ordenados del más antiguo al más nuevo. Toca un socio para ver su ficha.</p>
-        <div style="display:flex; align-items:center; gap:10px; flex-wrap:wrap; margin-bottom:14px;">
-            <label style="color:#aaa; font-size:0.9rem;">Mostrar socios con más de</label>
-            <input type="number" id="loyalty-min-months" value="0" min="0" style="width:80px; text-align:center;" oninput="app.renderLoyalty()">
-            <label style="color:#aaa; font-size:0.9rem;">meses</label>
-            <span id="loyalty-summary" style="margin-left:auto; color:#ccc; font-size:0.85rem;"></span>
-        </div>
-        <div class="table-container" style="overflow-y:auto; flex:1;">
-            <table style="width:100%;">
-                <thead>
-                    <tr><th>#</th><th>Nombre</th><th>Código</th><th>Antigüedad</th><th title="Racha actual"><i class="fas fa-fire"></i> Racha</th><th title="Mejor racha"><i class="fas fa-trophy"></i> Mejor</th></tr>
-                </thead>
-                <tbody id="loyalty-table-body"></tbody>
-            </table>
-        </div>
-        <button class="btn btn-outline" style="margin-top:16px;" onclick="app.closeModal('modal-loyalty')">Cerrar</button>
-    </div>
-</div>
-
-<div id="modal-renew-pro" class="modal">
-    <div class="modal-content renew-modal">
-        <h2 class="renew-title"><i class="fas fa-sync-alt"></i> RENOVACIÓN DE PLAN</h2>
-        <div id="renew-member-info" class="renew-member-info"></div>
-
-        <div id="renew-mode-toggle" class="renew-mode-toggle" style="display:none;">
-            <label class="renew-section-label">Tipo de Renovación</label>
-            <div class="renew-mode-options">
-                <label class="renew-mode-option">
-                    <input type="radio" name="renew-mode" value="group" checked onchange="app.onRenewModeChange()">
-                    <span class="rm-text"><strong>Grupal</strong><small>Renovar a todos</small></span>
-                </label>
-                <label class="renew-mode-option">
-                    <input type="radio" name="renew-mode" value="individual" onchange="app.onRenewModeChange()">
-                    <span class="rm-text"><strong>Individual</strong><small>Solo una persona</small></span>
-                </label>
+            <div id="renew-individual-picker" class="renew-picker" style="display:none;">
+                <div class="renew-picker-label"><i class="fas fa-user-check"></i> ¿Quién renueva?</div>
+                <div id="renew-individual-list" class="renew-member-list"></div>
+                <div class="renew-warning">
+                    <i class="fas fa-triangle-exclamation"></i>
+                    <span>Al renovar individualmente, el grupo se disuelve. Los demás conservan su fecha de vencimiento y quedan como socios independientes.</span>
+                </div>
             </div>
-        </div>
 
-        <div id="renew-individual-picker" class="renew-picker" style="display:none;">
-            <div class="renew-picker-label"><i class="fas fa-user-check"></i> ¿Quién renueva?</div>
-            <div id="renew-individual-list" class="renew-member-list"></div>
-            <div class="renew-warning">
-                <i class="fas fa-exclamation-triangle"></i>
-                <span>Al renovar individualmente, el grupo se disolverá. El resto de los integrantes conservarán su fecha de vencimiento y quedarán como miembros independientes.</span>
+            <label class="field">
+                <span>Nuevo plan</span>
+                <select id="renew-plan-select" onchange="app.updateRenewPrice()">
+                    <optgroup label="Temporales">
+                        <option value="visit">Visita</option>
+                        <option value="weekly">Semanal</option>
+                        <option value="biweekly">Quincenal</option>
+                    </optgroup>
+                    <optgroup label="Individuales">
+                        <option value="monthly" selected>Mensual</option>
+                        <option value="student">Estudiante</option>
+                    </optgroup>
+                    <optgroup label="Adelantados">
+                        <option value="quarterly">Trimestral</option>
+                        <option value="semiannual">Semestral</option>
+                        <option value="annual">Anual</option>
+                    </optgroup>
+                    <optgroup label="Grupales">
+                        <option value="couple">Pareja</option>
+                        <option value="family3">Fam. (3 Pers)</option>
+                        <option value="family4">Fam. (4 Pers)</option>
+                    </optgroup>
+                </select>
+            </label>
+
+            <div class="renew-payment-section">
+                <span class="renew-section-label">Método de pago</span>
+                <div class="seg-radio">
+                    <label class="seg-opt"><input type="radio" name="renew-payment-method" value="Efectivo" checked><span><i class="fas fa-money-bill-wave"></i> Efectivo</span></label>
+                    <label class="seg-opt"><input type="radio" name="renew-payment-method" value="Tarjeta"><span><i class="fas fa-credit-card"></i> Tarjeta</span></label>
+                    <label class="seg-opt"><input type="radio" name="renew-payment-method" value="Fiado"><span><i class="fas fa-hand-holding-dollar"></i> Fiado</span></label>
+                </div>
             </div>
+
+            <div class="renew-total-box">
+                <span class="renew-total-label">Total a pagar</span>
+                <h2 id="renew-price-display">$0</h2>
+            </div>
+
+            <button class="btn btn-lg btn-block renew-confirm-btn" onclick="app.confirmRenewal()"><i class="fas fa-check"></i> Confirmar pago y renovar</button>
+            <button class="btn btn-ghost btn-block renew-cancel-btn" style="margin-top:8px;" onclick="app.closeModal('modal-renew-pro')">Cancelar</button>
         </div>
+    </div>
 
-        <label class="renew-section-label">Seleccionar Nuevo Plan</label>
-        <select id="renew-plan-select" onchange="app.updateRenewPrice()">
-            <optgroup label="Temporales">
-                <option value="visit">Visita</option>
-                <option value="weekly">Semanal</option>
-                <option value="biweekly">Quincenal</option>
-            </optgroup>
-            <optgroup label="Individuales">
-                <option value="monthly" selected>Mensual</option>
-                <option value="student">Estudiante</option>
-            </optgroup>
-            <optgroup label="Adelantados">
-                <option value="quarterly">Trimestral</option>
-                <option value="semiannual">Semestral</option>
-                <option value="annual">Anual</option>
-            </optgroup>
-            <optgroup label="Grupales">
-                <option value="couple">Pareja</option>
-                <option value="family3">Fam. (3 Pers)</option>
-                <option value="family4">Fam. (4 Pers)</option>
-            </optgroup>
-        </select>
-
-        <div class="renew-total-box">
-            <span class="renew-total-label">Total a Pagar</span>
-            <h2 id="renew-price-display">$0</h2>
-        </div>
-
-        <div class="renew-payment-section">
-            <label class="renew-section-label">Método de Pago</label>
-            <div class="renew-payment-options">
-                <label class="renew-payment-option">
-                    <input type="radio" name="renew-payment-method" value="Efectivo" checked>
-                    <i class="fas fa-money-bill-wave"></i> Efectivo
-                </label>
-                <label class="renew-payment-option">
-                    <input type="radio" name="renew-payment-method" value="Tarjeta">
-                    <i class="fas fa-credit-card"></i> Tarjeta
-                </label>
-                <label class="renew-payment-option">
-                    <input type="radio" name="renew-payment-method" value="Fiado">
-                    <i class="fas fa-hand-holding-usd"></i> Fiado
-                </label>
+    <!-- Antigüedad -->
+    <div id="modal-loyalty" class="modal">
+        <div class="modal-content w-xl modal-flex">
+            <header class="modal-head">
+                <div>
+                    <span class="modal-kicker">Lealtad</span>
+                    <h2>Antigüedad de socios</h2>
+                    <p class="modal-desc">Del más antiguo al más nuevo. Toca un socio para ver su ficha.</p>
+                </div>
+                <button class="modal-x" onclick="app.closeModal('modal-loyalty')" aria-label="Cerrar"><i class="fas fa-xmark"></i></button>
+            </header>
+            <div class="loyalty-filter">
+                <label for="loyalty-min-months">Mostrar socios con más de</label>
+                <input type="number" id="loyalty-min-months" value="0" min="0" oninput="app.renderLoyalty()">
+                <span>meses</span>
+                <span id="loyalty-summary"></span>
+            </div>
+            <div class="table-container">
+                <table>
+                    <thead>
+                        <tr><th>#</th><th>Nombre</th><th>Código</th><th>Antigüedad</th><th title="Racha actual">Racha</th><th title="Mejor racha">Récord</th></tr>
+                    </thead>
+                    <tbody id="loyalty-table-body"></tbody>
+                </table>
             </div>
         </div>
-
-        <button class="btn renew-confirm-btn" onclick="app.confirmRenewal()"><i class="fas fa-check-circle"></i> Confirmar Pago y Renovar</button>
-        <button class="btn btn-outline renew-cancel-btn" onclick="app.closeModal('modal-renew-pro')">Cancelar</button>
     </div>
-</div>
 
+    <!-- Quién tiene una insignia -->
+    <div id="modal-badge-members" class="modal">
+        <div class="modal-content w-lg">
+            <header class="modal-head">
+                <div>
+                    <span class="modal-kicker">Insignia</span>
+                    <h2 id="badge-modal-title"></h2>
+                </div>
+                <button class="modal-x" onclick="app.closeModal('modal-badge-members')" aria-label="Cerrar"><i class="fas fa-xmark"></i></button>
+            </header>
+            <p id="badge-modal-sub"></p>
+            <div id="badge-members-list"></div>
+        </div>
+    </div>
+
+    <!-- Producto -->
     <div id="modal-product" class="modal">
-        <div class="modal-content">
-            <span class="close-btn" onclick="app.closeModal('modal-product')"><i class="fas fa-times"></i></span>
-            <h2>Gestión Producto</h2>
-            <input type="text" id="prod-name" placeholder="Nombre del Producto">
-            <div style="display:flex; gap:10px;">
-                <input type="number" id="prod-price" placeholder="Precio ($)">
-                <input type="number" id="prod-stock" placeholder="Stock Inicial">
+        <div class="modal-content w-sm">
+            <header class="modal-head">
+                <div>
+                    <span class="modal-kicker">Tienda</span>
+                    <h2 id="prod-modal-title">Nuevo producto</h2>
+                </div>
+                <button class="modal-x" onclick="app.closeModal('modal-product')" aria-label="Cerrar"><i class="fas fa-xmark"></i></button>
+            </header>
+            <div class="modal-body">
+                <label class="field"><span>Nombre del producto</span><input type="text" id="prod-name"></label>
+                <div class="form-grid">
+                    <label class="field price-input"><span>Precio de venta</span><input type="number" id="prod-price" min="0"></label>
+                    <label class="field"><span>Stock inicial</span><input type="number" id="prod-stock" min="0"></label>
+                </div>
+                <label class="field"><span>Categoría</span>
+                    <select id="prod-category">
+                        <option value="Suplementos">Suplementos</option>
+                        <option value="Bebidas">Bebidas</option>
+                        <option value="Snacks">Snacks</option>
+                        <option value="Accesorios">Accesorios</option>
+                        <option value="Ropa">Ropa</option>
+                    </select>
+                </label>
+                <label class="field"><span>Icono</span>
+                    <select id="prod-icon">
+                        <option value="fa-prescription-bottle">Bote / polvo</option>
+                        <option value="fa-bottle-water">Bebida</option>
+                        <option value="fa-cookie-bite">Snack / barrita</option>
+                        <option value="fa-shirt">Ropa</option>
+                        <option value="fa-dumbbell">Accesorio</option>
+                    </select>
+                </label>
             </div>
-            <select id="prod-icon">
-                <option value="fa-bottle-water">Botella</option>
-                <option value="fa-cookie-bite">Snack/Barra</option>
-                <option value="fa-tshirt">Ropa</option>
-                <option value="fa-dumbbell">Equipo</option>
-                <option value="fa-box">Otro</option>
-            </select>
-            <button class="btn" style="width:100%" onclick="app.saveProduct()">GUARDAR PRODUCTO</button>
+            <div class="modal-actions">
+                <button class="btn btn-outline" onclick="app.closeModal('modal-product')">Cancelar</button>
+                <button class="btn" onclick="app.saveProduct()">Guardar producto</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Gasto -->
+    <div id="modal-expense" class="modal">
+        <div class="modal-content w-sm">
+            <header class="modal-head">
+                <div>
+                    <span class="modal-kicker">Finanzas</span>
+                    <h2>Registrar gasto</h2>
+                    <p class="modal-desc">Salidas de dinero: luz, agua, renta, pagos…</p>
+                </div>
+                <button class="modal-x" onclick="app.closeModal('modal-expense')" aria-label="Cerrar"><i class="fas fa-xmark"></i></button>
+            </header>
+            <div class="modal-body">
+                <label class="field"><span>Categoría</span>
+                    <select id="exp-category">
+                        <option value="Renta">Renta</option>
+                        <option value="Nómina">Nómina / Sueldos</option>
+                        <option value="Luz">Luz</option>
+                        <option value="Agua">Agua</option>
+                        <option value="Internet">Internet / Teléfono</option>
+                        <option value="Mantenimiento">Mantenimiento</option>
+                        <option value="Limpieza">Limpieza</option>
+                        <option value="Equipo">Equipo / Máquinas</option>
+                        <option value="Insumos">Insumos / Tienda</option>
+                        <option value="Marketing">Marketing</option>
+                        <option value="Impuestos">Impuestos</option>
+                        <option value="Otro" selected>Otro</option>
+                    </select>
+                </label>
+                <label class="field"><span>Descripción</span><input type="text" id="exp-desc" placeholder="Ej. Pago de luz"></label>
+                <label class="field price-input"><span>Monto</span><input type="number" id="exp-amount" placeholder="0" min="0"></label>
+            </div>
+            <div class="modal-actions">
+                <button class="btn btn-danger btn-lg" onclick="app.saveExpense()"><i class="fas fa-minus"></i> Registrar salida</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Generador de reportes -->
+    <div id="report-generator-modal" class="modal">
+        <div class="modal-content w-xl">
+            <button class="modal-x floating" onclick="app.closeModal('report-generator-modal')" aria-label="Cerrar"><i class="fas fa-xmark"></i></button>
+            <div id="report-generator-content"></div>
+            <div class="modal-actions split">
+                <button class="btn btn-outline" onclick="app.closeModal('report-generator-modal')">Cerrar</button>
+                <button class="btn" onclick="app.reports.printCurrent()"><i class="fas fa-print"></i> Imprimir</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Confirmar -->
+    <div id="modal-confirm" class="modal">
+        <div class="modal-content">
+            <h2 id="confirm-title">Confirmar</h2>
+            <p id="confirm-message">¿Estás seguro?</p>
+            <div class="modal-actions">
+                <button id="confirm-cancel" class="btn btn-outline">Cancelar</button>
+                <button id="confirm-ok" class="btn">Aceptar</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Pedir dato -->
+    <div id="modal-prompt" class="modal">
+        <div class="modal-content">
+            <h2 id="prompt-title">Dato</h2>
+            <p id="prompt-message">Ingresa un valor:</p>
+            <input type="text" id="prompt-input">
+            <div class="modal-actions">
+                <button id="prompt-cancel" class="btn btn-outline">Cancelar</button>
+                <button id="prompt-ok" class="btn">Aceptar</button>
+            </div>
         </div>
     </div>
 
     <div id="printable-area"></div>
 
-    <div id="modal-confirm" class="modal">
-        <div class="modal-content">
-            <h2 id="confirm-title">Confirmar</h2>
-            <p id="confirm-message">Estas Seguro?</p>
-            <div style="display:flex; gap:10px; margin-top:20px;">
-                <button id="confirm-ok" class="btn">OK</button>
-                <button id="confirm-cancel" class="btn btn-outline">Cancelar</button>
-            </div>
-        </div>
-    </div>
-
-    <div id="modal-prompt" class="modal">
-        <div class="modal-content">
-            <h2 id="prompt-title">Prompt</h2>
-            <p id="prompt-message">Ingresa un valor:</p>
-            <input type="text" id="prompt-input">
-            <div style="display:flex; gap:10px; margin-top:20px;">
-                <button id="prompt-ok" class="btn">OK</button>
-                <button id="prompt-cancel" class="btn btn-outline">Cancelar</button>
-            </div>
-        </div>
-    </div>
-
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
     <script type="module" src="firebase-config.js"></script>
-    <script type="module" src="script.js?v=24"></script>
+    <script type="module" src="script.js?v=30"></script>
     <script>
+        // Fecha y hora en la barra superior + menú "Más" (celular)
+        (function () {
+            var dateEl = document.getElementById('topbar-date');
+            var dashDate = document.getElementById('dash-date');
+            function tick() {
+                var now = new Date();
+                var date = now.toLocaleDateString('es-MX', { weekday: 'long', day: 'numeric', month: 'long' });
+                var time = now.toLocaleTimeString('es-MX', { hour: '2-digit', minute: '2-digit' });
+                if (dateEl) dateEl.innerHTML = '<span>' + date + '</span><b>' + time + '</b>';
+                if (dashDate) dashDate.textContent = date;
+            }
+            tick();
+            setInterval(tick, 15000);
+
+            // Mientras el menú "Más" está abierto: fondo oscuro y sin scroll detrás
+            var sidebar = document.querySelector('.sidebar');
+            if (sidebar && 'MutationObserver' in window) {
+                new MutationObserver(function () {
+                    document.body.classList.toggle('dock-open', sidebar.classList.contains('show'));
+                }).observe(sidebar, { attributes: true, attributeFilter: ['class'] });
+            }
+
+            // Enter/espacio en las tarjetas del tablero
+            document.addEventListener('keydown', function (e) {
+                var t = e.target;
+                if ((e.key === 'Enter' || e.key === ' ') && t && t.classList && t.classList.contains('score')) {
+                    e.preventDefault();
+                    t.click();
+                }
+            });
+        })();
+
         if ('serviceWorker' in navigator) {
             // ¿Ya había un SW controlando la pagina? Si no, es la primera visita
             // (no recargar). Si si, un cambio de controlador = actualizacion real.
