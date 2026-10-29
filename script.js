@@ -623,6 +623,7 @@ window.app = {
             return `rgba(${parseInt(h.slice(0, 2), 16)},${parseInt(h.slice(2, 4), 16)},${parseInt(h.slice(4, 6), 16)},${a})`;
         };
         Chart.defaults.font.family = tok('--font', 'system-ui, sans-serif');
+        Chart.defaults.font.size = 13;
         Chart.defaults.color = tickColor;
 
         const { start, end } = this.getStatsRange();
