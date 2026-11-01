@@ -6,24 +6,28 @@
     <title>Atlas Gym · Kiosco</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@62..125,100..900&family=Cormorant+Garamond:ital,wght@1,600;1,700&family=Creepster&family=IBM+Plex+Mono:wght@400;500;600&display=swap">
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@62..125,100..900&family=Cormorant+Garamond:ital,wght@1,600;1,700&family=Creepster&family=Great+Vibes&family=IBM+Plex+Mono:wght@400;500;600&display=swap">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <link rel="stylesheet" href="style.css?v=35">
+    <link rel="stylesheet" href="style.css?v=39">
     <meta name="theme-color" content="#0F0F10">
 </head>
 <body class="kiosk-body">
     <script>
-        // Tema de temporada: Día de Muertos se activa solo del 15 de octubre al 2 de noviembre.
+        // Temas de temporada (se cambian solos según la fecha del equipo):
+        //   15 oct – 3 nov   -> Día de Muertos
+        //   15 nov – 28 dic  -> Navidad
+        //   el resto del año -> kiosco normal
         // Para probar o cambiar a mano:
-        //   kiosk.html?tema=muertos    -> Día de Muertos
-        //   kiosk.html?tema=halloween  -> Halloween (guardado, se usa solo si se pide)
-        //   kiosk.html?tema=normal     -> sin tema
+        //   kiosk.html?tema=muertos | navidad | halloween | normal
         (function () {
             var tema = new URLSearchParams(location.search).get('tema');
-            var hoy = new Date(), mes = hoy.getMonth(), dia = hoy.getDate();
-            var temporada = (mes === 9 && dia >= 15) || (mes === 10 && dia <= 2);
-            var activo = (tema === 'muertos' || tema === 'halloween') ? tema
-                : (tema !== 'normal' && temporada ? 'muertos' : null);
+            var hoy = new Date();
+            var fecha = (hoy.getMonth() + 1) * 100 + hoy.getDate(); // ej. 15 de octubre = 1015
+            var auto = null;
+            if (fecha >= 1015 && fecha <= 1103) auto = 'muertos';
+            else if (fecha >= 1115 && fecha <= 1228) auto = 'navidad';
+            var activo = ['muertos', 'navidad', 'halloween'].indexOf(tema) >= 0 ? tema
+                : (tema !== 'normal' ? auto : null);
             if (activo) document.body.classList.add('theme-' + activo);
         })();
     </script>
@@ -293,6 +297,248 @@
         })();
     </script>
 
+    <!-- Decoración de Navidad (solo visible con el tema activo) -->
+    <div class="xm-decor" aria-hidden="true">
+        <svg width="0" height="0" style="position:absolute">
+            <defs>
+                <radialGradient id="xm-snow-grad" cx=".38" cy=".32" r=".8">
+                    <stop offset="0" stop-color="#FFFFFF"/>
+                    <stop offset="1" stop-color="#CFE0E9"/>
+                </radialGradient>
+                <symbol id="xm-flake-shape" viewBox="-10 -10 20 20">
+                    <path d="M0 -9L0 9M7.8 -4.5L-7.8 4.5M7.8 4.5L-7.8 -4.5M0 -5.5L-2.4 -7.6M0 -5.5L2.4 -7.6M0 5.5L-2.4 7.6M0 5.5L2.4 7.6M4.8 -2.8L5.3 -6M4.8 -2.8L7.6 -1.5M-4.8 2.8L-5.3 6M-4.8 2.8L-7.6 1.5M4.8 2.8L7.6 1.5M4.8 2.8L5.3 6M-4.8 -2.8L-7.6 -1.5M-4.8 -2.8L-5.3 -6"/>
+                </symbol>
+            </defs>
+        </svg>
+
+        <div class="xm-stars"></div>
+
+        <!-- Guirnalda de foquitos: la arma el script de abajo -->
+        <div class="xm-lights"></div>
+
+        <!-- Nieve cayendo: la arma el script de abajo -->
+        <div class="xm-snowfall"></div>
+
+        <!-- Árbol de Navidad con estrella, esferas, lucecitas y regalos -->
+        <svg class="xm-tree" viewBox="0 -16 240 376">
+            <g class="xm-halo" stroke="#F2D27A" stroke-width="1.6" stroke-linecap="round" opacity=".7">
+                <path d="M120 -6V-14M137 1L143 -5M144 18H152M137 35L143 41M103 35L97 41M96 18H88M103 1L97 -5"/>
+            </g>
+            <path d="M108 296H132V330H108Z" fill="#5A3A22"/>
+            <path d="M120 150L218 300C184 314 56 314 22 300Z" fill="#1A5A36"/>
+            <path d="M120 150L218 300C190 311 150 313 120 313Z" fill="rgba(0,0,0,.18)"/>
+            <path d="M120 98L198 230C168 241 72 241 42 230Z" fill="#1F6B3F"/>
+            <path d="M120 98L198 230C176 238 146 241 120 241Z" fill="rgba(0,0,0,.16)"/>
+            <path d="M120 54L178 164C156 172 84 172 62 164Z" fill="#247A47"/>
+            <path d="M120 54L178 164C160 170 140 172 120 172Z" fill="rgba(0,0,0,.15)"/>
+            <path d="M120 22L158 100C142 106 98 106 82 100Z" fill="#2B8A50"/>
+            <path d="M120 22L158 100C146 104 132 106 120 106Z" fill="rgba(0,0,0,.14)"/>
+            <g stroke="#EEF5F8" stroke-width="5" fill="none" stroke-linecap="round" opacity=".85">
+                <path d="M30 302C60 312 180 312 210 302"/>
+                <path d="M50 231C78 240 162 240 190 231"/>
+                <path d="M68 165C90 172 150 172 172 165"/>
+                <path d="M88 101C104 106 136 106 152 101"/>
+            </g>
+            <g stroke="#F2D27A" stroke-width="3" fill="none" stroke-linecap="round" stroke-dasharray=".1 6">
+                <path d="M98 66C110 78 130 78 144 70"/>
+                <path d="M76 132C104 152 140 150 166 136"/>
+                <path d="M58 198C96 224 150 222 184 202"/>
+                <path d="M42 262C90 294 156 292 202 266"/>
+            </g>
+            <g class="xm-balls">
+                <circle class="xm-ball" cx="112" cy="82" r="4.5" fill="#D62839"/>
+                <circle class="xm-ball" cx="131" cy="92" r="4" fill="#E9B949" style="animation-delay:-1s"/>
+                <circle class="xm-ball" cx="98" cy="134" r="6" fill="#D62839" style="animation-delay:-2s"/>
+                <circle class="xm-ball" cx="143" cy="148" r="5.5" fill="#E9B949" style="animation-delay:-.4s"/>
+                <circle class="xm-ball" cx="78" cy="158" r="5.5" fill="#E9B949" style="animation-delay:-1.6s"/>
+                <circle class="xm-ball" cx="162" cy="160" r="5" fill="#F4F1E8" style="animation-delay:-2.6s"/>
+                <circle class="xm-ball" cx="86" cy="200" r="7" fill="#E9B949" style="animation-delay:-.8s"/>
+                <circle class="xm-ball" cx="130" cy="214" r="6.5" fill="#D62839" style="animation-delay:-2.2s"/>
+                <circle class="xm-ball" cx="170" cy="220" r="6" fill="#F4F1E8" style="animation-delay:-1.2s"/>
+                <circle class="xm-ball" cx="60" cy="226" r="6" fill="#D62839" style="animation-delay:-3s"/>
+                <circle class="xm-ball" cx="56" cy="284" r="7.5" fill="#D62839" style="animation-delay:-.2s"/>
+                <circle class="xm-ball" cx="100" cy="272" r="7" fill="#E9B949" style="animation-delay:-1.8s"/>
+                <circle class="xm-ball" cx="146" cy="290" r="7" fill="#D62839" style="animation-delay:-2.8s"/>
+                <circle class="xm-ball" cx="190" cy="282" r="6.5" fill="#E9B949" style="animation-delay:-1.4s"/>
+            </g>
+            <g fill="#FFFFFF" opacity=".55">
+                <circle cx="110.5" cy="80.5" r="1.4"/><circle cx="96" cy="132" r="1.8"/><circle cx="141" cy="146" r="1.6"/>
+                <circle cx="84" cy="197.5" r="2"/><circle cx="128" cy="211.5" r="1.9"/><circle cx="54" cy="281" r="2.1"/>
+                <circle cx="98" cy="269.5" r="2"/><circle cx="144" cy="287.5" r="2"/><circle cx="188" cy="279.5" r="1.9"/>
+            </g>
+            <g fill="#FFE7A3">
+                <circle class="xm-light" cx="104" cy="58" r="2.2"/>
+                <circle class="xm-light" cx="134" cy="62" r="2.2" style="animation-delay:-.5s"/>
+                <circle class="xm-light" cx="90" cy="120" r="2.2" style="animation-delay:-1.1s"/>
+                <circle class="xm-light" cx="150" cy="124" r="2.2" style="animation-delay:-.3s"/>
+                <circle class="xm-light" cx="114" cy="152" r="2.2" style="animation-delay:-1.4s"/>
+                <circle class="xm-light" cx="70" cy="182" r="2.2" style="animation-delay:-.8s"/>
+                <circle class="xm-light" cx="124" cy="186" r="2.2" style="animation-delay:-.2s"/>
+                <circle class="xm-light" cx="176" cy="190" r="2.2" style="animation-delay:-1.2s"/>
+                <circle class="xm-light" cx="104" cy="230" r="2.2" style="animation-delay:-.6s"/>
+                <circle class="xm-light" cx="152" cy="236" r="2.2" style="animation-delay:-1.5s"/>
+                <circle class="xm-light" cx="50" cy="252" r="2.2" style="animation-delay:-.9s"/>
+                <circle class="xm-light" cx="80" cy="256" r="2.2" style="animation-delay:-.1s"/>
+                <circle class="xm-light" cx="172" cy="256" r="2.2" style="animation-delay:-1s"/>
+                <circle class="xm-light" cx="122" cy="288" r="2.2" style="animation-delay:-.4s"/>
+                <circle class="xm-light" cx="202" cy="296" r="2.2" style="animation-delay:-1.3s"/>
+            </g>
+            <path class="xm-star" d="M120 2L124.1 12.3L135.2 13.1L126.7 20.2L129.4 30.9L120 25L110.6 30.9L113.3 20.2L104.8 13.1L115.9 12.3Z" fill="#F2D27A" stroke="#FFF3C4" stroke-width="1"/>
+            <!-- Regalos (uno con forma de mancuerna) -->
+            <rect x="48" y="298" width="46" height="40" rx="2" fill="#B3202F"/>
+            <rect x="68" y="298" width="6" height="40" fill="#F2D27A"/>
+            <rect x="48" y="314" width="46" height="6" fill="#F2D27A"/>
+            <path d="M71 298C62 286 54 292 62 298ZM71 298C80 286 88 292 80 298Z" fill="#F2D27A"/>
+            <rect x="148" y="306" width="42" height="32" rx="2" fill="#D9A93F"/>
+            <rect x="166" y="306" width="6" height="32" fill="#B3202F"/>
+            <rect x="148" y="318" width="42" height="6" fill="#B3202F"/>
+            <path d="M169 306C161 295 154 300 161 306ZM169 306C177 295 184 300 177 306Z" fill="#B3202F"/>
+            <rect x="92" y="318" width="12" height="26" rx="3" fill="#1F6B3F"/>
+            <rect x="136" y="318" width="12" height="26" rx="3" fill="#1F6B3F"/>
+            <rect x="102" y="328" width="36" height="6" rx="2" fill="#2B8A50"/>
+            <rect x="92" y="329" width="12" height="3" fill="#F2D27A"/>
+            <rect x="136" y="329" width="12" height="3" fill="#F2D27A"/>
+            <path d="M120 330C113 321 107 326 114 331ZM120 330C127 321 133 326 126 331Z" fill="#D62839"/>
+        </svg>
+
+        <!-- Muñeco de nieve: hace curl con la mancuerna y saluda cuando entra un socio -->
+        <svg class="xm-snowman" viewBox="0 -10 200 310">
+            <g class="xm-arm-l">
+                <path d="M64 140L18 140" stroke="#5A3A22" stroke-width="5" stroke-linecap="round"/>
+                <path d="M32 140L25 130M38 140L32 150" stroke="#5A3A22" stroke-width="3" stroke-linecap="round"/>
+                <rect x="12" y="126" width="6" height="28" rx="2" fill="#9AA3AC"/>
+                <rect x="6" y="119" width="18" height="9" rx="2" fill="#2C3138"/>
+                <rect x="6" y="152" width="18" height="9" rx="2" fill="#2C3138"/>
+            </g>
+            <g class="xm-arm-r">
+                <path d="M136 138L176 104" stroke="#5A3A22" stroke-width="5" stroke-linecap="round"/>
+                <path d="M162 116L164 102M166 112L180 112" stroke="#5A3A22" stroke-width="3" stroke-linecap="round"/>
+                <circle cx="178" cy="101" r="8" fill="#C8102E"/>
+            </g>
+            <circle cx="100" cy="230" r="62" fill="url(#xm-snow-grad)"/>
+            <circle cx="100" cy="142" r="45" fill="url(#xm-snow-grad)"/>
+            <circle cx="100" cy="74" r="33" fill="url(#xm-snow-grad)"/>
+            <g fill="#1E2228">
+                <circle cx="100" cy="128" r="3.6"/><circle cx="100" cy="146" r="3.6"/><circle cx="100" cy="164" r="3.6"/>
+                <circle cx="100" cy="206" r="4"/><circle cx="100" cy="230" r="4"/>
+                <circle cx="89" cy="68" r="3.4"/><circle cx="111" cy="68" r="3.4"/>
+                <circle cx="87" cy="88" r="1.8"/><circle cx="93" cy="91.5" r="1.8"/><circle cx="100" cy="92.5" r="1.8"/><circle cx="107" cy="91.5" r="1.8"/><circle cx="113" cy="88" r="1.8"/>
+            </g>
+            <circle cx="80" cy="80" r="5" fill="rgba(240,120,120,.35)"/>
+            <circle cx="120" cy="80" r="5" fill="rgba(240,120,120,.35)"/>
+            <path d="M100 75L131 81L100 85Z" fill="#F08A24"/>
+            <path d="M66 100C84 113 116 113 134 100L136 112C118 126 82 126 64 112Z" fill="#C8102E"/>
+            <path d="M80 109L83 121M96 112L97 124M112 111L111 123M126 106L123 118" stroke="#F4F1E8" stroke-width="3" stroke-linecap="round" opacity=".9"/>
+            <path d="M114 116L124 156L110 158L104 118Z" fill="#A80D26"/>
+            <path d="M111 158V165M116 157V164M121 156V163" stroke="#A80D26" stroke-width="2.5" stroke-linecap="round"/>
+            <path d="M68 58C68 26 132 26 132 58Z" fill="#C8102E"/>
+            <rect x="64" y="50" width="72" height="12" rx="6" fill="#F4F1E8"/>
+            <circle cx="100" cy="25" r="9" fill="#F4F1E8"/>
+        </svg>
+
+        <!-- Suelo nevado -->
+        <svg class="xm-ground" viewBox="0 0 1000 100" preserveAspectRatio="none">
+            <path d="M0 52C120 26 240 44 360 36C500 26 600 52 720 40C840 28 920 38 1000 32V100H0Z" fill="#D7E5EC"/>
+            <path d="M0 68C150 50 300 64 450 56C620 48 760 66 1000 54V100H0Z" fill="#EEF5F8"/>
+        </svg>
+    </div>
+    <script>
+        // Arma la guirnalda de foquitos y la nieve solo con el tema de Navidad
+        (function () {
+            if (!document.body.classList.contains('theme-navidad')) return;
+            function rnd(a, b) { return a + Math.random() * (b - a); }
+            var angosto = window.innerWidth < 600;
+
+            // Guirnalda: varios tramos colgando, con foquitos sobre la curva
+            var tramos = angosto ? 2 : (window.innerWidth < 1000 ? 3 : 4);
+            var porTramo = angosto ? 5 : 7;
+            var caida = angosto ? 16 : 22; // px que cuelga cada tramo en el centro
+            var colores = ['#FF4D4D', '#FFD166', '#4CD787', '#FFF4D6', '#5BC0FF'];
+            var cable = '', focos = '', n = 0;
+            for (var t = 0; t < tramos; t++) {
+                var x0 = t * 1000 / tramos, x1 = (t + 1) * 1000 / tramos;
+                cable += 'M' + x0.toFixed(1) + ' 6Q' + ((x0 + x1) / 2).toFixed(1) + ' ' + (6 + 2 * caida) + ' ' + x1.toFixed(1) + ' 6';
+                for (var j = 0; j < porTramo; j++) {
+                    var u = (j + 0.5) / porTramo;
+                    var x = (x0 + u * (x1 - x0)) / 10;          // %
+                    var y = 6 + 4 * caida * u * (1 - u);        // px
+                    focos += '<i class="xm-bulb" style="left:' + x.toFixed(2) + '%;top:' + y.toFixed(1) + 'px;--c:' +
+                        colores[n % colores.length] + ';--r:' + rnd(-10, 10).toFixed(0) + 'deg;--t:' + rnd(1.2, 2.4).toFixed(2) +
+                        's;--delay:-' + rnd(0, 2.4).toFixed(2) + 's"></i>';
+                    n++;
+                }
+            }
+            document.querySelector('.xm-lights').innerHTML =
+                '<svg viewBox="0 0 1000 64" preserveAspectRatio="none"><path class="xm-wire" d="' + cable + '"/></svg>' + focos;
+
+            // Nieve: copitos suaves y algunos copos de cristal más grandes
+            var nieve = '', total = angosto ? 28 : 46;
+            for (var k = 0; k < total; k++) {
+                nieve += '<div class="xm-flake" style="--x:' + rnd(0, 100).toFixed(1) + '%;--d:' + rnd(9, 18).toFixed(1) +
+                    's;--delay:-' + rnd(0, 18).toFixed(1) + 's"><i style="--s:' + rnd(3, 8).toFixed(1) + 'px;--o:' +
+                    rnd(0.45, 0.95).toFixed(2) + ';--f:' + rnd(2.2, 4.2).toFixed(1) + 's"></i></div>';
+            }
+            for (var g = 0; g < (angosto ? 4 : 7); g++) {
+                nieve += '<div class="xm-flake" style="--x:' + rnd(0, 100).toFixed(1) + '%;--d:' + rnd(16, 26).toFixed(1) +
+                    's;--delay:-' + rnd(0, 26).toFixed(1) + 's"><svg class="xm-crystal" viewBox="-10 -10 20 20" style="--s:' +
+                    rnd(14, 26).toFixed(0) + 'px;--f:' + rnd(7, 12).toFixed(1) + 's"><use href="#xm-flake-shape"/></svg></div>';
+            }
+            document.querySelector('.xm-snowfall').innerHTML = nieve;
+        })();
+    </script>
+
+    <!-- Decoración del kiosco normal (solo cuando no hay tema de temporada) -->
+    <div class="nm-decor" aria-hidden="true">
+        <div class="nm-stars"></div>
+        <div class="nm-shoot"></div>
+        <div class="nm-shoot nm-shoot-2"></div>
+        <div class="nm-glow nm-glow-a"></div>
+        <div class="nm-glow nm-glow-b"></div>
+        <!-- "ATLAS GYM" gigante en contorno, desplazándose despacio -->
+        <div class="nm-bigword"><div class="nm-bigword-track"><span>Atlas Gym · Atlas Gym · </span><span>Atlas Gym · Atlas Gym · </span></div></div>
+        <!-- Globo terráqueo de líneas girando (el mundo que carga Atlas) con dos órbitas y sus cometas -->
+        <svg class="nm-globe" viewBox="-150 -150 300 300">
+            <g class="nm-orbits">
+                <path class="nm-ring" d="M-140 0a140 34 0 1 0 280 0a140 34 0 1 0 -280 0" transform="rotate(-6)"/>
+                <path class="nm-comet" pathLength="1000" d="M-140 0a140 34 0 1 0 280 0a140 34 0 1 0 -280 0" transform="rotate(-6)"/>
+                <path class="nm-ring" d="M-126 0a126 50 0 1 0 252 0a126 50 0 1 0 -252 0" transform="rotate(32)"/>
+                <path class="nm-comet nm-comet-2" pathLength="1000" d="M-126 0a126 50 0 1 0 252 0a126 50 0 1 0 -252 0" transform="rotate(32)"/>
+            </g>
+            <circle r="96"/>
+            <ellipse cy="-62" rx="73" ry="9"/>
+            <ellipse cy="-32" rx="90" ry="12"/>
+            <ellipse cy="0" rx="96" ry="14"/>
+            <ellipse cy="32" rx="90" ry="12"/>
+            <ellipse cy="62" rx="73" ry="9"/>
+            <ellipse class="nm-mer" rx="96" ry="96"/>
+            <ellipse class="nm-mer" rx="96" ry="96" style="animation-delay:-2.5s"/>
+            <ellipse class="nm-mer" rx="96" ry="96" style="animation-delay:-5s"/>
+            <ellipse class="nm-mer" rx="96" ry="96" style="animation-delay:-7.5s"/>
+            <ellipse class="nm-mer" rx="96" ry="96" style="animation-delay:-10s"/>
+            <ellipse class="nm-mer" rx="96" ry="96" style="animation-delay:-12.5s"/>
+            <ellipse class="nm-mer" rx="96" ry="96" style="animation-delay:-15s"/>
+            <ellipse class="nm-mer" rx="96" ry="96" style="animation-delay:-17.5s"/>
+        </svg>
+        <div class="nm-dust"></div>
+
+        <!-- Reloj y fecha -->
+        <div class="nm-clock"><b id="nm-time">--:--</b><span id="nm-date"></span></div>
+    </div>
+    <script>
+        // Polvo de luz del kiosco normal (solo si no hay tema de temporada)
+        (function () {
+            if (/\btheme-/.test(document.body.className)) return;
+            function rnd(a, b) { return a + Math.random() * (b - a); }
+            var html = '';
+            for (var i = 0; i < 20; i++) {
+                html += '<i style="--x:' + rnd(0, 100).toFixed(1) + '%;--d:' + rnd(14, 26).toFixed(1) + 's;--delay:-' +
+                    rnd(0, 26).toFixed(1) + 's;--s:' + rnd(2, 4.5).toFixed(1) + 'px;--dx:' + rnd(-5, 5).toFixed(1) + 'vw;--c:' +
+                    (Math.random() < 0.6 ? '#FF6B5E' : '#FFE9DC') + '"></i>';
+            }
+            document.querySelector('.nm-dust').innerHTML = html;
+        })();
+    </script>
+
     <!-- Confeti para el mes de cumpleaños -->
     <canvas id="confetti-canvas" style="position:fixed; top:0; left:0; width:100%; height:100%; pointer-events:none; z-index:9999;"></canvas>
 
@@ -319,7 +565,7 @@
             </div>
 
             <div>
-                <p class="kiosk-kicker"><span class="hw-hide dm-hide">Atlas Gym</span><span class="hw-show">¿Dulce o entreno?</span><span class="dm-show">Entrena hasta los huesos</span></p>
+                <p class="kiosk-kicker"><span class="hw-hide dm-hide xm-hide" id="k-kicker-main">Atlas Gym</span><span class="hw-show">¿Dulce o entreno?</span><span class="dm-show">Entrena hasta los huesos</span><span class="xm-show">Feliz Navidad</span></p>
                 <h1 class="kiosk-title">Acceso <em>socios</em></h1>
             </div>
 
@@ -328,6 +574,9 @@
                 <span class="k-keys">Escribe tu código de socio y presiona <kbd>Enter</kbd></span>
                 <span class="k-touch">Escribe tu código de socio y toca <kbd><i class="fas fa-arrow-right"></i></kbd></span>
             </p>
+
+            <!-- Información en vivo (solo kiosco normal): racha líder -->
+            <div id="nm-live" class="nm-live"></div>
 
             <!-- Teclado numérico (solo en pantallas táctiles) -->
             <div id="virtual-keypad" class="virtual-keypad">
@@ -349,6 +598,32 @@
         <div id="k-msg" class="kiosk-message"></div>
         <div id="k-sub" class="kiosk-submessage"></div>
     </div>
+    <script>
+        // Kiosco normal: la frase de arriba va cambiando sola y el reloj se actualiza
+        (function () {
+            if (/\btheme-/.test(document.body.className)) return;
+            var frases = ['Atlas Gym', 'Forja tu mejor versión', 'Un día más, una repetición más', 'La constancia construye'];
+            var el = document.getElementById('k-kicker-main');
+            var i = 0;
+            setInterval(function () {
+                el.classList.add('nm-fade');
+                setTimeout(function () {
+                    i = (i + 1) % frases.length;
+                    el.textContent = frases[i];
+                    el.classList.remove('nm-fade');
+                }, 450);
+            }, 6000);
+
+            var hora = document.getElementById('nm-time'), fecha = document.getElementById('nm-date');
+            function reloj() {
+                var ahora = new Date();
+                hora.textContent = ahora.toLocaleTimeString('es-MX', { hour: '2-digit', minute: '2-digit' });
+                fecha.textContent = ahora.toLocaleDateString('es-MX', { weekday: 'long', day: 'numeric', month: 'long' });
+            }
+            reloj();
+            setInterval(reloj, 15000);
+        })();
+    </script>
 
     <script type="module">
         import { database } from './firebase-config.js';
@@ -373,11 +648,41 @@
         let isOnline = true;
 
         onValue(ref(database, 'members'),
-            (snap) => { membersCache = snap.exists() ? snap.val() : {}; },
+            (snap) => { membersCache = snap.exists() ? snap.val() : {}; scheduleLive(); },
             (err) => { console.error('members listener', err); });
         onValue(ref(database, 'visits'),
-            (snap) => { visitsCache = snap.exists() ? snap.val() : {}; },
+            (snap) => { visitsCache = snap.exists() ? snap.val() : {}; scheduleLive(); },
             (err) => { console.error('visits listener', err); });
+
+        // ===== INFORMACIÓN EN VIVO (kiosco normal) =====
+        // El socio con la racha activa más larga (solo su primer nombre).
+        var liveTimer = null; // var: puede usarse antes de esta línea si Firebase responde de inmediato
+        function scheduleLive() { clearTimeout(liveTimer); liveTimer = setTimeout(updateLive, 300); }
+        function updateLive() {
+            const box = document.getElementById('nm-live');
+            if (!box || /\btheme-/.test(document.body.className) || membersCache === null) return;
+            const porCodigo = {};
+            Object.values(visitsCache).forEach(v => {
+                if (v.status !== 'success') return;
+                (porCodigo[String(v.code)] = porCodigo[String(v.code)] || []).push(kLocalKey(v.date));
+            });
+            const nombres = {};
+            Object.values(membersCache).forEach(m => { nombres[String(m.code)] = m.name || ''; });
+            let lider = null;
+            Object.keys(porCodigo).forEach(c => {
+                if (!nombres[c]) return;
+                const s = kComputeStreak(porCodigo[c]);
+                if (s.current > 0 && (!lider || s.current > lider.current)) lider = { name: nombres[c], current: s.current };
+            });
+            let html = '';
+            if (lider) {
+                const primer = lider.name.split(' ')[0];
+                const nombre = primer.charAt(0) + primer.slice(1).toLowerCase();
+                html = `<span><i class="fas fa-fire-flame-curved"></i> Racha líder: <b>${nombre}</b> · ${lider.current} día${lider.current === 1 ? '' : 's'}</span>`;
+            }
+            box.innerHTML = html;
+        }
+        setInterval(updateLive, 60000);
 
         // Estado de conexión (indicador visible)
         onValue(ref(database, '.info/connected'), (snap) => {
@@ -663,6 +968,14 @@
                 'Fuerte de aquí al Mictlán.',
                 'Músculo que no se muere.',
                 'Tu mejor ofrenda: una buena rutina.'
+            ],
+            navidad: [
+                'Ni el ponche te detiene.',
+                'Entrena antes del recalentado.',
+                'Santa también hace pierna.',
+                'Tu mejor regalo: la constancia.',
+                'Más fuerte que el frío.',
+                'Hoy se entrena, mañana tamales.'
             ]
         };
 
@@ -699,8 +1012,7 @@
                 : `<i class="fas fa-circle-check"></i> Acceso autorizado`;
 
             // Frase de temporada (solo si hay un tema activo)
-            const themeKey = body.classList.contains('theme-muertos') ? 'muertos'
-                : (body.classList.contains('theme-halloween') ? 'halloween' : null);
+            const themeKey = ['muertos', 'navidad', 'halloween'].find(t => body.classList.contains('theme-' + t)) || null;
             const phrases = themeKey ? THEME_PHRASES[themeKey] : null;
             const hwPhrase = phrases
                 ? `<span class="k-theme-phrase">${phrases[Math.floor(Math.random() * phrases.length)]}</span>`
